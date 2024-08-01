@@ -1,4 +1,4 @@
-FROM node:20.12.1
+FROM public.ecr.aws/docker/library/node:20
 
 WORKDIR /app
 COPY . .
