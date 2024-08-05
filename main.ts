@@ -15,9 +15,11 @@ async function main(): Promise<void> {
 function registerHandlers(sessionKey: string): express.Express {
   SessionSigner.SECRET_KEY = sessionKey;
   let app = express();
-  let register = new HandlerRegister(app);
+  let router = express.Router();
+  let register = new HandlerRegister(router);
   register.registerCorsAllowedPreflightHandler();
   register.register(SignInHandler.create());
+  app.use("/user", router);
   return app;
 }
 
