@@ -11,7 +11,7 @@ import { SessionBuilder } from "@selfage/service_handler/session_signer";
 AWS.config.update({ region: "us-east-1" });
 
 export class SignInHandler extends SignInHandlerInterface {
-  public static create(s3Service: AWS.S3): SignInHandler {
+  public static create(): SignInHandler {
     return new SignInHandler(
       SessionBuilder.create(),
       new AWS.S3({ apiVersion: "2006-03-01" }),
