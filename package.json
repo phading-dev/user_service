@@ -30,6 +30,8 @@
     "@phading/user_service_interface": "^0.14.2",
     "@phading/user_session_service_interface": "^0.5.0",
     "@selfage/service_handler": "^4.5.0",
-    "express": "^4.19.2"
+    "aws-sdk": "^2.1668.0",
+    "express": "^4.19.2",
+    "get-stream": "^6.0.1"
   }
 }
