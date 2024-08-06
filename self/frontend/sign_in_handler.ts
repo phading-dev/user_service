@@ -43,6 +43,7 @@ export class SignInHandler extends SignInHandlerInterface {
       database: "UserServiceDb",
       username: "root",
       password: dbPassword,
+      ssl: true
     });
     await sql`CREATE TABLE IF NOT EXISTS User (
       username varchar(128)
