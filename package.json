@@ -32,6 +32,7 @@
     "@selfage/service_handler": "^4.5.0",
     "aws-sdk": "^2.1668.0",
     "express": "^4.19.2",
-    "get-stream": "^6.0.1"
+    "get-stream": "^6.0.1",
+    "postgres": "^3.4.4"
   }
 }
