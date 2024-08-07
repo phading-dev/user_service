@@ -1,6 +1,6 @@
 import AWS = require("aws-sdk");
 import getStream = require("get-stream");
-import postgres = require("postgres");
+import mysql = require("mysql2/promise");
 import {
   SignInRequestBody,
   SignInResponse,
@@ -37,17 +37,17 @@ export class SignInHandler extends SignInHandlerInterface {
         })
         .createReadStream(),
     );
-    const sql = postgres({
+    const conn = await mysql.createConnection({
       host: "user-service-db.cda5j8gofxqp.us-east-1.rds.amazonaws.com",
-      port: 5432,
+      port: 3306,
       database: "UserServiceDb",
-      username: "root",
+      user: "root",
       password: dbPassword,
     });
-    await sql`CREATE TABLE IF NOT EXISTS User (
-      username varchar(128)
-    );`;
-    await sql.end();
+    await conn.execute(`CREATE TABLE User (
+      username varchar(255)
+    );`);
+    conn.destroy();
 
     let signedSession = this.sessionBuilder.build(
       JSON.stringify({
