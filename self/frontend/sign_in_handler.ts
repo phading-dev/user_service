@@ -44,7 +44,7 @@ export class SignInHandler extends SignInHandlerInterface {
       user: "root",
       password: dbPassword,
     });
-    await conn.execute(`CREATE TABLE User (
+    await conn.execute(`CREATE TABLE IF NOT EXISTS User (
       username varchar(255)
     );`);
     conn.destroy();
