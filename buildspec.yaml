@@ -7,4 +7,5 @@ phases:
       - docker build -t $ECR_REPO_NAME . 
       - docker tag $ECR_REPO_NAME:latest $AWS_ECR_URL/$ECR_REPO_NAME:latest
       - docker push $AWS_ECR_URL/$ECR_REPO_NAME:latest
+      - aws eks update-kubeconfig --region $REGION --name $EKS_CLUSTER_NAME
       - kubectl rollout restart deployment/user-service-deployment
