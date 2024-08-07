@@ -38,7 +38,7 @@ export class SignInHandler extends SignInHandlerInterface {
         .createReadStream(),
     );
     const conn = await mysql.createConnection({
-      host: "user-service-db.cda5j8gofxqp.us-east-1.rds.amazonaws.com",
+      host: "user-service-db-cluster.cluster-ro-cda5j8gofxqp.us-east-1.rds.amazonaws.com",
       port: 3306,
       database: "UserServiceDb",
       user: "root",
