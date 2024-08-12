@@ -42,10 +42,9 @@ export class SignInHandler extends SignInHandlerInterface {
   ): Promise<SignInResponse> {
     console.log(`${loggingPrefix} Start handling SignIn request.`);
     counter.inc();
-    let metrics = await promClient.register.metrics();
     let signedSession = this.sessionBuilder.build(
       JSON.stringify({
-        sessionId: `${body.username}-${body.password}-${metrics}`,
+        sessionId: `${body.username}-${body.password}`,
       } as ClientSession),
     );
     return {

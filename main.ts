@@ -1,5 +1,6 @@
 import express = require("express");
 import http = require("http");
+import promClient = require("prom-client");
 import { SignInHandler } from "./self/frontend/sign_in_handler";
 import { HandlerRegister } from "@selfage/service_handler/register";
 import { SessionSigner } from "@selfage/service_handler/session_signer";
@@ -20,8 +21,11 @@ function registerHandlers(sessionKey: string): express.Express {
   register.registerCorsAllowedPreflightHandler();
   register.register(SignInHandler.create());
   app.use("/user", router);
-  app.get("/healthz", (request, response) => {
-    response.end("ok");
+  app.get("/healthz", (req, res) => {
+    res.end("ok");
+  });
+  app.get("/metrics", async (req, res) => {
+    res.end(await promClient.register.metrics());
   });
   return app;
 }
