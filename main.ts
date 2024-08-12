@@ -20,7 +20,7 @@ function registerHandlers(sessionKey: string): express.Express {
   register.registerCorsAllowedPreflightHandler();
   register.register(SignInHandler.create());
   app.use("/user", router);
-  app.get("/healthz", (request, response) => {
+  app.get("/", (request, response) => {
     response.end("ok");
   });
   return app;
