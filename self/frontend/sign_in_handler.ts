@@ -19,7 +19,7 @@ import { SessionBuilder } from "@selfage/service_handler/session_signer";
 // });
 
 let counter = new promClient.Counter({
-  name: "custom.googleapis.com/user_service/sign_in_total",
+  name: "sign_in_total",
   help: "Total number of sign in requests",
 });
 
