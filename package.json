@@ -27,7 +27,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@google-cloud/monitoring": "^4.1.0",
+    "@google-cloud/spanner": "^7.13.0",
     "@google-cloud/storage": "^7.12.1",
     "@phading/user_service_interface": "^0.14.2",
     "@phading/user_session_service_interface": "^0.5.0",

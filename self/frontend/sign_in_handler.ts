@@ -6,21 +6,7 @@ import {
 import { SignInHandlerInterface } from "@phading/user_service_interface/self/frontend/server_handlers";
 import { ClientSession } from "@phading/user_session_service_interface/client_session";
 import { SessionBuilder } from "@selfage/service_handler/session_signer";
-// import monitoring = require('@google-cloud/monitoring')
-
-// let METRICS_CLIENT = new monitoring.MetricServiceClient();
-// let signInTotal = METRICS_CLIENT.createMetricDescriptor({
-//   metricDescriptor: {
-//     description: "The number of sign in requests.",
-//     displayName: "# of sign in",
-//     type: "custom.googleapis.com/user_service/sign_in_total",
-//     metricKind: 'CUMULATIVE',
-//     valueType: 'INT64',
-//   }
-// });
-// signInTotal.then((res) => {
-//   res[0].
-// })
+import { Database, Spanner } from "@google-cloud/spanner";
 
 let counter = new promClient.Counter({
   name: "user_service_sign_in_total",
@@ -32,8 +18,11 @@ export class SignInHandler extends SignInHandlerInterface {
     return new SignInHandler(SessionBuilder.create());
   }
 
+  private userDb: Database;
+
   public constructor(private sessionBuilder: SessionBuilder) {
     super();
+    this.userDb = new Spanner().instance("user-service-db").database("user");
   }
 
   public async handle(
@@ -42,9 +31,13 @@ export class SignInHandler extends SignInHandlerInterface {
   ): Promise<SignInResponse> {
     console.log(`${loggingPrefix} Start handling SignIn request.`);
     counter.inc();
+    let [rows] = await this.userDb.run({
+      sql: `SELECT * FROM UserTrial`
+    });
+    let username = rows[0].toJSON()['username'];
     let signedSession = this.sessionBuilder.build(
       JSON.stringify({
-        sessionId: `${body.username}-${body.password}`,
+        sessionId: `${body.username}-${body.password}-${username}`,
       } as ClientSession),
     );
     return {
