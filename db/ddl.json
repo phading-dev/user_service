@@ -1,0 +1,73 @@
+{
+  "tables": [{
+    "name": "User",
+    "columns": [{
+      "name": "userId",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN userId STRING(MAX) NOT NULL"
+    }, {
+      "name": "username",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN username STRING(MAX) NOT NULL"
+    }, {
+      "name": "passwordHashV1",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN passwordHashV1 STRING(MAX) NOT NULL"
+    }, {
+      "name": "recoveryEmail",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN recoveryEmail STRING(MAX) NOT NULL"
+    }, {
+      "name": "createdTimestamp",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)"
+    }],
+    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, passwordHashV1 STRING(MAX) NOT NULL, recoveryEmail STRING(MAX) NOT NULL, createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)) PRIMARY KEY (userId ASC)",
+    "indexes": [{
+      "name": "UniqueUsername",
+      "createIndexDdl": "CREATE INDEX UNIQUE UniqueUsername ON User(username)"
+    }]
+  }, {
+    "name": "Account",
+    "columns": [{
+      "name": "userId",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN userId STRING(MAX) NOT NULL"
+    }, {
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "accountType",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64 NOT NULL"
+    }, {
+      "name": "naturalName",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN naturalName STRING(MAX) NOT NULL"
+    }, {
+      "name": "description",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN description STRING(MAX)"
+    }, {
+      "name": "contactEmail",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN contactEmail STRING(MAX) NOT NULL"
+    }, {
+      "name": "avatarSmallPath",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallPath STRING(MAX) NOT NULL"
+    }, {
+      "name": "avatarLargePath",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarLargePath STRING(MAX) NOT NULL"
+    }, {
+      "name": "avatarSmallFilename",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallFilename STRING(MAX)"
+    }, {
+      "name": "avatarLargeFilename",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarLargeFilename STRING(MAX)"
+    }, {
+      "name": "createdTimestamp",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)"
+    }, {
+      "name": "lastAccessedTimestamp",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)"
+    }],
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, naturalName STRING(MAX) NOT NULL, description STRING(MAX), contactEmail STRING(MAX) NOT NULL, avatarSmallPath STRING(MAX) NOT NULL, avatarLargePath STRING(MAX) NOT NULL, avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true), lastAccessedTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)) PRIMARY KEY (accountId ASC)",
+    "indexes": [{
+      "name": "FromUser",
+      "createIndexDdl": "CREATE INDEX FromUser ON Account(userId)"
+    }, {
+      "name": "ByLastAccessTimestamp",
+      "createIndexDdl": "CREATE INDEX ByLastAccessTimestamp ON Account(lastAccessedTimestamp)"
+    }]
+  }]
+}

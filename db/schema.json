@@ -1,0 +1,379 @@
+[{
+  "enum": {
+    "name": "AccountType",
+    "values": [{
+      "name": "CONSUMER",
+      "value": 1
+    }, {
+      "name": "PUBLISHER",
+      "value": 2
+    }]
+  }
+}, {
+  "spannerDatabase": {
+    "name": "UserDatabase",
+    "tables": [{
+      "name": "User",
+      "columns": [{
+        "name": "userId",
+        "type": "string"
+      }, {
+        "name": "username",
+        "type": "string"
+      }, {
+        "name": "passwordHashV1",
+        "type": "string"
+      }, {
+        "name": "recoveryEmail",
+        "type": "string"
+      }, {
+        "name": "createdTimestamp",
+        "type": "timestamp",
+        "allowCommitTimestamp": true
+      }],
+      "primaryKeys": [{
+        "column": "userId"
+      }],
+      "indexes": [{
+        "name": "UniqueUsername",
+        "columns": ["username"],
+        "unique": true
+      }]
+    }, {
+      "name": "Account",
+      "columns": [{
+        "name": "userId",
+        "type": "string"
+      }, {
+        "name": "accountId",
+        "type": "string"
+      }, {
+        "name": "accountType",
+        "type": "AccountType"
+      }, {
+        "name": "naturalName",
+        "type": "string"
+      }, {
+        "name": "description",
+        "type": "string",
+        "nullable": true
+      }, {
+        "name": "contactEmail",
+        "type": "string"
+      }, {
+        "name": "avatarSmallPath",
+        "type": "string"
+      }, {
+        "name": "avatarLargePath",
+        "type": "string"
+      }, {
+        "name": "avatarSmallFilename",
+        "type": "string",
+        "nullable": true
+      }, {
+        "name": "avatarLargeFilename",
+        "type": "string",
+        "nullable": true
+      }, {
+        "name": "createdTimestamp",
+        "type": "timestamp",
+        "allowCommitTimestamp": true
+      }, {
+        "name": "lastAccessedTimestamp",
+        "type": "timestamp",
+        "allowCommitTimestamp": true
+      }],
+      "primaryKeys": [{
+        "column": "accountId"
+      }],
+      "indexes": [{
+        "name": "FromUser",
+        "columns": ["userId"]
+      }, {
+        "name": "ByLastAccessTimestamp",
+        "columns": ["lastAccessedTimestamp"]
+      }]
+    }],
+    "inserts": [{
+      "name": "InsertNewUser",
+      "table": "User",
+      "setColumns": ["userId", "username", "passwordHashV1", "recoveryEmail", "createdTimestamp"]
+    }, {
+      "name": "InsertNewAccount",
+      "table": "Account",
+      "setColumns": ["userId", "accountId", "accountType", "naturalName", "contactEmail", "avatarSmallPath", "avatarLargePath", "createdTimestamp", "lastAccessedTimestamp"]
+    }],
+    "updates": [{
+      "name": "UpdatePassword",
+      "table": "User",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "userId"
+        }
+      },
+      "setColumns": ["passwordHashV1"]
+    }, {
+      "name": "UpdateRecoveryEmail",
+      "table": "User",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "userId"
+        }
+      },
+      "setColumns": ["recoveryEmail"]
+    }, {
+      "name": "UpdateLastAccessedTimestmap",
+      "table": "Account",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["lastAccessedTimestamp"]
+    }, {
+      "name": "UpdateNaturalName",
+      "table": "Account",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["naturalName"]
+    }, {
+      "name": "UpdateContactEmail",
+      "table": "Account",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["contactEmail"]
+    }, {
+      "name": "UpdateAccountDescription",
+      "table": "Account",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["description"]
+    }, {
+      "name": "UpdateAvatar",
+      "table": "Account",
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["avatarSmallPath", "avatarLargePath", "avatarSmallFilename", "avatarLargeFilename"]
+    }],
+    "selects": [{
+      "name": "GetPasswordHashById",
+      "fromTable": {
+        "name": "User"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "userId"
+        }
+      },
+      "getColumns": [{
+        "name": "passwordHashV1"
+      }]
+    }, {
+      "name": "GetUserByUsername",
+      "fromTable": {
+        "name": "User"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "username"
+        }
+      },
+      "getColumns": [{
+        "name": "userId"
+      }, {
+        "name": "passwordHashV1"
+      }]
+    }, {
+      "name": "GetLastAccessedAccount",
+      "fromTable": {
+        "name": "Account"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "userId"
+        }
+      },
+      "orderBy": [{
+        "column": {
+          "name": "lastAccessedTimestamp"
+        },
+        "desc": true
+      }],
+      "limit": 1,
+      "getColumns": [{
+        "name": "accountId"
+      }, {
+        "name": "accountType"
+      }]
+    }, {
+      "name": "GetAccountById",
+      "fromTable": {
+        "name": "Account"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "getColumns": [{
+        "name": "userId"
+      }, {
+        "name": "accountType"
+      }]
+    }, {
+      "name": "GetAccounts",
+      "fromTable": {
+        "name": "Account"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "userId"
+        }
+      },
+      "getColumns": [{
+        "name": "accountId"
+      }, {
+        "name": "accountType"
+      }, {
+        "name": "naturalName"
+      }, {
+        "name": "avatarSmallPath"
+      }]
+    }, {
+      "name": "GetAvatarFilename",
+      "fromTable": {
+        "name": "Account"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "getColumns": [{
+        "name": "avatarSmallFilename"
+      }, {
+        "name": "avatarLargeFilename"
+      }]
+    }, {
+      "name": "GetAccountSnapshot",
+      "fromTable": {
+        "name": "Account"
+      },
+      "where": {
+        "type": "leaf",
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "getColumns": [{
+        "name": "accountId"
+      }, {
+        "name": "naturalName"
+      }, {
+        "name": "avatarSmallPath"
+      }]
+    }, {
+      "name": "GetAccountAndUser",
+      "fromTable": {
+        "name": "User",
+        "as": "u"
+      },
+      "join": [{
+        "type": "INNER",
+        "table": {
+          "name": "Account",
+          "as": "a"
+        },
+        "on": {
+          "type": "leaf",
+          "op": "=",
+          "leftColumn": {
+            "name": "userId",
+            "table": "u"
+          },
+          "rightColumn": "userId"
+        }
+      }],
+      "where": {
+        "type": "gate",
+        "op": "AND",
+        "left": {
+          "type": "leaf",
+          "op": "=",
+          "leftColumn": {
+            "name": "userId",
+            "table": "a"
+          }
+        },
+        "right": {
+          "type": "leaf",
+          "op": "=",
+          "leftColumn": {
+            "name": "accountId",
+            "table": "a"
+          }
+        }
+      },
+      "getColumns": [{
+        "name": "username",
+        "table": "u"
+      }, {
+        "name": "recoveryEmail",
+        "table": "u"
+      }, {
+        "name": "naturalName",
+        "table": "a"
+      }, {
+        "name": "contactEmail",
+        "table": "a"
+      }, {
+        "name": "description",
+        "table": "a"
+      }, {
+        "name": "avatarLargePath",
+        "table": "a"
+      }]
+    }],
+    "outputDdl": "./db/ddl",
+    "outputSql": "./db/sql"
+  }
+}]
