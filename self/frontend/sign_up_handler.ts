@@ -3,7 +3,7 @@ import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_PATH,
   DEFAULT_ACCOUNT_AVATAR_SMALL_PATH,
 } from "../../common/constants";
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   getUserByUsername,
@@ -25,7 +25,7 @@ export class SignUpHandler extends SignUpHandlerInterface {
     return new SignUpHandler(
       new PasswordSigner(),
       SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
+      SERVICE_CLIENT,
       () => crypto.randomUUID(),
     );
   }

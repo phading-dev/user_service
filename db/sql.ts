@@ -1,6 +1,7 @@
 import { ExecuteSqlRequest, RunResponse } from '@google-cloud/spanner/build/src/transaction';
 import { AccountType, ACCOUNT_TYPE } from './schema';
-import { toEnumFromNumber } from '@selfage/message/serializer';
+import { toEnumFromNumber, deserializeMessage, serializeMessage } from '@selfage/message/serializer';
+import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/self/frontend/video_player_settings';
 import { Spanner } from '@google-cloud/spanner';
 
 export interface GetPasswordHashByIdRow {
@@ -242,6 +243,58 @@ export async function getAccountAndUser(
   return resRows;
 }
 
+export interface GetVideoPlayerSettingsRow {
+  videoPlayerSettingsSettings?: VideoPlayerSettings,
+}
+
+export async function getVideoPlayerSettings(
+  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
+  videoPlayerSettingsAccountId: string,
+): Promise<Array<GetVideoPlayerSettingsRow>> {
+  let [rows] = await run({
+    sql: "SELECT VideoPlayerSettings.settings FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    params: {
+      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+    },
+    types: {
+      videoPlayerSettingsAccountId: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetVideoPlayerSettingsRow>();
+  for (let row of rows) {
+    resRows.push({
+      videoPlayerSettingsSettings: row.at(0).value == null ? undefined : deserializeMessage(row.at(0).value, VIDEO_PLAYER_SETTINGS),
+    });
+  }
+  return resRows;
+}
+
+export interface CheckPresenceVideoPlayerSettingsRow {
+  videoPlayerSettingsAccountId?: string,
+}
+
+export async function checkPresenceVideoPlayerSettings(
+  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
+  videoPlayerSettingsAccountId: string,
+): Promise<Array<CheckPresenceVideoPlayerSettingsRow>> {
+  let [rows] = await run({
+    sql: "SELECT VideoPlayerSettings.accountId FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    params: {
+      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+    },
+    types: {
+      videoPlayerSettingsAccountId: { type: "string" },
+    }
+  });
+  let resRows = new Array<CheckPresenceVideoPlayerSettingsRow>();
+  for (let row of rows) {
+    resRows.push({
+      videoPlayerSettingsAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+    });
+  }
+  return resRows;
+}
+
 export async function insertNewUser(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   userId: string,
@@ -295,6 +348,24 @@ export async function insertNewAccount(
       contactEmail: { type: "string" },
       avatarSmallPath: { type: "string" },
       avatarLargePath: { type: "string" },
+    }
+  });
+}
+
+export async function insertNewVideoPlayerSettings(
+  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
+  accountId: string,
+  settings: VideoPlayerSettings,
+): Promise<void> {
+  await run({
+    sql: "INSERT VideoPlayerSettings (accountId, settings) VALUES (@accountId, @settings)",
+    params: {
+      accountId: accountId,
+      settings: Buffer.from(serializeMessage(settings, VIDEO_PLAYER_SETTINGS).buffer),
+    },
+    types: {
+      accountId: { type: "string" },
+      settings: { type: "bytes" },
     }
   });
 }
@@ -427,6 +498,24 @@ export async function updateAvatar(
       setAvatarSmallFilename: { type: "string" },
       setAvatarLargeFilename: { type: "string" },
       accountAccountId: { type: "string" },
+    }
+  });
+}
+
+export async function updateVideoPlayerSettings(
+  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
+  setSettings: VideoPlayerSettings,
+  videoPlayerSettingsAccountId: string,
+): Promise<void> {
+  await run({
+    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    params: {
+      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
+      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+    },
+    types: {
+      setSettings: { type: "bytes" },
+      videoPlayerSettingsAccountId: { type: "string" },
     }
   });
 }

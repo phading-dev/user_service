@@ -1,4 +1,4 @@
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccountAndUser } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -12,10 +12,7 @@ import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface {
   public static create(): GetAccountAndUserHandler {
-    return new GetAccountAndUserHandler(
-      SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
-    );
+    return new GetAccountAndUserHandler(SPANNER_DATABASE, SERVICE_CLIENT);
   }
 
   public constructor(

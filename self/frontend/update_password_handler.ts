@@ -1,4 +1,4 @@
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getPasswordHashById, updatePassword } from "../../db/sql";
 import { PasswordSigner } from "./password_signer";
@@ -17,7 +17,7 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
     return new UpdatePasswordHandler(
       new PasswordSigner(),
       SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
+      SERVICE_CLIENT,
     );
   }
 

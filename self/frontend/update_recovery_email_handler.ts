@@ -1,3 +1,5 @@
+import { SERVICE_CLIENT } from "../../common/service_client";
+import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getPasswordHashById, updateRecoveryEmail } from "../../db/sql";
 import { PasswordSigner } from "./password_signer";
 import { Database } from "@google-cloud/spanner";
@@ -11,6 +13,14 @@ import { newUnauthorizedError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterface {
+  public static create(): UpdateRecoveryEmailHandler {
+    return new UpdateRecoveryEmailHandler(
+      SPANNER_DATABASE,
+      SERVICE_CLIENT,
+      new PasswordSigner(),
+    );
+  }
+
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,

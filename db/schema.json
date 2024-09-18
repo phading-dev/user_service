@@ -100,6 +100,19 @@
           "desc": true
         }]
       }]
+    }, {
+      "name": "VideoPlayerSettings",
+      "columns": [{
+        "name": "accountId",
+        "type": "string"
+      }, {
+        "name": "settings",
+        "type": "VideoPlayerSettings",
+        "import": "@phading/user_service_interface/self/frontend/video_player_settings"
+      }],
+      "primaryKeys": [{
+        "name": "accountId"
+      }]
     }],
     "inserts": [{
       "name": "InsertNewUser",
@@ -109,12 +122,15 @@
       "name": "InsertNewAccount",
       "table": "Account",
       "setColumns": ["userId", "accountId", "accountType", "naturalName", "contactEmail", "avatarSmallPath", "avatarLargePath", "createdTimestamp", "lastAccessedTimestamp"]
+    }, {
+      "name": "InsertNewVideoPlayerSettings",
+      "table": "VideoPlayerSettings",
+      "setColumns": ["accountId", "settings"]
     }],
     "updates": [{
       "name": "UpdatePassword",
       "table": "User",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "userId"
@@ -125,7 +141,6 @@
       "name": "UpdateRecoveryEmail",
       "table": "User",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "userId"
@@ -136,7 +151,6 @@
       "name": "UpdateLastAccessedTimestmap",
       "table": "Account",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -147,7 +161,6 @@
       "name": "UpdateNaturalName",
       "table": "Account",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -158,7 +171,6 @@
       "name": "UpdateContactEmail",
       "table": "Account",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -169,7 +181,6 @@
       "name": "UpdateAccountDescription",
       "table": "Account",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -180,13 +191,22 @@
       "name": "UpdateAvatar",
       "table": "Account",
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
         }
       },
       "setColumns": ["avatarSmallPath", "avatarLargePath", "avatarSmallFilename", "avatarLargeFilename"]
+    }, {
+      "name": "UpdateVideoPlayerSettings",
+      "table": "VideoPlayerSettings",
+      "where": {
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "setColumns": ["settings"]
     }],
     "selects": [{
       "name": "GetPasswordHashById",
@@ -194,7 +214,6 @@
         "name": "User"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "userId"
@@ -209,7 +228,6 @@
         "name": "User"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "username"
@@ -226,7 +244,6 @@
         "name": "Account"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "userId"
@@ -250,7 +267,6 @@
         "name": "Account"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -267,7 +283,6 @@
         "name": "Account"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "userId"
@@ -288,7 +303,6 @@
         "name": "Account"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -305,7 +319,6 @@
         "name": "Account"
       },
       "where": {
-        "type": "leaf",
         "op": "=",
         "leftColumn": {
           "name": "accountId"
@@ -331,7 +344,6 @@
           "as": "a"
         },
         "on": {
-          "type": "leaf",
           "op": "=",
           "leftColumn": {
             "name": "userId",
@@ -341,10 +353,8 @@
         }
       }],
       "where": {
-        "type": "gate",
         "op": "AND",
         "left": {
-          "type": "leaf",
           "op": "=",
           "leftColumn": {
             "name": "userId",
@@ -352,7 +362,6 @@
           }
         },
         "right": {
-          "type": "leaf",
           "op": "=",
           "leftColumn": {
             "name": "accountId",
@@ -378,6 +387,34 @@
       }, {
         "name": "avatarLargePath",
         "table": "a"
+      }]
+    }, {
+      "name": "GetVideoPlayerSettings",
+      "fromTable": {
+        "name": "VideoPlayerSettings"
+      },
+      "where": {
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "getColumns": [{
+        "name": "settings"
+      }]
+    }, {
+      "name": "CheckPresenceVideoPlayerSettings",
+      "fromTable": {
+        "name": "VideoPlayerSettings"
+      },
+      "where": {
+        "op": "=",
+        "leftColumn": {
+          "name": "accountId"
+        }
+      },
+      "getColumns": [{
+        "name": "accountId"
       }]
     }],
     "outputDdl": "./db/ddl",

@@ -9,7 +9,7 @@ import {
   MAX_AVATAR_BUFFER_SIZE,
   SMALL_AVATAR_SIZE,
 } from "../../common/constants";
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAvatarFilename, updateAvatar } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -26,7 +26,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
       CLOUD_STORAGE,
-      USER_SESSION_SERVICE_CLIENT,
+      SERVICE_CLIENT,
       () => crypto.randomUUID(),
     );
   }

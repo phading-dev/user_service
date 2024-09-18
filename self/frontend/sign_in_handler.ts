@@ -1,4 +1,4 @@
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   getLastAccessedAccount,
@@ -20,7 +20,7 @@ export class SignInHandler extends SignInHandlerInterface {
   public static create(): SignInHandler {
     return new SignInHandler(
       SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
+      SERVICE_CLIENT,
       new PasswordSigner(),
     );
   }

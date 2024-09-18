@@ -1,4 +1,4 @@
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   updateAccountDescription,
@@ -16,10 +16,7 @@ import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
   public static create(): UpdateAccountHandler {
-    return new UpdateAccountHandler(
-      SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
-    );
+    return new UpdateAccountHandler(SPANNER_DATABASE, SERVICE_CLIENT);
   }
 
   public constructor(

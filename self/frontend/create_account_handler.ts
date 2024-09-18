@@ -3,7 +3,7 @@ import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_PATH,
   DEFAULT_ACCOUNT_AVATAR_SMALL_PATH,
 } from "../../common/constants";
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { insertNewAccount } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -20,10 +20,8 @@ import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class CreateAccountHandler extends CreateAccountHandlerInterface {
   public static create(): CreateAccountHandler {
-    return new CreateAccountHandler(
-      SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
-      () => crypto.randomUUID(),
+    return new CreateAccountHandler(SPANNER_DATABASE, SERVICE_CLIENT, () =>
+      crypto.randomUUID(),
     );
   }
 
@@ -40,11 +38,11 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     body: CreateAccountRequestBody,
     sessionStr: string,
   ): Promise<CreateAccountResponse> {
-      let userSession = (
-        await exchangeSessionAndCheckCapability(this.serviceClient, {
-          signedSession: sessionStr,
-        })
-      ).userSession;
+    let userSession = (
+      await exchangeSessionAndCheckCapability(this.serviceClient, {
+        signedSession: sessionStr,
+      })
+    ).userSession;
     let accountId = this.generateUuid();
     await insertNewAccount(
       (query) => this.database.run(query),

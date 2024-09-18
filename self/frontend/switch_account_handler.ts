@@ -1,4 +1,4 @@
-import { USER_SESSION_SERVICE_CLIENT } from "../../common/service_client";
+import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccountById } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -16,10 +16,7 @@ import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
   public static create(): SwitchAccountHandler {
-    return new SwitchAccountHandler(
-      SPANNER_DATABASE,
-      USER_SESSION_SERVICE_CLIENT,
-    );
+    return new SwitchAccountHandler(SPANNER_DATABASE, SERVICE_CLIENT);
   }
 
   public constructor(

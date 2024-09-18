@@ -69,5 +69,16 @@
       "name": "ByLastAccessTimestamp",
       "createIndexDdl": "CREATE INDEX ByLastAccessTimestamp ON Account(lastAccessedTimestamp DESC)"
     }]
+  }, {
+    "name": "VideoPlayerSettings",
+    "columns": [{
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE VideoPlayerSettings ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "settings",
+      "addColumnDdl": "ALTER TABLE VideoPlayerSettings ADD COLUMN settings BYTES(MAX) NOT NULL"
+    }],
+    "createTableDdl": "CREATE TABLE VideoPlayerSettings (accountId STRING(MAX) NOT NULL, settings BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
+    "indexes": []
   }]
 }
