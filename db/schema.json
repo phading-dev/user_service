@@ -31,14 +31,10 @@
         "type": "timestamp",
         "allowCommitTimestamp": true
       }],
-      "primaryKeys": [{
-        "name": "userId"
-      }],
+      "primaryKeys": ["userId"],
       "indexes": [{
         "name": "UniqueUsername",
-        "columns": [{
-          "name": "username"
-        }],
+        "columns": ["username"],
         "unique": true
       }]
     }, {
@@ -85,14 +81,10 @@
         "type": "timestamp",
         "allowCommitTimestamp": true
       }],
-      "primaryKeys": [{
-        "name": "accountId"
-      }],
+      "primaryKeys": ["accountId"],
       "indexes": [{
         "name": "FromUser",
-        "columns": [{
-          "name": "userId"
-        }]
+        "columns": ["userId"]
       }, {
         "name": "ByLastAccessTimestamp",
         "columns": [{
@@ -110,9 +102,7 @@
         "type": "VideoPlayerSettings",
         "import": "@phading/user_service_interface/self/frontend/video_player_settings"
       }],
-      "primaryKeys": [{
-        "name": "accountId"
-      }]
+      "primaryKeys": ["accountId"]
     }],
     "inserts": [{
       "name": "InsertNewUser",
@@ -132,9 +122,7 @@
       "table": "User",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "userId"
-        }
+        "leftColumn": "userId"
       },
       "setColumns": ["passwordHashV1"]
     }, {
@@ -142,9 +130,7 @@
       "table": "User",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "userId"
-        }
+        "leftColumn": "userId"
       },
       "setColumns": ["recoveryEmail"]
     }, {
@@ -152,9 +138,7 @@
       "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
       "setColumns": ["lastAccessedTimestamp"]
     }, {
@@ -162,9 +146,7 @@
       "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn":"accountId"
       },
       "setColumns": ["naturalName"]
     }, {
@@ -172,9 +154,7 @@
       "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
       "setColumns": ["contactEmail"]
     }, {
@@ -182,9 +162,7 @@
       "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
       "setColumns": ["description"]
     }, {
@@ -192,9 +170,7 @@
       "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
       "setColumns": ["avatarSmallPath", "avatarLargePath", "avatarSmallFilename", "avatarLargeFilename"]
     }, {
@@ -202,138 +178,74 @@
       "table": "VideoPlayerSettings",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
       "setColumns": ["settings"]
     }],
     "selects": [{
       "name": "GetPasswordHashById",
-      "fromTable": {
-        "name": "User"
-      },
+      "table": "User",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "userId"
-        }
+        "leftColumn": "userId"
       },
-      "getColumns": [{
-        "name": "passwordHashV1"
-      }]
+      "getColumns": ["passwordHashV1"]
     }, {
       "name": "GetUserByUsername",
-      "fromTable": {
-        "name": "User"
-      },
+      "table": "User",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "username"
-        }
+        "leftColumn": "username"
       },
-      "getColumns": [{
-        "name": "userId"
-      }, {
-        "name": "passwordHashV1"
-      }]
+      "getColumns": ["userId", "passwordHashV1"]
     }, {
       "name": "GetLastAccessedAccount",
-      "fromTable": {
-        "name": "Account"
-      },
+      "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "userId"
-        }
+        "leftColumn": "userId"
       },
       "orderBy": [{
-        "column": {
-          "name": "lastAccessedTimestamp"
-        },
+        "column": "lastAccessedTimestamp",
         "desc": true
       }],
       "limit": 1,
-      "getColumns": [{
-        "name": "accountId"
-      }, {
-        "name": "accountType"
-      }]
+      "getColumns": ["accountId", "accountType"]
     }, {
       "name": "GetAccountById",
-      "fromTable": {
-        "name": "Account"
-      },
+      "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
-      "getColumns": [{
-        "name": "userId"
-      }, {
-        "name": "accountType"
-      }]
+      "getColumns": ["userId", "accountType"]
     }, {
       "name": "GetAccounts",
-      "fromTable": {
-        "name": "Account"
-      },
+      "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "userId"
-        }
+        "leftColumn": "userId"
       },
-      "getColumns": [{
-        "name": "accountId"
-      }, {
-        "name": "accountType"
-      }, {
-        "name": "naturalName"
-      }, {
-        "name": "avatarSmallPath"
-      }]
+      "getColumns": ["accountId", "accountType", "naturalName", "avatarSmallPath"]
     }, {
       "name": "GetAvatarFilename",
-      "fromTable": {
-        "name": "Account"
-      },
+      "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
-      "getColumns": [{
-        "name": "avatarSmallFilename"
-      }, {
-        "name": "avatarLargeFilename"
-      }]
+      "getColumns": ["avatarSmallFilename", "avatarLargeFilename"]
     }, {
       "name": "GetAccountSnapshot",
-      "fromTable": {
-        "name": "Account"
-      },
+      "table": "Account",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
-      "getColumns": [{
-        "name": "accountId"
-      }, {
-        "name": "naturalName"
-      }, {
-        "name": "avatarSmallPath"
-      }]
+      "getColumns": ["accountId", "naturalName", "avatarSmallPath"]
     }, {
       "name": "GetAccountAndUser",
-      "fromTable": {
+      "table": {
         "name": "User",
         "as": "u"
       },
@@ -390,32 +302,20 @@
       }]
     }, {
       "name": "GetVideoPlayerSettings",
-      "fromTable": {
-        "name": "VideoPlayerSettings"
-      },
+      "table": "VideoPlayerSettings",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
-      "getColumns": [{
-        "name": "settings"
-      }]
+      "getColumns": ["settings"]
     }, {
       "name": "CheckPresenceVideoPlayerSettings",
-      "fromTable": {
-        "name": "VideoPlayerSettings"
-      },
+      "table": "VideoPlayerSettings",
       "where": {
         "op": "=",
-        "leftColumn": {
-          "name": "accountId"
-        }
+        "leftColumn": "accountId"
       },
-      "getColumns": [{
-        "name": "accountId"
-      }]
+      "getColumns": ["accountId"]
     }],
     "outputDdl": "./db/ddl",
     "outputSql": "./db/sql"
