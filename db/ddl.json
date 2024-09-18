@@ -67,7 +67,7 @@
       "createIndexDdl": "CREATE INDEX FromUser ON Account(userId)"
     }, {
       "name": "ByLastAccessTimestamp",
-      "createIndexDdl": "CREATE INDEX ByLastAccessTimestamp ON Account(lastAccessedTimestamp)"
+      "createIndexDdl": "CREATE INDEX ByLastAccessTimestamp ON Account(lastAccessedTimestamp DESC)"
     }]
   }]
 }

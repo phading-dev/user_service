@@ -32,11 +32,13 @@
         "allowCommitTimestamp": true
       }],
       "primaryKeys": [{
-        "column": "userId"
+        "name": "userId"
       }],
       "indexes": [{
         "name": "UniqueUsername",
-        "columns": ["username"],
+        "columns": [{
+          "name": "username"
+        }],
         "unique": true
       }]
     }, {
@@ -84,14 +86,19 @@
         "allowCommitTimestamp": true
       }],
       "primaryKeys": [{
-        "column": "accountId"
+        "name": "accountId"
       }],
       "indexes": [{
         "name": "FromUser",
-        "columns": ["userId"]
+        "columns": [{
+          "name": "userId"
+        }]
       }, {
         "name": "ByLastAccessTimestamp",
-        "columns": ["lastAccessedTimestamp"]
+        "columns": [{
+          "name": "lastAccessedTimestamp",
+          "desc": true
+        }]
       }]
     }],
     "inserts": [{
