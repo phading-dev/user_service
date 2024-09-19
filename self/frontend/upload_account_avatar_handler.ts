@@ -112,7 +112,9 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
       this.storage
         .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
         .file(outputFile)
-        .createWriteStream(),
+        .createWriteStream({
+          resumable: false,
+        }),
     );
   }
 }
