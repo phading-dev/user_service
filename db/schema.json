@@ -59,12 +59,6 @@
         "name": "contactEmail",
         "type": "string"
       }, {
-        "name": "avatarSmallPath",
-        "type": "string"
-      }, {
-        "name": "avatarLargePath",
-        "type": "string"
-      }, {
         "name": "avatarSmallFilename",
         "type": "string",
         "nullable": true
@@ -111,7 +105,7 @@
     }, {
       "name": "InsertNewAccount",
       "table": "Account",
-      "setColumns": ["userId", "accountId", "accountType", "naturalName", "contactEmail", "avatarSmallPath", "avatarLargePath", "createdTimestamp", "lastAccessedTimestamp"]
+      "setColumns": ["userId", "accountId", "accountType", "naturalName", "contactEmail", "createdTimestamp", "lastAccessedTimestamp"]
     }, {
       "name": "InsertNewVideoPlayerSettings",
       "table": "VideoPlayerSettings",
@@ -172,7 +166,7 @@
         "op": "=",
         "leftColumn": "accountId"
       },
-      "setColumns": ["avatarSmallPath", "avatarLargePath", "avatarSmallFilename", "avatarLargeFilename"]
+      "setColumns": ["avatarSmallFilename", "avatarLargeFilename"]
     }, {
       "name": "UpdateVideoPlayerSettings",
       "table": "VideoPlayerSettings",
@@ -226,7 +220,7 @@
         "op": "=",
         "leftColumn": "userId"
       },
-      "getColumns": ["accountId", "accountType", "naturalName", "avatarSmallPath"]
+      "getColumns": ["accountId", "accountType", "naturalName", "avatarSmallFilename"]
     }, {
       "name": "GetAvatarFilename",
       "table": "Account",
@@ -242,7 +236,7 @@
         "op": "=",
         "leftColumn": "accountId"
       },
-      "getColumns": ["accountId", "naturalName", "avatarSmallPath"]
+      "getColumns": ["accountId", "naturalName", "avatarSmallFilename"]
     }, {
       "name": "GetAccountAndUser",
       "table": {
@@ -297,7 +291,7 @@
         "name": "description",
         "table": "a"
       }, {
-        "name": "avatarLargePath",
+        "name": "avatarLargeFilename",
         "table": "a"
       }]
     }, {

@@ -2,9 +2,8 @@ import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
 import util = require("util");
-import { CLOUD_STORAGE } from "../../common/cloud_storage";
+import { ACCOUNT_AVATAR_BUCKET } from "../../common/cloud_storage";
 import {
-  ACCOUNT_AVATAR_BUCKET_NAME,
   LARGE_AVATAR_SIZE,
   MAX_AVATAR_BUFFER_SIZE,
   SMALL_AVATAR_SIZE,
@@ -13,7 +12,7 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAvatarFilename, updateAvatar } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { Storage } from "@google-cloud/storage";
+import { Bucket } from "@google-cloud/storage";
 import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
 import { UploadAccountAvatarResponse } from "@phading/user_service_interface/self/frontend/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/backend/client";
@@ -25,7 +24,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
   public static create(): UploadAccountAvatarHandler {
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
-      CLOUD_STORAGE,
+      ACCOUNT_AVATAR_BUCKET,
       SERVICE_CLIENT,
       () => crypto.randomUUID(),
     );
@@ -33,7 +32,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
 
   public constructor(
     private database: Database,
-    private storage: Storage,
+    private accountAvatarBucket: Bucket,
     private serviceClient: NodeServiceClient,
     private generateUuid: () => string,
   ) {
@@ -67,8 +66,6 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
       avatarLargeFilename = `${this.generateUuid()}.png`;
       await updateAvatar(
         (query) => transaction.run(query),
-        `${ACCOUNT_AVATAR_BUCKET_NAME}/${avatarSmallFilename}`,
-        `${ACCOUNT_AVATAR_BUCKET_NAME}/${avatarLargeFilename}`,
         avatarSmallFilename,
         avatarLargeFilename,
         userSession.accountId,
@@ -109,12 +106,9 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         palette: true,
         effort: 10,
       }),
-      this.storage
-        .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
-        .file(outputFile)
-        .createWriteStream({
-          resumable: false,
-        }),
+      this.accountAvatarBucket.file(outputFile).createWriteStream({
+        resumable: false,
+      }),
     );
   }
 }

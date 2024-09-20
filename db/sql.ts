@@ -118,7 +118,7 @@ export interface GetAccountsRow {
   accountAccountId?: string,
   accountAccountType?: AccountType,
   accountNaturalName?: string,
-  accountAvatarSmallPath?: string,
+  accountAvatarSmallFilename?: string,
 }
 
 export async function getAccounts(
@@ -126,7 +126,7 @@ export async function getAccounts(
   accountUserId: string,
 ): Promise<Array<GetAccountsRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.accountId, Account.accountType, Account.naturalName, Account.avatarSmallPath FROM Account WHERE Account.userId = @accountUserId",
+    sql: "SELECT Account.accountId, Account.accountType, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.userId = @accountUserId",
     params: {
       accountUserId: accountUserId,
     },
@@ -140,7 +140,7 @@ export async function getAccounts(
       accountAccountId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountType: row.at(1).value == null ? undefined : toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
       accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
-      accountAvatarSmallPath: row.at(3).value == null ? undefined : row.at(3).value,
+      accountAvatarSmallFilename: row.at(3).value == null ? undefined : row.at(3).value,
     });
   }
   return resRows;
@@ -177,7 +177,7 @@ export async function getAvatarFilename(
 export interface GetAccountSnapshotRow {
   accountAccountId?: string,
   accountNaturalName?: string,
-  accountAvatarSmallPath?: string,
+  accountAvatarSmallFilename?: string,
 }
 
 export async function getAccountSnapshot(
@@ -185,7 +185,7 @@ export async function getAccountSnapshot(
   accountAccountId: string,
 ): Promise<Array<GetAccountSnapshotRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.accountId, Account.naturalName, Account.avatarSmallPath FROM Account WHERE Account.accountId = @accountAccountId",
+    sql: "SELECT Account.accountId, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.accountId = @accountAccountId",
     params: {
       accountAccountId: accountAccountId,
     },
@@ -198,7 +198,7 @@ export async function getAccountSnapshot(
     resRows.push({
       accountAccountId: row.at(0).value == null ? undefined : row.at(0).value,
       accountNaturalName: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAvatarSmallPath: row.at(2).value == null ? undefined : row.at(2).value,
+      accountAvatarSmallFilename: row.at(2).value == null ? undefined : row.at(2).value,
     });
   }
   return resRows;
@@ -210,7 +210,7 @@ export interface GetAccountAndUserRow {
   aNaturalName?: string,
   aContactEmail?: string,
   aDescription?: string,
-  aAvatarLargePath?: string,
+  aAvatarLargeFilename?: string,
 }
 
 export async function getAccountAndUser(
@@ -219,7 +219,7 @@ export async function getAccountAndUser(
   aAccountId: string,
 ): Promise<Array<GetAccountAndUserRow>> {
   let [rows] = await run({
-    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargePath FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (a.userId = @aUserId AND a.accountId = @aAccountId)",
+    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (a.userId = @aUserId AND a.accountId = @aAccountId)",
     params: {
       aUserId: aUserId,
       aAccountId: aAccountId,
@@ -237,7 +237,7 @@ export async function getAccountAndUser(
       aNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
       aContactEmail: row.at(3).value == null ? undefined : row.at(3).value,
       aDescription: row.at(4).value == null ? undefined : row.at(4).value,
-      aAvatarLargePath: row.at(5).value == null ? undefined : row.at(5).value,
+      aAvatarLargeFilename: row.at(5).value == null ? undefined : row.at(5).value,
     });
   }
   return resRows;
@@ -326,19 +326,15 @@ export async function insertNewAccount(
   accountType: AccountType,
   naturalName: string,
   contactEmail: string,
-  avatarSmallPath: string,
-  avatarLargePath: string,
 ): Promise<void> {
   await run({
-    sql: "INSERT Account (userId, accountId, accountType, naturalName, contactEmail, avatarSmallPath, avatarLargePath, createdTimestamp, lastAccessedTimestamp) VALUES (@userId, @accountId, @accountType, @naturalName, @contactEmail, @avatarSmallPath, @avatarLargePath, PENDING_COMMIT_TIMESTAMP(), PENDING_COMMIT_TIMESTAMP())",
+    sql: "INSERT Account (userId, accountId, accountType, naturalName, contactEmail, createdTimestamp, lastAccessedTimestamp) VALUES (@userId, @accountId, @accountType, @naturalName, @contactEmail, PENDING_COMMIT_TIMESTAMP(), PENDING_COMMIT_TIMESTAMP())",
     params: {
       userId: userId,
       accountId: accountId,
       accountType: Spanner.float(accountType),
       naturalName: naturalName,
       contactEmail: contactEmail,
-      avatarSmallPath: avatarSmallPath,
-      avatarLargePath: avatarLargePath,
     },
     types: {
       userId: { type: "string" },
@@ -346,8 +342,6 @@ export async function insertNewAccount(
       accountType: { type: "float64" },
       naturalName: { type: "string" },
       contactEmail: { type: "string" },
-      avatarSmallPath: { type: "string" },
-      avatarLargePath: { type: "string" },
     }
   });
 }
@@ -477,24 +471,18 @@ export async function updateAccountDescription(
 
 export async function updateAvatar(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  setAvatarSmallPath: string,
-  setAvatarLargePath: string,
   setAvatarSmallFilename: string,
   setAvatarLargeFilename: string,
   accountAccountId: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE Account SET avatarSmallPath = @setAvatarSmallPath, avatarLargePath = @setAvatarLargePath, avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountId",
+    sql: "UPDATE Account SET avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountId",
     params: {
-      setAvatarSmallPath: setAvatarSmallPath,
-      setAvatarLargePath: setAvatarLargePath,
       setAvatarSmallFilename: setAvatarSmallFilename,
       setAvatarLargeFilename: setAvatarLargeFilename,
       accountAccountId: accountAccountId,
     },
     types: {
-      setAvatarSmallPath: { type: "string" },
-      setAvatarLargePath: { type: "string" },
       setAvatarSmallFilename: { type: "string" },
       setAvatarLargeFilename: { type: "string" },
       accountAccountId: { type: "string" },

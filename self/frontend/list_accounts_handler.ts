@@ -1,8 +1,9 @@
+import { ACCOUNT_AVATAR_BUCKET } from "../../common/cloud_storage";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { GetAccountsRow, getAccounts } from "../../db/sql";
+import { getAccounts } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { AccountOverview } from "@phading/user_service_interface/self/frontend/account";
+import { Bucket } from "@google-cloud/storage";
 import { ListAccountsHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
 import {
   ListAccountsRequestBody,
@@ -13,11 +14,16 @@ import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class ListAccountsHandler extends ListAccountsHandlerInterface {
   public static create(): ListAccountsHandler {
-    return new ListAccountsHandler(SPANNER_DATABASE, SERVICE_CLIENT);
+    return new ListAccountsHandler(
+      SPANNER_DATABASE,
+      ACCOUNT_AVATAR_BUCKET,
+      SERVICE_CLIENT,
+    );
   }
 
   public constructor(
     private database: Database,
+    private avatarAccountBucket: Bucket,
     private serviceClient: NodeServiceClient,
   ) {
     super();
@@ -38,20 +44,16 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
       userSession.userId,
     );
     return {
-      accounts: (await rows).map((row) =>
-        ListAccountsHandler.convertRowToAccountOverview(row),
-      ),
-    };
-  }
-
-  private static convertRowToAccountOverview(
-    row: GetAccountsRow,
-  ): AccountOverview {
-    return {
-      accountId: row.accountAccountId,
-      accountType: row.accountAccountType,
-      naturalName: row.accountNaturalName,
-      avatarSmallPath: row.accountAvatarSmallPath,
+      accounts: (await rows).map((row) => {
+        return {
+          accountId: row.accountAccountId,
+          accountType: row.accountAccountType,
+          naturalName: row.accountNaturalName,
+          avatarSmallPath: this.avatarAccountBucket
+            .file(row.accountAvatarSmallFilename)
+            .publicUrl(),
+        };
+      }),
     };
   }
 }

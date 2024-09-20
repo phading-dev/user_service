@@ -43,12 +43,6 @@
       "name": "contactEmail",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN contactEmail STRING(MAX) NOT NULL"
     }, {
-      "name": "avatarSmallPath",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallPath STRING(MAX) NOT NULL"
-    }, {
-      "name": "avatarLargePath",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarLargePath STRING(MAX) NOT NULL"
-    }, {
       "name": "avatarSmallFilename",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallFilename STRING(MAX)"
     }, {
@@ -61,7 +55,7 @@
       "name": "lastAccessedTimestamp",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, naturalName STRING(MAX) NOT NULL, description STRING(MAX), contactEmail STRING(MAX) NOT NULL, avatarSmallPath STRING(MAX) NOT NULL, avatarLargePath STRING(MAX) NOT NULL, avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true), lastAccessedTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, naturalName STRING(MAX) NOT NULL, description STRING(MAX), contactEmail STRING(MAX) NOT NULL, avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true), lastAccessedTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "FromUser",
       "createIndexDdl": "CREATE INDEX FromUser ON Account(userId)"

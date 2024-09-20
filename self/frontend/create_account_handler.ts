@@ -1,8 +1,4 @@
 import crypto = require("crypto");
-import {
-  DEFAULT_ACCOUNT_AVATAR_LARGE_PATH,
-  DEFAULT_ACCOUNT_AVATAR_SMALL_PATH,
-} from "../../common/constants";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { insertNewAccount } from "../../db/sql";
@@ -51,8 +47,6 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       body.accountType,
       body.naturalName,
       body.contactEmail,
-      DEFAULT_ACCOUNT_AVATAR_SMALL_PATH,
-      DEFAULT_ACCOUNT_AVATAR_LARGE_PATH,
     );
 
     let signedSession = (
