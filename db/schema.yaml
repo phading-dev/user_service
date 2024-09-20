@@ -1,0 +1,264 @@
+- enum:
+    name: AccountType
+    values:
+      - name: CONSUMER
+        value: 1
+      - name: PUBLISHER
+        value: 2
+- spannerDatabase:
+    name: UserDatabase
+    tables:
+      - name: User
+        columns:
+          - name: userId
+            type: string
+          - name: username
+            type: string
+          - name: passwordHashV1
+            type: string
+          - name: recoveryEmail
+            type: string
+          - name: createdTimestamp
+            type: timestamp
+            allowCommitTimestamp: true
+        primaryKeys:
+          - userId
+        indexes:
+          - name: UniqueUsername
+            columns:
+              - username
+            unique: true
+      - name: Account
+        columns:
+          - name: userId
+            type: string
+          - name: accountId
+            type: string
+          - name: accountType
+            type: AccountType
+          - name: naturalName
+            type: string
+          - name: description
+            type: string
+            nullable: true
+          - name: contactEmail
+            type: string
+          - name: avatarSmallFilename
+            type: string
+            nullable: true
+          - name: avatarLargeFilename
+            type: string
+            nullable: true
+          - name: createdTimestamp
+            type: timestamp
+            allowCommitTimestamp: true
+          - name: lastAccessedTimestamp
+            type: timestamp
+            allowCommitTimestamp: true
+        primaryKeys:
+          - accountId
+        indexes:
+          - name: FromUser
+            columns:
+              - userId
+          - name: ByLastAccessTimestamp
+            columns:
+              - name: lastAccessedTimestamp
+                desc: true
+      - name: VideoPlayerSettings
+        columns:
+          - name: accountId
+            type: string
+          - name: settings
+            type: VideoPlayerSettings
+            import: "@phading/user_service_interface/self/frontend/video_player_settings"
+        primaryKeys:
+          - accountId
+    inserts:
+      - name: InsertNewUser
+        table: User
+        setColumns:
+          - userId
+          - username
+          - passwordHashV1
+          - recoveryEmail
+          - createdTimestamp
+      - name: InsertNewAccount
+        table: Account
+        setColumns:
+          - userId
+          - accountId
+          - accountType
+          - naturalName
+          - contactEmail
+          - createdTimestamp
+          - lastAccessedTimestamp
+      - name: InsertNewVideoPlayerSettings
+        table: VideoPlayerSettings
+        setColumns:
+          - accountId
+          - settings
+    updates:
+      - name: UpdatePassword
+        table: User
+        where:
+          op: =
+          leftColumn: userId
+        setColumns:
+          - passwordHashV1
+      - name: UpdateRecoveryEmail
+        table: User
+        where:
+          op: =
+          leftColumn: userId
+        setColumns:
+          - recoveryEmail
+      - name: UpdateLastAccessedTimestmap
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        setColumns:
+          - lastAccessedTimestamp
+      - name: UpdateAccountInfo
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        setColumns:
+          - naturalName
+          - contactEmail
+          - description
+      - name: UpdateAvatar
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        setColumns:
+          - avatarSmallFilename
+          - avatarLargeFilename
+      - name: UpdateVideoPlayerSettings
+        table: VideoPlayerSettings
+        where:
+          op: =
+          leftColumn: accountId
+        setColumns:
+          - settings
+    selects:
+      - name: GetPasswordHashById
+        table: User
+        where:
+          op: =
+          leftColumn: userId
+        getColumns:
+          - passwordHashV1
+      - name: GetUserByUsername
+        table: User
+        where:
+          op: =
+          leftColumn: username
+        getColumns:
+          - userId
+          - passwordHashV1
+      - name: GetLastAccessedAccount
+        table: Account
+        where:
+          op: =
+          leftColumn: userId
+        orderBy:
+          - column: lastAccessedTimestamp
+            desc: true
+        limit: 1
+        getColumns:
+          - accountId
+          - accountType
+      - name: GetAccountById
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - userId
+          - accountType
+      - name: GetAccounts
+        table: Account
+        where:
+          op: =
+          leftColumn: userId
+        getColumns:
+          - accountId
+          - accountType
+          - naturalName
+          - avatarSmallFilename
+      - name: GetAvatarFilename
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - avatarSmallFilename
+          - avatarLargeFilename
+      - name: GetAccountSnapshot
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - naturalName
+          - avatarSmallFilename
+      - name: GetAccountAndUser
+        table:
+          name: User
+          as: u
+        join:
+          - type: INNER
+            table:
+              name: Account
+              as: a
+            on:
+              op: =
+              leftColumn:
+                name: userId
+                table: u
+              rightColumn: userId
+        where:
+          op: AND
+          left:
+            op: =
+            leftColumn:
+              name: userId
+              table: u
+          right:
+            op: =
+            leftColumn:
+              name: accountId
+              table: a
+        getColumns:
+          - name: username
+            table: u
+          - name: recoveryEmail
+            table: u
+          - name: naturalName
+            table: a
+          - name: contactEmail
+            table: a
+          - name: description
+            table: a
+          - name: avatarLargeFilename
+            table: a
+      - name: GetVideoPlayerSettings
+        table: VideoPlayerSettings
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - settings
+      - name: CheckPresenceVideoPlayerSettings
+        table: VideoPlayerSettings
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - accountId
+    outputDdl: ./db/ddl
+    outputSql: ./db/sql

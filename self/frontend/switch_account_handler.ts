@@ -8,7 +8,7 @@ import {
   SwitchAccountResponse,
 } from "@phading/user_service_interface/self/frontend/interface";
 import {
-  createClientSession,
+  createSession,
   exchangeSessionAndCheckCapability,
 } from "@phading/user_session_service_interface/backend/client";
 import { newForbiddenError, newNotFoundError } from "@selfage/http_error";
@@ -48,7 +48,7 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
         `Not authorized to switch to account ${body.accountId}.`,
       );
     }
-    let response = await createClientSession(this.serviceClient, {
+    let response = await createSession(this.serviceClient, {
       userId: userSession.userId,
       accountId: body.accountId,
       accountType: rows[0].accountAccountType,

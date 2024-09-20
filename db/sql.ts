@@ -175,7 +175,6 @@ export async function getAvatarFilename(
 }
 
 export interface GetAccountSnapshotRow {
-  accountAccountId?: string,
   accountNaturalName?: string,
   accountAvatarSmallFilename?: string,
 }
@@ -185,7 +184,7 @@ export async function getAccountSnapshot(
   accountAccountId: string,
 ): Promise<Array<GetAccountSnapshotRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.accountId, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.accountId = @accountAccountId",
+    sql: "SELECT Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.accountId = @accountAccountId",
     params: {
       accountAccountId: accountAccountId,
     },
@@ -196,9 +195,8 @@ export async function getAccountSnapshot(
   let resRows = new Array<GetAccountSnapshotRow>();
   for (let row of rows) {
     resRows.push({
-      accountAccountId: row.at(0).value == null ? undefined : row.at(0).value,
-      accountNaturalName: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAvatarSmallFilename: row.at(2).value == null ? undefined : row.at(2).value,
+      accountNaturalName: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAvatarSmallFilename: row.at(1).value == null ? undefined : row.at(1).value,
     });
   }
   return resRows;
@@ -215,17 +213,17 @@ export interface GetAccountAndUserRow {
 
 export async function getAccountAndUser(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  aUserId: string,
+  uUserId: string,
   aAccountId: string,
 ): Promise<Array<GetAccountAndUserRow>> {
   let [rows] = await run({
-    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (a.userId = @aUserId AND a.accountId = @aAccountId)",
+    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserId AND a.accountId = @aAccountId)",
     params: {
-      aUserId: aUserId,
+      uUserId: uUserId,
       aAccountId: aAccountId,
     },
     types: {
-      aUserId: { type: "string" },
+      uUserId: { type: "string" },
       aAccountId: { type: "string" },
     }
   });
@@ -415,54 +413,24 @@ export async function updateLastAccessedTimestmap(
   });
 }
 
-export async function updateNaturalName(
+export async function updateAccountInfo(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setNaturalName: string,
-  accountAccountId: string,
-): Promise<void> {
-  await run({
-    sql: "UPDATE Account SET naturalName = @setNaturalName WHERE Account.accountId = @accountAccountId",
-    params: {
-      setNaturalName: setNaturalName,
-      accountAccountId: accountAccountId,
-    },
-    types: {
-      setNaturalName: { type: "string" },
-      accountAccountId: { type: "string" },
-    }
-  });
-}
-
-export async function updateContactEmail(
-  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setContactEmail: string,
-  accountAccountId: string,
-): Promise<void> {
-  await run({
-    sql: "UPDATE Account SET contactEmail = @setContactEmail WHERE Account.accountId = @accountAccountId",
-    params: {
-      setContactEmail: setContactEmail,
-      accountAccountId: accountAccountId,
-    },
-    types: {
-      setContactEmail: { type: "string" },
-      accountAccountId: { type: "string" },
-    }
-  });
-}
-
-export async function updateAccountDescription(
-  run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setDescription: string,
   accountAccountId: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE Account SET description = @setDescription WHERE Account.accountId = @accountAccountId",
+    sql: "UPDATE Account SET naturalName = @setNaturalName, contactEmail = @setContactEmail, description = @setDescription WHERE Account.accountId = @accountAccountId",
     params: {
+      setNaturalName: setNaturalName,
+      setContactEmail: setContactEmail,
       setDescription: setDescription,
       accountAccountId: accountAccountId,
     },
     types: {
+      setNaturalName: { type: "string" },
+      setContactEmail: { type: "string" },
       setDescription: { type: "string" },
       accountAccountId: { type: "string" },
     }

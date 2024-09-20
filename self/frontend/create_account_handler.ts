@@ -9,7 +9,7 @@ import {
   CreateAccountResponse,
 } from "@phading/user_service_interface/self/frontend/interface";
 import {
-  createClientSession,
+  createSession,
   exchangeSessionAndCheckCapability,
 } from "@phading/user_session_service_interface/backend/client";
 import { NodeServiceClient } from "@selfage/node_service_client";
@@ -50,7 +50,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     );
 
     let signedSession = (
-      await createClientSession(this.serviceClient, {
+      await createSession(this.serviceClient, {
         userId: userSession.userId,
         accountId,
         accountType: body.accountType,

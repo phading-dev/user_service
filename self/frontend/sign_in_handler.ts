@@ -12,7 +12,7 @@ import {
   SignInRequestBody,
   SignInResponse,
 } from "@phading/user_service_interface/self/frontend/interface";
-import { createClientSession } from "@phading/user_session_service_interface/backend/client";
+import { createSession } from "@phading/user_session_service_interface/backend/client";
 import { newUnauthorizedError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -64,7 +64,7 @@ export class SignInHandler extends SignInHandlerInterface {
         (query) => this.database.run(query),
         accountRow.accountAccountId,
       ),
-      createClientSession(this.serviceClient, {
+      createSession(this.serviceClient, {
         userId: userRow.userUserId,
       }),
     ]);

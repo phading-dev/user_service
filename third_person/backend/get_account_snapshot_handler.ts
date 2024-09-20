@@ -34,10 +34,9 @@ export class GetAccountSnapshotHandler extends GetAccountSnapshotHandlerInterfac
         body.accountId,
       )
     )[0];
-    this.accoutAvatarBucket.file(row.accountAvatarSmallFilename).publicUrl();
     return {
       account: {
-        accountId: row.accountAccountId,
+        accountId: body.accountId,
         naturalName: row.accountNaturalName,
         avatarSmallUrl: this.accoutAvatarBucket
           .file(row.accountAvatarSmallFilename)

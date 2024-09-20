@@ -1,10 +1,6 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  updateAccountDescription,
-  updateContactEmail,
-  updateNaturalName,
-} from "../../db/sql";
+import { updateAccountInfo } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { UpdateAccountHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
 import {
@@ -36,26 +32,13 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
         signedSession: sessionStr,
       })
     ).userSession;
-    await this.database.runTransactionAsync(async (transaction) => {
-      await Promise.all([
-        updateNaturalName(
-          (query) => transaction.run(query),
-          body.naturalName,
-          userSession.accountId,
-        ),
-        updateContactEmail(
-          (query) => transaction.run(query),
-          body.contactEmail,
-          userSession.accountId,
-        ),
-        updateAccountDescription(
-          (query) => transaction.run(query),
-          body.description,
-          userSession.accountId,
-        ),
-      ]);
-      await transaction.commit();
-    });
+    await updateAccountInfo(
+      (query) => this.database.run(query),
+      body.naturalName,
+      body.contactEmail,
+      body.description,
+      userSession.accountId,
+    );
     return {};
   }
 }
