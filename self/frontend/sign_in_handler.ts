@@ -5,7 +5,7 @@ import {
   getUserByUsername,
   updateLastAccessedTimestmap,
 } from "../../db/sql";
-import { PasswordSigner } from "./password_signer";
+import { PasswordSigner } from "../../common/password_signer";
 import { Database } from "@google-cloud/spanner";
 import { SignInHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
 import {

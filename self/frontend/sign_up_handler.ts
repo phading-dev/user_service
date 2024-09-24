@@ -6,7 +6,7 @@ import {
   insertNewAccount,
   insertNewUser,
 } from "../../db/sql";
-import { PasswordSigner } from "./password_signer";
+import { PasswordSigner } from "../../common/password_signer";
 import { Database } from "@google-cloud/spanner";
 import { SignUpHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
 import {
