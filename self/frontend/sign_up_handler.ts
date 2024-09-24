@@ -13,7 +13,7 @@ import {
   SignUpRequestBody,
   SignUpResponse,
 } from "@phading/user_service_interface/self/frontend/interface";
-import { createClientSession } from "@phading/user_session_service_interface/backend/client";
+import { createSession } from "@phading/user_session_service_interface/backend/client";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class SignUpHandler extends SignUpHandlerInterface {
@@ -79,7 +79,7 @@ export class SignUpHandler extends SignUpHandlerInterface {
       };
     }
 
-    let response = await createClientSession(this.serviceClient, {
+    let response = await createSession(this.serviceClient, {
       userId,
       accountId,
       accountType: body.accountType,
