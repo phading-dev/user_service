@@ -10,15 +10,15 @@ export interface GetPasswordHashByIdRow {
 
 export async function getPasswordHashById(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  userUserId: string,
+  userUserIdEq: string,
 ): Promise<Array<GetPasswordHashByIdRow>> {
   let [rows] = await run({
-    sql: "SELECT User.passwordHashV1 FROM User WHERE User.userId = @userUserId",
+    sql: "SELECT User.passwordHashV1 FROM User WHERE User.userId = @userUserIdEq",
     params: {
-      userUserId: userUserId,
+      userUserIdEq: userUserIdEq,
     },
     types: {
-      userUserId: { type: "string" },
+      userUserIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetPasswordHashByIdRow>();
@@ -37,15 +37,15 @@ export interface GetUserByUsernameRow {
 
 export async function getUserByUsername(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  userUsername: string,
+  userUsernameEq: string,
 ): Promise<Array<GetUserByUsernameRow>> {
   let [rows] = await run({
-    sql: "SELECT User.userId, User.passwordHashV1 FROM User WHERE User.username = @userUsername",
+    sql: "SELECT User.userId, User.passwordHashV1 FROM User WHERE User.username = @userUsernameEq",
     params: {
-      userUsername: userUsername,
+      userUsernameEq: userUsernameEq,
     },
     types: {
-      userUsername: { type: "string" },
+      userUsernameEq: { type: "string" },
     }
   });
   let resRows = new Array<GetUserByUsernameRow>();
@@ -65,15 +65,15 @@ export interface GetLastAccessedAccountRow {
 
 export async function getLastAccessedAccount(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountUserId: string,
+  accountUserIdEq: string,
 ): Promise<Array<GetLastAccessedAccountRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.accountId, Account.accountType FROM Account WHERE Account.userId = @accountUserId ORDER BY Account.lastAccessedTimestamp DESC LIMIT 1",
+    sql: "SELECT Account.accountId, Account.accountType FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC LIMIT 1",
     params: {
-      accountUserId: accountUserId,
+      accountUserIdEq: accountUserIdEq,
     },
     types: {
-      accountUserId: { type: "string" },
+      accountUserIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetLastAccessedAccountRow>();
@@ -93,15 +93,15 @@ export interface GetAccountByIdRow {
 
 export async function getAccountById(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<Array<GetAccountByIdRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.userId, Account.accountType FROM Account WHERE Account.accountId = @accountAccountId",
+    sql: "SELECT Account.userId, Account.accountType FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetAccountByIdRow>();
@@ -123,15 +123,15 @@ export interface GetAccountsRow {
 
 export async function getAccounts(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountUserId: string,
+  accountUserIdEq: string,
 ): Promise<Array<GetAccountsRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.accountId, Account.accountType, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.userId = @accountUserId",
+    sql: "SELECT Account.accountId, Account.accountType, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.userId = @accountUserIdEq",
     params: {
-      accountUserId: accountUserId,
+      accountUserIdEq: accountUserIdEq,
     },
     types: {
-      accountUserId: { type: "string" },
+      accountUserIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetAccountsRow>();
@@ -153,15 +153,15 @@ export interface GetAvatarFilenameRow {
 
 export async function getAvatarFilename(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<Array<GetAvatarFilenameRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.avatarSmallFilename, Account.avatarLargeFilename FROM Account WHERE Account.accountId = @accountAccountId",
+    sql: "SELECT Account.avatarSmallFilename, Account.avatarLargeFilename FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetAvatarFilenameRow>();
@@ -181,15 +181,15 @@ export interface GetAccountSnapshotRow {
 
 export async function getAccountSnapshot(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<Array<GetAccountSnapshotRow>> {
   let [rows] = await run({
-    sql: "SELECT Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.accountId = @accountAccountId",
+    sql: "SELECT Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetAccountSnapshotRow>();
@@ -213,18 +213,18 @@ export interface GetAccountAndUserRow {
 
 export async function getAccountAndUser(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  uUserId: string,
-  aAccountId: string,
+  uUserIdEq: string,
+  aAccountIdEq: string,
 ): Promise<Array<GetAccountAndUserRow>> {
   let [rows] = await run({
-    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserId AND a.accountId = @aAccountId)",
+    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
     params: {
-      uUserId: uUserId,
-      aAccountId: aAccountId,
+      uUserIdEq: uUserIdEq,
+      aAccountIdEq: aAccountIdEq,
     },
     types: {
-      uUserId: { type: "string" },
-      aAccountId: { type: "string" },
+      uUserIdEq: { type: "string" },
+      aAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetAccountAndUserRow>();
@@ -247,15 +247,15 @@ export interface GetVideoPlayerSettingsRow {
 
 export async function getVideoPlayerSettings(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  videoPlayerSettingsAccountId: string,
+  videoPlayerSettingsAccountIdEq: string,
 ): Promise<Array<GetVideoPlayerSettingsRow>> {
   let [rows] = await run({
-    sql: "SELECT VideoPlayerSettings.settings FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    sql: "SELECT VideoPlayerSettings.settings FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
     params: {
-      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
     },
     types: {
-      videoPlayerSettingsAccountId: { type: "string" },
+      videoPlayerSettingsAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<GetVideoPlayerSettingsRow>();
@@ -273,15 +273,15 @@ export interface CheckPresenceVideoPlayerSettingsRow {
 
 export async function checkPresenceVideoPlayerSettings(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  videoPlayerSettingsAccountId: string,
+  videoPlayerSettingsAccountIdEq: string,
 ): Promise<Array<CheckPresenceVideoPlayerSettingsRow>> {
   let [rows] = await run({
-    sql: "SELECT VideoPlayerSettings.accountId FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    sql: "SELECT VideoPlayerSettings.accountId FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
     params: {
-      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
     },
     types: {
-      videoPlayerSettingsAccountId: { type: "string" },
+      videoPlayerSettingsAccountIdEq: { type: "string" },
     }
   });
   let resRows = new Array<CheckPresenceVideoPlayerSettingsRow>();
@@ -365,17 +365,17 @@ export async function insertNewVideoPlayerSettings(
 export async function updatePassword(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setPasswordHashV1: string,
-  userUserId: string,
+  userUserIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE User SET passwordHashV1 = @setPasswordHashV1 WHERE User.userId = @userUserId",
+    sql: "UPDATE User SET passwordHashV1 = @setPasswordHashV1 WHERE User.userId = @userUserIdEq",
     params: {
       setPasswordHashV1: setPasswordHashV1,
-      userUserId: userUserId,
+      userUserIdEq: userUserIdEq,
     },
     types: {
       setPasswordHashV1: { type: "string" },
-      userUserId: { type: "string" },
+      userUserIdEq: { type: "string" },
     }
   });
 }
@@ -383,32 +383,32 @@ export async function updatePassword(
 export async function updateRecoveryEmail(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setRecoveryEmail: string,
-  userUserId: string,
+  userUserIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE User SET recoveryEmail = @setRecoveryEmail WHERE User.userId = @userUserId",
+    sql: "UPDATE User SET recoveryEmail = @setRecoveryEmail WHERE User.userId = @userUserIdEq",
     params: {
       setRecoveryEmail: setRecoveryEmail,
-      userUserId: userUserId,
+      userUserIdEq: userUserIdEq,
     },
     types: {
       setRecoveryEmail: { type: "string" },
-      userUserId: { type: "string" },
+      userUserIdEq: { type: "string" },
     }
   });
 }
 
 export async function updateLastAccessedTimestmap(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE Account SET lastAccessedTimestamp = PENDING_COMMIT_TIMESTAMP() WHERE Account.accountId = @accountAccountId",
+    sql: "UPDATE Account SET lastAccessedTimestamp = PENDING_COMMIT_TIMESTAMP() WHERE Account.accountId = @accountAccountIdEq",
     params: {
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
 }
@@ -418,21 +418,21 @@ export async function updateAccountInfo(
   setNaturalName: string,
   setContactEmail: string,
   setDescription: string,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE Account SET naturalName = @setNaturalName, contactEmail = @setContactEmail, description = @setDescription WHERE Account.accountId = @accountAccountId",
+    sql: "UPDATE Account SET naturalName = @setNaturalName, contactEmail = @setContactEmail, description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
     params: {
       setNaturalName: setNaturalName,
       setContactEmail: setContactEmail,
       setDescription: setDescription,
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
       setNaturalName: { type: "string" },
       setContactEmail: { type: "string" },
       setDescription: { type: "string" },
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
 }
@@ -441,19 +441,19 @@ export async function updateAvatar(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setAvatarSmallFilename: string,
   setAvatarLargeFilename: string,
-  accountAccountId: string,
+  accountAccountIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE Account SET avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountId",
+    sql: "UPDATE Account SET avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountIdEq",
     params: {
       setAvatarSmallFilename: setAvatarSmallFilename,
       setAvatarLargeFilename: setAvatarLargeFilename,
-      accountAccountId: accountAccountId,
+      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
       setAvatarSmallFilename: { type: "string" },
       setAvatarLargeFilename: { type: "string" },
-      accountAccountId: { type: "string" },
+      accountAccountIdEq: { type: "string" },
     }
   });
 }
@@ -461,17 +461,17 @@ export async function updateAvatar(
 export async function updateVideoPlayerSettings(
   run: (query: ExecuteSqlRequest) => Promise<RunResponse>,
   setSettings: VideoPlayerSettings,
-  videoPlayerSettingsAccountId: string,
+  videoPlayerSettingsAccountIdEq: string,
 ): Promise<void> {
   await run({
-    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountId",
+    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
     params: {
       setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
-      videoPlayerSettingsAccountId: videoPlayerSettingsAccountId,
+      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
     },
     types: {
       setSettings: { type: "bytes" },
-      videoPlayerSettingsAccountId: { type: "string" },
+      videoPlayerSettingsAccountIdEq: { type: "string" },
     }
   });
 }

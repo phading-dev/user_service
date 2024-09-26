@@ -223,16 +223,15 @@
               rightColumn: userId
         where:
           op: AND
-          left:
-            op: =
-            leftColumn:
-              name: userId
-              table: u
-          right:
-            op: =
-            leftColumn:
-              name: accountId
-              table: a
+          exps:
+            - op: =
+              leftColumn:
+                name: userId
+                table: u
+            - op: =
+              leftColumn:
+                name: accountId
+                table: a
         getColumns:
           - name: username
             table: u

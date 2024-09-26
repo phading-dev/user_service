@@ -20,7 +20,7 @@
   "devDependencies": {
     "@selfage/bundler_cli": "^5.1.7",
     "@selfage/cli": "^5.0.0",
-    "@selfage/generator_cli": "^3.0.2",
+    "@selfage/generator_cli": "^3.1.1",
     "@selfage/test_runner": "^5.0.1",
     "@selfage/tsconfig": "^1.1.0",
     "@types/express": "^4.17.21",
