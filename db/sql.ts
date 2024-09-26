@@ -1,5 +1,5 @@
 import { ExecuteSqlRequest, RunResponse } from '@google-cloud/spanner/build/src/transaction';
-import { AccountType, ACCOUNT_TYPE } from './schema';
+import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
 import { toEnumFromNumber, deserializeMessage, serializeMessage } from '@selfage/message/serializer';
 import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/self/frontend/video_player_settings';
 import { Spanner } from '@google-cloud/spanner';

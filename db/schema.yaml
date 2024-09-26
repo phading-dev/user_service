@@ -1,10 +1,3 @@
-- enum:
-    name: AccountType
-    values:
-      - name: CONSUMER
-        value: 1
-      - name: PUBLISHER
-        value: 2
 - spannerDatabase:
     name: UserDatabase
     tables:
@@ -36,6 +29,7 @@
             type: string
           - name: accountType
             type: AccountType
+            import: "@phading/user_service_interface/account_type"
           - name: naturalName
             type: string
           - name: description
