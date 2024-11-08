@@ -1,22 +1,31 @@
+import { STORAGE } from "../../common/cloud_storage";
+import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccountAndUser } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { GetAccountAndUserHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
+import { Storage } from "@google-cloud/storage";
+import { GetAccountAndUserHandlerInterface } from "@phading/user_service_interface/frontend/self/handler";
 import {
   GetAccountAndUserRequestBody,
   GetAccountAndUserResponse,
-} from "@phading/user_service_interface/self/frontend/interface";
+} from "@phading/user_service_interface/frontend/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/backend/client";
+import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface {
   public static create(): GetAccountAndUserHandler {
-    return new GetAccountAndUserHandler(SPANNER_DATABASE, SERVICE_CLIENT);
+    return new GetAccountAndUserHandler(
+      SPANNER_DATABASE,
+      STORAGE,
+      SERVICE_CLIENT,
+    );
   }
 
   public constructor(
     private database: Database,
+    private storage: Storage,
     private serviceClient: NodeServiceClient,
   ) {
     super();
@@ -27,18 +36,23 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
     body: GetAccountAndUserRequestBody,
     sessionStr: string,
   ): Promise<GetAccountAndUserResponse> {
-    let userSession = (
-      await exchangeSessionAndCheckCapability(this.serviceClient, {
+    let { userSession } = await exchangeSessionAndCheckCapability(
+      this.serviceClient,
+      {
         signedSession: sessionStr,
-      })
-    ).userSession;
-    let row = (
-      await getAccountAndUser(
-        (query) => this.database.run(query),
-        userSession.userId,
-        userSession.accountId,
-      )
-    )[0];
+      },
+    );
+    let rows = await getAccountAndUser(
+      this.database,
+      userSession.userId,
+      userSession.accountId,
+    );
+    if (rows.length === 0) {
+      throw newInternalServerErrorError(
+        `User ${userSession.userId} or account ${userSession.accountId} is not found.`,
+      );
+    }
+    let row = rows[0];
     return {
       account: {
         username: row.uUsername,
@@ -46,6 +60,10 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
         naturalName: row.aNaturalName,
         contactEmail: row.aContactEmail,
         description: row.aDescription,
+        avatarLargeUrl: this.storage
+          .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
+          .file(row.aAvatarLargeFilename)
+          .publicUrl(),
       },
     };
   }

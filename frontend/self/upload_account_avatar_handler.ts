@@ -2,20 +2,23 @@ import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
 import util = require("util");
-import { ACCOUNT_AVATAR_BUCKET } from "../../common/cloud_storage";
-import {
-  LARGE_AVATAR_SIZE,
-  MAX_AVATAR_BUFFER_SIZE,
-  SMALL_AVATAR_SIZE,
-} from "../../common/constants";
+import { STORAGE } from "../../common/cloud_storage";
+import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
+import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAvatarFilename, updateAvatar } from "../../db/sql";
+import { getAccountById, updateAvatarStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { Bucket } from "@google-cloud/storage";
-import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
-import { UploadAccountAvatarResponse } from "@phading/user_service_interface/self/frontend/interface";
+import { Storage } from "@google-cloud/storage";
+import {
+  AVATAR_SIZE_LIMIT,
+  LARGE_AVATAR_SIZE,
+  SMALL_AVATAR_SIZE,
+} from "@phading/constants/account";
+import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/frontend/self/handler";
+import { UploadAccountAvatarResponse } from "@phading/user_service_interface/frontend/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/backend/client";
+import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 import { Readable } from "stream";
 let pipeline = util.promisify(stream.pipeline);
@@ -24,17 +27,15 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
   public static create(): UploadAccountAvatarHandler {
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
-      ACCOUNT_AVATAR_BUCKET,
+      STORAGE,
       SERVICE_CLIENT,
-      () => crypto.randomUUID(),
     );
   }
 
   public constructor(
     private database: Database,
-    private accountAvatarBucket: Bucket,
+    private storage: Storage,
     private serviceClient: NodeServiceClient,
-    private generateUuid: () => string,
   ) {
     super();
   }
@@ -44,37 +45,44 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     body: Readable,
     sessionStr: string,
   ): Promise<UploadAccountAvatarResponse> {
-    let userSession = (
-      await exchangeSessionAndCheckCapability(this.serviceClient, {
+    let { userSession } = await exchangeSessionAndCheckCapability(
+      this.serviceClient,
+      {
         signedSession: sessionStr,
-      })
-    ).userSession;
+      },
+    );
     let avatarSmallFilename: string;
     let avatarLargeFilename: string;
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAvatarFilename(
-        (query) => transaction.run(query),
-        userSession.accountId,
-      );
-      if (rows.length > 0) {
-        avatarSmallFilename = rows[0].accountAvatarSmallFilename;
-        avatarLargeFilename = rows[0].accountAvatarLargeFilename;
-        await transaction.commit();
+      let rows = await getAccountById(transaction, userSession.accountId);
+      if (rows.length === 0) {
+        throw newInternalServerErrorError(
+          `Account ${userSession.accountId} is not found.`,
+        );
+      }
+      let accountRow = rows[0];
+      if (
+        accountRow.accountAvatarSmallFilename !==
+        DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME
+      ) {
+        avatarSmallFilename = accountRow.accountAvatarSmallFilename;
+        avatarLargeFilename = accountRow.accountAvatarLargeFilename;
         return;
       }
-      avatarSmallFilename = `${this.generateUuid()}.png`;
-      avatarLargeFilename = `${this.generateUuid()}.png`;
-      await updateAvatar(
-        (query) => transaction.run(query),
-        avatarSmallFilename,
-        avatarLargeFilename,
-        userSession.accountId,
-      );
+      avatarSmallFilename = `${userSession.accountId}s.png`;
+      avatarLargeFilename = `${userSession.accountId}l.png`;
+      await transaction.batchUpdate([
+        updateAvatarStatement(
+          avatarSmallFilename,
+          avatarLargeFilename,
+          userSession.accountId,
+        ),
+      ]);
       await transaction.commit();
     });
 
     let imageBuffer = await getStream.buffer(body, {
-      maxBuffer: MAX_AVATAR_BUFFER_SIZE,
+      maxBuffer: AVATAR_SIZE_LIMIT,
     });
     await Promise.all([
       this.resizeAndUpload(
@@ -106,9 +114,12 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         palette: true,
         effort: 10,
       }),
-      this.accountAvatarBucket.file(outputFile).createWriteStream({
-        resumable: false,
-      }),
+      this.storage
+        .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
+        .file(outputFile)
+        .createWriteStream({
+          resumable: false,
+        }),
     );
   }
 }

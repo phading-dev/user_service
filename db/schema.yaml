@@ -34,30 +34,28 @@
             type: string
           - name: description
             type: string
-            nullable: true
           - name: contactEmail
             type: string
           - name: avatarSmallFilename
             type: string
-            nullable: true
           - name: avatarLargeFilename
             type: string
-            nullable: true
           - name: createdTimestamp
             type: timestamp
-            allowCommitTimestamp: true
           - name: lastAccessedTimestamp
             type: timestamp
-            allowCommitTimestamp: true
         primaryKeys:
           - accountId
         indexes:
-          - name: FromUser
+          - name: ByUserAndLastAccessTimestamp
             columns:
               - userId
-          - name: ByLastAccessTimestamp
-            columns:
               - name: lastAccessedTimestamp
+                desc: true
+          - name: ByTypeAndCreatedTimestamp
+            columns:
+              - accountType
+              - name: createdTimestamp
                 desc: true
       - name: VideoPlayerSettings
         columns:
@@ -65,7 +63,7 @@
             type: string
           - name: settings
             type: VideoPlayerSettings
-            import: "@phading/user_service_interface/self/frontend/video_player_settings"
+            import: "@phading/user_service_interface/frontend/self/video_player_settings"
         primaryKeys:
           - accountId
     inserts:
@@ -84,7 +82,10 @@
           - accountId
           - accountType
           - naturalName
+          - description
           - contactEmail
+          - avatarSmallFilename
+          - avatarLargeFilename
           - createdTimestamp
           - lastAccessedTimestamp
       - name: InsertNewVideoPlayerSettings
@@ -138,14 +139,32 @@
           leftColumn: accountId
         setColumns:
           - settings
+    deletes:
+      - name: DeleteUser
+        table: User
+        where:
+          op: =
+          leftColumn: userId
+      - name: DeleteAccount
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+      - name: DeleteVideoPlaySettings
+        table: VideoPlayerSettings
+        where:
+          op: =
+          leftColumn: accountId
     selects:
-      - name: GetPasswordHashById
+      - name: GetUserById
         table: User
         where:
           op: =
           leftColumn: userId
         getColumns:
+          - username
           - passwordHashV1
+          - recoveryEmail
       - name: GetUserByUsername
         table: User
         where:
@@ -162,7 +181,7 @@
         orderBy:
           - column: lastAccessedTimestamp
             desc: true
-        limit: 1
+        withLimit: true
         getColumns:
           - accountId
           - accountType
@@ -174,32 +193,52 @@
         getColumns:
           - userId
           - accountType
+          - naturalName
+          - contactEmail
+          - avatarSmallFilename
+          - avatarLargeFilename
+      - name: GetFullAccountById
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        getColumns:
+          - userId
+          - accountType
+          - naturalName
+          - description
+          - contactEmail
+          - avatarSmallFilename
+          - avatarLargeFilename
       - name: GetAccounts
         table: Account
         where:
           op: =
           leftColumn: userId
+        orderBy:
+          - column: lastAccessedTimestamp
+            desc: true
         getColumns:
           - accountId
           - accountType
           - naturalName
           - avatarSmallFilename
-      - name: GetAvatarFilename
+      - name: ListAccountsByType
         table: Account
         where:
-          op: =
-          leftColumn: accountId
+          op: AND
+          exps:
+            - op: <
+              leftColumn: createdTimestamp
+            - op: =
+              leftColumn: accountType
+        orderBy:
+          - column: createdTimestamp
+            desc: true
+        withLimit: true
         getColumns:
-          - avatarSmallFilename
-          - avatarLargeFilename
-      - name: GetAccountSnapshot
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        getColumns:
-          - naturalName
-          - avatarSmallFilename
+          - accountId
+          - createdTimestamp
       - name: GetAccountAndUser
         table:
           name: User
@@ -246,7 +285,7 @@
           leftColumn: accountId
         getColumns:
           - settings
-      - name: CheckPresenceVideoPlayerSettings
+      - name: CheckPresenceOfVideoPlayerSettings
         table: VideoPlayerSettings
         where:
           op: =

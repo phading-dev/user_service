@@ -2,11 +2,11 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getVideoPlayerSettings } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { GetVideoPlayerSettingsHandlerInterface } from "@phading/user_service_interface/self/frontend/handler";
+import { GetVideoPlayerSettingsHandlerInterface } from "@phading/user_service_interface/frontend/self/handler";
 import {
   GetVideoPlayerSettingsRequestBody,
   GetVideoPlayerSettingsResponse,
-} from "@phading/user_service_interface/self/frontend/interface";
+} from "@phading/user_service_interface/frontend/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/backend/client";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -34,11 +34,13 @@ export class GetVideoPlayerSettingsHandler extends GetVideoPlayerSettingsHandler
       },
     );
     let rows = await getVideoPlayerSettings(
-      (query) => this.database.run(query),
+      this.database,
       userSession.accountId,
     );
     if (rows.length === 0) {
-      return {};
+      return {
+        settings: {},
+      };
     } else {
       return {
         settings: rows[0].videoPlayerSettingsSettings,
