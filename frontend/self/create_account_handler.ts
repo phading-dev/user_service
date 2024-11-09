@@ -60,7 +60,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       throw newBadRequestError(`"accountType" is required.`);
     }
 
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { userId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
@@ -71,7 +71,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       let now = this.getNow();
       await transaction.batchUpdate([
         insertNewAccountStatement(
-          userSession.userId,
+          userId,
           accountId,
           body.accountType,
           body.naturalName,
@@ -86,7 +86,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       await transaction.commit();
     });
     let response = await createSession(this.serviceClient, {
-      userId: userSession.userId,
+      userId: userId,
       accountId,
       accountType: body.accountType,
     });

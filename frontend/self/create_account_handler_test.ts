@@ -30,9 +30,7 @@ TEST_RUNNER.run({
           public async send(request: any): Promise<any> {
             if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
               return {
-                userSession: {
-                  userId: "user1",
-                },
+                userId: "user1",
               } as ExchangeSessionAndCheckCapabilityResponse;
             } else if (request.descriptor === CREATE_SESSION) {
               this.request = request;

@@ -38,9 +38,7 @@ TEST_RUNNER.run({
         signerMock.signed = "signed_current_pass";
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdateRecoveryEmailHandler(
           SPANNER_DATABASE,
@@ -77,9 +75,7 @@ TEST_RUNNER.run({
         let signerMock = new PasswordSignerMock();
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdateRecoveryEmailHandler(
           SPANNER_DATABASE,
@@ -127,9 +123,7 @@ TEST_RUNNER.run({
         signerMock.signed = "incorrect_signed_current_pass";
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdateRecoveryEmailHandler(
           SPANNER_DATABASE,

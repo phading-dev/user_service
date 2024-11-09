@@ -38,7 +38,7 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
     if (!body.accountId) {
       throw newBadRequestError(`"accountId" is required.`);
     }
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { userId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
@@ -48,13 +48,13 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
     if (rows.length === 0) {
       throw newNotFoundError(`Account ${body.accountId} is not found.`);
     }
-    if (rows[0].accountUserId !== userSession.userId) {
+    if (rows[0].accountUserId !== userId) {
       throw newForbiddenError(
         `Not authorized to switch to account ${body.accountId} owned by a different user.`,
       );
     }
     let response = await createSession(this.serviceClient, {
-      userId: userSession.userId,
+      userId: userId,
       accountId: body.accountId,
       accountType: rows[0].accountAccountType,
     });

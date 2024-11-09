@@ -63,9 +63,7 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new ListAccountsHandler(
           SPANNER_DATABASE,

@@ -47,16 +47,15 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
     if (body.newEmail.length > EMAIL_LIMIT) {
       throw newBadRequestError(`"newEmail" is too long.`);
     }
-    let userSession = (
-      await exchangeSessionAndCheckCapability(this.serviceClient, {
+    let { userId } = await exchangeSessionAndCheckCapability(
+      this.serviceClient,
+      {
         signedSession: sessionStr,
-      })
-    ).userSession;
-    let rows = await getUserById(this.database, userSession.userId);
+      },
+    );
+    let rows = await getUserById(this.database, userId);
     if (rows.length === 0) {
-      throw newInternalServerErrorError(
-        `User ${userSession.userId} is not found.`,
-      );
+      throw newInternalServerErrorError(`User ${userId} is not found.`);
     }
     let userRow = rows[0];
     if (
@@ -67,7 +66,7 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
     }
     await this.database.runTransactionAsync(async (transaction) => {
       await transaction.batchUpdate([
-        updateRecoveryEmailStatement(body.newEmail, userSession.userId),
+        updateRecoveryEmailStatement(body.newEmail, userId),
       ]);
       await transaction.commit();
     });

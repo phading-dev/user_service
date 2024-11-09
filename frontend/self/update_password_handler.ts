@@ -47,17 +47,15 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
     if (body.newPassword.length > PASSWORD_LIMIT) {
       throw newBadRequestError(`"newPassword" is too long.`);
     }
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { userId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
       },
     );
-    let rows = await getUserById(this.database, userSession.userId);
+    let rows = await getUserById(this.database, userId);
     if (rows.length === 0) {
-      throw newInternalServerErrorError(
-        `User ${userSession.userId} is not found.`,
-      );
+      throw newInternalServerErrorError(`User ${userId} is not found.`);
     }
     let userRow = rows[0];
     if (
@@ -69,7 +67,7 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
     let newPasswordHash = this.passwordSigner.sign(body.newPassword);
     await this.database.runTransactionAsync(async (transaction) => {
       await transaction.batchUpdate([
-        updatePasswordStatement(newPasswordHash, userSession.userId),
+        updatePasswordStatement(newPasswordHash, userId),
       ]);
       await transaction.commit();
     });

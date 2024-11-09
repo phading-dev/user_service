@@ -35,7 +35,7 @@ export class SaveVideoPlayerSettingsHandler extends SaveVideoPlayerSettingsHandl
     if (!body.settings) {
       throw newBadRequestError(`"settings" is required.`);
     }
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { accountId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
@@ -44,21 +44,15 @@ export class SaveVideoPlayerSettingsHandler extends SaveVideoPlayerSettingsHandl
     await this.database.runTransactionAsync(async (transaction) => {
       let rows = await checkPresenceOfVideoPlayerSettings(
         transaction,
-        userSession.accountId,
+        accountId,
       );
       if (rows.length === 0) {
         await transaction.batchUpdate([
-          insertNewVideoPlayerSettingsStatement(
-            userSession.accountId,
-            body.settings,
-          ),
+          insertNewVideoPlayerSettingsStatement(accountId, body.settings),
         ]);
       } else {
         await transaction.batchUpdate([
-          updateVideoPlayerSettingsStatement(
-            body.settings,
-            userSession.accountId,
-          ),
+          updateVideoPlayerSettingsStatement(body.settings, accountId),
         ]);
       }
       await transaction.commit();

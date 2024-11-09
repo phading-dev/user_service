@@ -47,9 +47,7 @@ TEST_RUNNER.run({
         })();
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,
@@ -89,9 +87,7 @@ TEST_RUNNER.run({
         let signerMock = new PasswordSignerMock();
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,
@@ -146,9 +142,7 @@ TEST_RUNNER.run({
         })();
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-          },
+          userId: "user1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,

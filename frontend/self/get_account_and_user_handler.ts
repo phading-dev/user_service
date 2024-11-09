@@ -36,20 +36,16 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
     body: GetAccountAndUserRequestBody,
     sessionStr: string,
   ): Promise<GetAccountAndUserResponse> {
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { userId, accountId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
       },
     );
-    let rows = await getAccountAndUser(
-      this.database,
-      userSession.userId,
-      userSession.accountId,
-    );
+    let rows = await getAccountAndUser(this.database, userId, accountId);
     if (rows.length === 0) {
       throw newInternalServerErrorError(
-        `User ${userSession.userId} or account ${userSession.accountId} is not found.`,
+        `User ${userId} or account ${accountId} is not found.`,
       );
     }
     let row = rows[0];

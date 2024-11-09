@@ -27,16 +27,13 @@ export class GetVideoPlayerSettingsHandler extends GetVideoPlayerSettingsHandler
     body: GetVideoPlayerSettingsRequestBody,
     sessionStr: string,
   ): Promise<GetVideoPlayerSettingsResponse> {
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { accountId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
       },
     );
-    let rows = await getVideoPlayerSettings(
-      this.database,
-      userSession.accountId,
-    );
+    let rows = await getVideoPlayerSettings(this.database, accountId);
     if (rows.length === 0) {
       return {
         settings: {},

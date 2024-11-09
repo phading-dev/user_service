@@ -31,13 +31,13 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
     body: ListAccountsRequestBody,
     sessionStr: string,
   ): Promise<ListAccountsResponse> {
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { userId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
       },
     );
-    let rows = getAccounts(this.database, userSession.userId);
+    let rows = getAccounts(this.database, userId);
     return {
       accounts: (await rows).map((row) => {
         return {

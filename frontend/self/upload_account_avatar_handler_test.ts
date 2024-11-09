@@ -50,9 +50,7 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            accountId: "account1",
-          },
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
@@ -121,9 +119,7 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            accountId: "account1",
-          },
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,

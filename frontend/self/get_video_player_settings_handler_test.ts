@@ -20,9 +20,7 @@ TEST_RUNNER.run({
         // Prepare
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            accountId: "account1",
-          },
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetVideoPlayerSettingsHandler(
           SPANNER_DATABASE,
@@ -62,9 +60,7 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            accountId: "account1",
-          },
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetVideoPlayerSettingsHandler(
           SPANNER_DATABASE,

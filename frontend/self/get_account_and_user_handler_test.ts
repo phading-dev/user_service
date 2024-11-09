@@ -44,10 +44,8 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-            accountId: "account1",
-          },
+          userId: "user1",
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
@@ -93,10 +91,8 @@ TEST_RUNNER.run({
         // Prepare
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-            accountId: "account1",
-          },
+          userId: "user1",
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
@@ -128,10 +124,8 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-            accountId: "account1",
-          },
+          userId: "user1",
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
@@ -180,10 +174,8 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-            accountId: "account1",
-          },
+          userId: "user1",
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
@@ -235,10 +227,8 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
-          userSession: {
-            userId: "user1",
-            accountId: "account1",
-          },
+          userId: "user1",
+          accountId: "account1",
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,

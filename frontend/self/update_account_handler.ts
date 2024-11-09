@@ -49,7 +49,7 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
     if (body.description.length > DESCRIPTION_LIMIT) {
       throw newBadRequestError(`"descrition" is too long.`);
     }
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { accountId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
@@ -61,7 +61,7 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
           body.naturalName,
           body.contactEmail,
           body.description,
-          userSession.accountId,
+          accountId,
         ),
       ]);
       await transaction.commit();

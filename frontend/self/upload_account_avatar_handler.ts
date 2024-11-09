@@ -45,7 +45,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     body: Readable,
     sessionStr: string,
   ): Promise<UploadAccountAvatarResponse> {
-    let { userSession } = await exchangeSessionAndCheckCapability(
+    let { accountId } = await exchangeSessionAndCheckCapability(
       this.serviceClient,
       {
         signedSession: sessionStr,
@@ -54,11 +54,9 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     let avatarSmallFilename: string;
     let avatarLargeFilename: string;
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccountById(transaction, userSession.accountId);
+      let rows = await getAccountById(transaction, accountId);
       if (rows.length === 0) {
-        throw newInternalServerErrorError(
-          `Account ${userSession.accountId} is not found.`,
-        );
+        throw newInternalServerErrorError(`Account ${accountId} is not found.`);
       }
       let accountRow = rows[0];
       if (
@@ -69,13 +67,13 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         avatarLargeFilename = accountRow.accountAvatarLargeFilename;
         return;
       }
-      avatarSmallFilename = `${userSession.accountId}s.png`;
-      avatarLargeFilename = `${userSession.accountId}l.png`;
+      avatarSmallFilename = `${accountId}s.png`;
+      avatarLargeFilename = `${accountId}l.png`;
       await transaction.batchUpdate([
         updateAvatarStatement(
           avatarSmallFilename,
           avatarLargeFilename,
-          userSession.accountId,
+          accountId,
         ),
       ]);
       await transaction.commit();
