@@ -1,15 +1,15 @@
 import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
-import util = require("util");
-import { STORAGE } from "../../common/cloud_storage";
 import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
 import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
+import { R2_CLIENT } from "../../common/r2_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccountById, updateAvatarStatement } from "../../db/sql";
+import { S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { Database } from "@google-cloud/spanner";
-import { Storage } from "@google-cloud/storage";
 import {
   AVATAR_SIZE_LIMIT,
   LARGE_AVATAR_SIZE,
@@ -20,21 +20,21 @@ import { UploadAccountAvatarResponse } from "@phading/user_service_interface/fro
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/backend/client";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
+import { pipeline } from "node:stream/promises";
 import { Readable } from "stream";
-let pipeline = util.promisify(stream.pipeline);
 
 export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterface {
   public static create(): UploadAccountAvatarHandler {
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
-      STORAGE,
+      R2_CLIENT,
       SERVICE_CLIENT,
     );
   }
 
   public constructor(
     private database: Database,
-    private storage: Storage,
+    private r2Client: S3Client,
     private serviceClient: NodeServiceClient,
   ) {
     super();
@@ -105,19 +105,25 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     height: number,
     outputFile: string,
   ): Promise<void> {
-    await pipeline(
+    let passThrough = new stream.PassThrough();
+    let upload = new Upload({
+      client: this.r2Client,
+      params: {
+        Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+        Key: outputFile,
+        Body: passThrough,
+        ContentType: "image/png",
+      },
+    });
+    pipeline(
       sharp(data).resize(width, height, { fit: "contain" }).png({
         progressive: true,
         compressionLevel: 9,
         palette: true,
         effort: 10,
       }),
-      this.storage
-        .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
-        .file(outputFile)
-        .createWriteStream({
-          resumable: false,
-        }),
+      passThrough,
     );
+    await upload.done();
   }
 }

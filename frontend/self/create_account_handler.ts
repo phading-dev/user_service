@@ -86,7 +86,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       await transaction.commit();
     });
     let response = await createSession(this.serviceClient, {
-      userId: userId,
+      userId,
       accountId,
       accountType: body.accountType,
     });

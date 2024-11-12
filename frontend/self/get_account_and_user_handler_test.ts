@@ -1,4 +1,3 @@
-import { StorageFake } from "../../common/cloud_storage_fake";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   deleteAccountStatement,
@@ -49,8 +48,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -67,7 +66,7 @@ TEST_RUNNER.run({
                 naturalName: "name1",
                 description: "something something",
                 contactEmail: "contact1",
-                avatarLargeUrl: "avatarL",
+                avatarLargeUrl: "https://custom.domain/avatarL",
               },
             },
             GET_ACCOUNT_AND_USER_RESPONSE,
@@ -96,8 +95,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -129,8 +128,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -179,8 +178,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -232,8 +231,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute

@@ -1,9 +1,10 @@
 import path from "path";
-import { StorageFake } from "../../common/cloud_storage_fake";
+import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
 } from "../../common/params";
+import { R2_CLIENT } from "../../common/r2_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   deleteAccountStatement,
@@ -11,17 +12,28 @@ import {
   insertNewAccountStatement,
 } from "../../db/sql";
 import { UploadAccountAvatarHandler } from "./upload_account_avatar_handler";
+import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/backend/interface";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
-import { createReadStream, existsSync, unlinkSync } from "fs";
+import { createReadStream } from "fs";
 
-async function cleaUpFile(filePath: string) {
-  try {
-    unlinkSync(filePath);
-  } catch (e) {}
+async function cleanupFiles(files: Array<string>) {
+  await R2_CLIENT.send(
+    new DeleteObjectsCommand({
+      Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+      Delete: {
+        Objects: files.map((file) => {
+          return {
+            Key: file,
+          };
+        }),
+        Quiet: true,
+      },
+    }),
+  );
 }
 
 TEST_RUNNER.run({
@@ -54,7 +66,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
+          R2_CLIENT,
           clientMock,
         );
 
@@ -77,15 +89,21 @@ TEST_RUNNER.run({
           eq("account1l.png"),
           "avatar large filename",
         );
+        let response = await R2_CLIENT.send(
+          new ListObjectsV2Command({
+            Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+          }),
+        );
+        assertThat(response.Contents.length, eq(2), "number of avatars");
         assertThat(
-          existsSync(path.join("test_data", "account1s.png")),
-          eq(true),
-          "small avatar exists",
+          response.Contents[0].Key,
+          eq("account1l.png"),
+          "large avatar exists",
         );
         assertThat(
-          existsSync(path.join("test_data", "account1l.png")),
-          eq(true),
-          "large avatar exists",
+          response.Contents[1].Key,
+          eq("account1s.png"),
+          "small avatar exists",
         );
       },
       tearDown: async () => {
@@ -93,8 +111,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([deleteAccountStatement("account1")]);
           await transaction.commit();
         });
-        cleaUpFile(path.join("test_data", "account1s.png"));
-        cleaUpFile(path.join("test_data", "account1l.png"));
+        await cleanupFiles(["account1l.png", "account1s.png"]);
       },
     },
     {
@@ -123,7 +140,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
+          R2_CLIENT,
           clientMock,
         );
 
@@ -146,15 +163,21 @@ TEST_RUNNER.run({
           eq("account1l.png"),
           "avatar large filename",
         );
+        let response = await R2_CLIENT.send(
+          new ListObjectsV2Command({
+            Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+          }),
+        );
+        assertThat(response.Contents.length, eq(2), "number of avatars");
         assertThat(
-          existsSync(path.join("test_data", "account1s.png")),
-          eq(true),
-          "small avatar exists",
+          response.Contents[0].Key,
+          eq("account1l.png"),
+          "large avatar exists",
         );
         assertThat(
-          existsSync(path.join("test_data", "account1l.png")),
-          eq(true),
-          "large avatar exists",
+          response.Contents[1].Key,
+          eq("account1s.png"),
+          "small avatar exists",
         );
       },
       tearDown: async () => {
@@ -162,8 +185,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([deleteAccountStatement("account1")]);
           await transaction.commit();
         });
-        cleaUpFile(path.join("test_data", "account1s.png"));
-        cleaUpFile(path.join("test_data", "account1l.png"));
+        await cleanupFiles(["account1l.png", "account1s.png"]);
       },
     },
   ],

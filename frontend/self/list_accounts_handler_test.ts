@@ -1,4 +1,3 @@
-import { StorageFake } from "../../common/cloud_storage_fake";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   deleteAccountStatement,
@@ -67,8 +66,8 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new ListAccountsHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
           clientMock,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -84,19 +83,19 @@ TEST_RUNNER.run({
                   accountId: "account2",
                   accountType: AccountType.PUBLISHER,
                   naturalName: "name2",
-                  avatarSmallUrl: "avatar2",
+                  avatarSmallUrl: "https://custom.domain/avatar2",
                 },
                 {
                   accountId: "account3",
                   accountType: AccountType.PUBLISHER,
                   naturalName: "name3",
-                  avatarSmallUrl: "avatar3",
+                  avatarSmallUrl: "https://custom.domain/avatar3",
                 },
                 {
                   accountId: "account1",
                   accountType: AccountType.CONSUMER,
                   naturalName: "name1",
-                  avatarSmallUrl: "avatar1",
+                  avatarSmallUrl: "https://custom.domain/avatar1",
                 },
               ],
             },

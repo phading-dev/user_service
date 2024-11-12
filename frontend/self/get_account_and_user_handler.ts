@@ -1,10 +1,8 @@
-import { STORAGE } from "../../common/cloud_storage";
-import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
+import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../../common/env_vars";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccountAndUser } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { Storage } from "@google-cloud/storage";
 import { GetAccountAndUserHandlerInterface } from "@phading/user_service_interface/frontend/self/handler";
 import {
   GetAccountAndUserRequestBody,
@@ -18,15 +16,15 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
   public static create(): GetAccountAndUserHandler {
     return new GetAccountAndUserHandler(
       SPANNER_DATABASE,
-      STORAGE,
       SERVICE_CLIENT,
+      ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN,
     );
   }
 
   public constructor(
     private database: Database,
-    private storage: Storage,
     private serviceClient: NodeServiceClient,
+    private publicAccessDomain: string,
   ) {
     super();
   }
@@ -56,10 +54,7 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
         naturalName: row.aNaturalName,
         contactEmail: row.aContactEmail,
         description: row.aDescription,
-        avatarLargeUrl: this.storage
-          .bucket(ACCOUNT_AVATAR_BUCKET_NAME)
-          .file(row.aAvatarLargeFilename)
-          .publicUrl(),
+        avatarLargeUrl: `${this.publicAccessDomain}${row.aAvatarLargeFilename}`,
       },
     };
   }

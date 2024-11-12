@@ -1,4 +1,3 @@
-import { StorageFake } from "../common/cloud_storage_fake";
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import { deleteAccountStatement, insertNewAccountStatement } from "../db/sql";
 import { GetAccountSummaryHandler } from "./get_account_summary_handler";
@@ -36,7 +35,7 @@ TEST_RUNNER.run({
         });
         let handler = new GetAccountSummaryHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
+          "https://custom.domain/",
         );
 
         // Execute
@@ -52,7 +51,7 @@ TEST_RUNNER.run({
               account: {
                 accountId: "account1",
                 naturalName: "name1",
-                avatarSmallUrl: "avatarS",
+                avatarSmallUrl: "https://custom.domain/avatarS",
               },
             },
             GET_ACCOUNT_SUMMARY_RESPONSE,
@@ -73,7 +72,7 @@ TEST_RUNNER.run({
         // Prepare
         let handler = new GetAccountSummaryHandler(
           SPANNER_DATABASE,
-          new StorageFake() as any,
+          "https://custom.domain/",
         );
 
         // Execute
