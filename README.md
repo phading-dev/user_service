@@ -9,6 +9,7 @@
 ### Setup
 
 `source local_test_env_setup.sh`
+
 `source .secret.sh`
 
 ### TearDown
