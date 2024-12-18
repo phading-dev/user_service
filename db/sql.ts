@@ -1,7 +1,9 @@
+import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
 import { Database, Transaction, Spanner } from '@google-cloud/spanner';
 import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
 import { toEnumFromNumber, deserializeMessage, serializeMessage } from '@selfage/message/serializer';
-import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/frontend/self/video_player_settings';
+import { AccountData, ACCOUNT_DATA } from './schema';
+import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
 import { Statement } from '@google-cloud/spanner/build/src/transaction';
 
 export interface GetUserByIdRow {
@@ -9,6 +11,23 @@ export interface GetUserByIdRow {
   userPasswordHashV1: string,
   userRecoveryEmail: string,
 }
+
+export let GET_USER_BY_ID_ROW: MessageDescriptor<GetUserByIdRow> = {
+  name: 'GetUserByIdRow',
+  fields: [{
+    name: 'userUsername',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userPasswordHashV1',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userRecoveryEmail',
+    index: 3,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
 
 export async function getUserById(
   runner: Database | Transaction,
@@ -39,6 +58,19 @@ export interface GetUserByUsernameRow {
   userPasswordHashV1: string,
 }
 
+export let GET_USER_BY_USERNAME_ROW: MessageDescriptor<GetUserByUsernameRow> = {
+  name: 'GetUserByUsernameRow',
+  fields: [{
+    name: 'userUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userPasswordHashV1',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
+
 export async function getUserByUsername(
   runner: Database | Transaction,
   userUsernameEq: string,
@@ -67,6 +99,19 @@ export interface GetLastAccessedAccountRow {
   accountAccountType: AccountType,
 }
 
+export let GET_LAST_ACCESSED_ACCOUNT_ROW: MessageDescriptor<GetLastAccessedAccountRow> = {
+  name: 'GetLastAccessedAccountRow',
+  fields: [{
+    name: 'accountAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 2,
+    enumType: ACCOUNT_TYPE,
+  }],
+};
+
 export async function getLastAccessedAccount(
   runner: Database | Transaction,
   accountUserIdEq: string,
@@ -76,7 +121,7 @@ export async function getLastAccessedAccount(
     sql: "SELECT Account.accountId, Account.accountType FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC LIMIT @limit",
     params: {
       accountUserIdEq: accountUserIdEq,
-      limit: limit,
+      limit: limit.toString(),
     },
     types: {
       accountUserIdEq: { type: "string" },
@@ -96,18 +141,32 @@ export async function getLastAccessedAccount(
 export interface GetAccountByIdRow {
   accountUserId: string,
   accountAccountType: AccountType,
-  accountNaturalName: string,
-  accountContactEmail: string,
-  accountAvatarSmallFilename: string,
-  accountAvatarLargeFilename: string,
+  accountData: AccountData,
 }
+
+export let GET_ACCOUNT_BY_ID_ROW: MessageDescriptor<GetAccountByIdRow> = {
+  name: 'GetAccountByIdRow',
+  fields: [{
+    name: 'accountUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 2,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountData',
+    index: 3,
+    messageType: ACCOUNT_DATA,
+  }],
+};
 
 export async function getAccountById(
   runner: Database | Transaction,
   accountAccountIdEq: string,
 ): Promise<Array<GetAccountByIdRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    sql: "SELECT Account.userId, Account.accountType, Account.data FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: accountAccountIdEq,
     },
@@ -120,31 +179,46 @@ export async function getAccountById(
     resRows.push({
       accountUserId: row.at(0).value,
       accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(2).value,
-      accountContactEmail: row.at(3).value,
-      accountAvatarSmallFilename: row.at(4).value,
-      accountAvatarLargeFilename: row.at(5).value,
+      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
     });
   }
   return resRows;
 }
 
-export interface GetFullAccountByIdRow {
+export interface GetAccountWithDescriptionByIdRow {
   accountUserId: string,
   accountAccountType: AccountType,
-  accountNaturalName: string,
+  accountData: AccountData,
   accountDescription: string,
-  accountContactEmail: string,
-  accountAvatarSmallFilename: string,
-  accountAvatarLargeFilename: string,
 }
 
-export async function getFullAccountById(
+export let GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW: MessageDescriptor<GetAccountWithDescriptionByIdRow> = {
+  name: 'GetAccountWithDescriptionByIdRow',
+  fields: [{
+    name: 'accountUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 2,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountData',
+    index: 3,
+    messageType: ACCOUNT_DATA,
+  }, {
+    name: 'accountDescription',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
+
+export async function getAccountWithDescriptionById(
   runner: Database | Transaction,
   accountAccountIdEq: string,
-): Promise<Array<GetFullAccountByIdRow>> {
+): Promise<Array<GetAccountWithDescriptionByIdRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    sql: "SELECT Account.userId, Account.accountType, Account.data, Account.description FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: accountAccountIdEq,
     },
@@ -152,16 +226,13 @@ export async function getFullAccountById(
       accountAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetFullAccountByIdRow>();
+  let resRows = new Array<GetAccountWithDescriptionByIdRow>();
   for (let row of rows) {
     resRows.push({
       accountUserId: row.at(0).value,
       accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(2).value,
+      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
       accountDescription: row.at(3).value,
-      accountContactEmail: row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value,
     });
   }
   return resRows;
@@ -170,16 +241,32 @@ export async function getFullAccountById(
 export interface GetAccountsRow {
   accountAccountId: string,
   accountAccountType: AccountType,
-  accountNaturalName: string,
-  accountAvatarSmallFilename: string,
+  accountData: AccountData,
 }
+
+export let GET_ACCOUNTS_ROW: MessageDescriptor<GetAccountsRow> = {
+  name: 'GetAccountsRow',
+  fields: [{
+    name: 'accountAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 2,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountData',
+    index: 3,
+    messageType: ACCOUNT_DATA,
+  }],
+};
 
 export async function getAccounts(
   runner: Database | Transaction,
   accountUserIdEq: string,
 ): Promise<Array<GetAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.accountId, Account.accountType, Account.naturalName, Account.avatarSmallFilename FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC",
+    sql: "SELECT Account.accountId, Account.accountType, Account.data FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC",
     params: {
       accountUserIdEq: accountUserIdEq,
     },
@@ -192,8 +279,7 @@ export async function getAccounts(
     resRows.push({
       accountAccountId: row.at(0).value,
       accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(2).value,
-      accountAvatarSmallFilename: row.at(3).value,
+      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
     });
   }
   return resRows;
@@ -203,6 +289,19 @@ export interface ListAccountsByTypeRow {
   accountAccountId: string,
   accountCreatedTimestamp: number,
 }
+
+export let LIST_ACCOUNTS_BY_TYPE_ROW: MessageDescriptor<ListAccountsByTypeRow> = {
+  name: 'ListAccountsByTypeRow',
+  fields: [{
+    name: 'accountAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountCreatedTimestamp',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
 
 export async function listAccountsByType(
   runner: Database | Transaction,
@@ -215,7 +314,7 @@ export async function listAccountsByType(
     params: {
       accountCreatedTimestampLt: new Date(accountCreatedTimestampLt).toISOString(),
       accountAccountTypeEq: Spanner.float(accountAccountTypeEq),
-      limit: limit,
+      limit: limit.toString(),
     },
     types: {
       accountCreatedTimestampLt: { type: "timestamp" },
@@ -236,11 +335,30 @@ export async function listAccountsByType(
 export interface GetAccountAndUserRow {
   uUsername: string,
   uRecoveryEmail: string,
-  aNaturalName: string,
-  aContactEmail: string,
+  aData: AccountData,
   aDescription: string,
-  aAvatarLargeFilename: string,
 }
+
+export let GET_ACCOUNT_AND_USER_ROW: MessageDescriptor<GetAccountAndUserRow> = {
+  name: 'GetAccountAndUserRow',
+  fields: [{
+    name: 'uUsername',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'uRecoveryEmail',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'aData',
+    index: 3,
+    messageType: ACCOUNT_DATA,
+  }, {
+    name: 'aDescription',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
 
 export async function getAccountAndUser(
   runner: Database | Transaction,
@@ -248,7 +366,7 @@ export async function getAccountAndUser(
   aAccountIdEq: string,
 ): Promise<Array<GetAccountAndUserRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT u.username, u.recoveryEmail, a.naturalName, a.contactEmail, a.description, a.avatarLargeFilename FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
+    sql: "SELECT u.username, u.recoveryEmail, a.data, a.description FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
     params: {
       uUserIdEq: uUserIdEq,
       aAccountIdEq: aAccountIdEq,
@@ -263,10 +381,8 @@ export async function getAccountAndUser(
     resRows.push({
       uUsername: row.at(0).value,
       uRecoveryEmail: row.at(1).value,
-      aNaturalName: row.at(2).value,
-      aContactEmail: row.at(3).value,
-      aDescription: row.at(4).value,
-      aAvatarLargeFilename: row.at(5).value,
+      aData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
+      aDescription: row.at(3).value,
     });
   }
   return resRows;
@@ -275,6 +391,15 @@ export async function getAccountAndUser(
 export interface GetVideoPlayerSettingsRow {
   videoPlayerSettingsSettings: VideoPlayerSettings,
 }
+
+export let GET_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<GetVideoPlayerSettingsRow> = {
+  name: 'GetVideoPlayerSettingsRow',
+  fields: [{
+    name: 'videoPlayerSettingsSettings',
+    index: 1,
+    messageType: VIDEO_PLAYER_SETTINGS,
+  }],
+};
 
 export async function getVideoPlayerSettings(
   runner: Database | Transaction,
@@ -301,6 +426,15 @@ export async function getVideoPlayerSettings(
 export interface CheckPresenceOfVideoPlayerSettingsRow {
   videoPlayerSettingsAccountId: string,
 }
+
+export let CHECK_PRESENCE_OF_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<CheckPresenceOfVideoPlayerSettingsRow> = {
+  name: 'CheckPresenceOfVideoPlayerSettingsRow',
+  fields: [{
+    name: 'videoPlayerSettingsAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
 
 export async function checkPresenceOfVideoPlayerSettings(
   runner: Database | Transaction,
@@ -351,25 +485,19 @@ export function insertNewAccountStatement(
   userId: string,
   accountId: string,
   accountType: AccountType,
-  naturalName: string,
+  data: AccountData,
   description: string,
-  contactEmail: string,
-  avatarSmallFilename: string,
-  avatarLargeFilename: string,
   createdTimestamp: number,
   lastAccessedTimestamp: number,
 ): Statement {
   return {
-    sql: "INSERT Account (userId, accountId, accountType, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, createdTimestamp, lastAccessedTimestamp) VALUES (@userId, @accountId, @accountType, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @createdTimestamp, @lastAccessedTimestamp)",
+    sql: "INSERT Account (userId, accountId, accountType, data, description, createdTimestamp, lastAccessedTimestamp) VALUES (@userId, @accountId, @accountType, @data, @description, @createdTimestamp, @lastAccessedTimestamp)",
     params: {
       userId: userId,
       accountId: accountId,
       accountType: Spanner.float(accountType),
-      naturalName: naturalName,
+      data: Buffer.from(serializeMessage(data, ACCOUNT_DATA).buffer),
       description: description,
-      contactEmail: contactEmail,
-      avatarSmallFilename: avatarSmallFilename,
-      avatarLargeFilename: avatarLargeFilename,
       createdTimestamp: new Date(createdTimestamp).toISOString(),
       lastAccessedTimestamp: new Date(lastAccessedTimestamp).toISOString(),
     },
@@ -377,11 +505,8 @@ export function insertNewAccountStatement(
       userId: { type: "string" },
       accountId: { type: "string" },
       accountType: { type: "float64" },
-      naturalName: { type: "string" },
+      data: { type: "bytes" },
       description: { type: "string" },
-      contactEmail: { type: "string" },
-      avatarSmallFilename: { type: "string" },
-      avatarLargeFilename: { type: "string" },
       createdTimestamp: { type: "timestamp" },
       lastAccessedTimestamp: { type: "timestamp" },
     }
@@ -406,112 +531,103 @@ export function insertNewVideoPlayerSettingsStatement(
 }
 
 export function updatePasswordStatement(
-  setPasswordHashV1: string,
   userUserIdEq: string,
+  setPasswordHashV1: string,
 ): Statement {
   return {
     sql: "UPDATE User SET passwordHashV1 = @setPasswordHashV1 WHERE User.userId = @userUserIdEq",
     params: {
-      setPasswordHashV1: setPasswordHashV1,
       userUserIdEq: userUserIdEq,
+      setPasswordHashV1: setPasswordHashV1,
     },
     types: {
-      setPasswordHashV1: { type: "string" },
       userUserIdEq: { type: "string" },
+      setPasswordHashV1: { type: "string" },
     }
   };
 }
 
 export function updateRecoveryEmailStatement(
-  setRecoveryEmail: string,
   userUserIdEq: string,
+  setRecoveryEmail: string,
 ): Statement {
   return {
     sql: "UPDATE User SET recoveryEmail = @setRecoveryEmail WHERE User.userId = @userUserIdEq",
     params: {
-      setRecoveryEmail: setRecoveryEmail,
       userUserIdEq: userUserIdEq,
+      setRecoveryEmail: setRecoveryEmail,
     },
     types: {
-      setRecoveryEmail: { type: "string" },
       userUserIdEq: { type: "string" },
+      setRecoveryEmail: { type: "string" },
     }
   };
 }
 
 export function updateLastAccessedTimestmapStatement(
-  setLastAccessedTimestamp: number,
   accountAccountIdEq: string,
+  setLastAccessedTimestamp: number,
 ): Statement {
   return {
     sql: "UPDATE Account SET lastAccessedTimestamp = @setLastAccessedTimestamp WHERE Account.accountId = @accountAccountIdEq",
     params: {
+      accountAccountIdEq: accountAccountIdEq,
       setLastAccessedTimestamp: new Date(setLastAccessedTimestamp).toISOString(),
-      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
+      accountAccountIdEq: { type: "string" },
       setLastAccessedTimestamp: { type: "timestamp" },
-      accountAccountIdEq: { type: "string" },
     }
   };
 }
 
-export function updateAccountInfoStatement(
-  setNaturalName: string,
-  setContactEmail: string,
+export function updateAccountDataStatement(
+  accountAccountIdEq: string,
+  setData: AccountData,
+): Statement {
+  return {
+    sql: "UPDATE Account SET data = @setData WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: accountAccountIdEq,
+      setData: Buffer.from(serializeMessage(setData, ACCOUNT_DATA).buffer),
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setData: { type: "bytes" },
+    }
+  };
+}
+
+export function updateAccountDescriptionStatement(
+  accountAccountIdEq: string,
   setDescription: string,
-  accountAccountIdEq: string,
 ): Statement {
   return {
-    sql: "UPDATE Account SET naturalName = @setNaturalName, contactEmail = @setContactEmail, description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
+    sql: "UPDATE Account SET description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
     params: {
-      setNaturalName: setNaturalName,
-      setContactEmail: setContactEmail,
+      accountAccountIdEq: accountAccountIdEq,
       setDescription: setDescription,
-      accountAccountIdEq: accountAccountIdEq,
     },
     types: {
-      setNaturalName: { type: "string" },
-      setContactEmail: { type: "string" },
+      accountAccountIdEq: { type: "string" },
       setDescription: { type: "string" },
-      accountAccountIdEq: { type: "string" },
-    }
-  };
-}
-
-export function updateAvatarStatement(
-  setAvatarSmallFilename: string,
-  setAvatarLargeFilename: string,
-  accountAccountIdEq: string,
-): Statement {
-  return {
-    sql: "UPDATE Account SET avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      setAvatarSmallFilename: setAvatarSmallFilename,
-      setAvatarLargeFilename: setAvatarLargeFilename,
-      accountAccountIdEq: accountAccountIdEq,
-    },
-    types: {
-      setAvatarSmallFilename: { type: "string" },
-      setAvatarLargeFilename: { type: "string" },
-      accountAccountIdEq: { type: "string" },
     }
   };
 }
 
 export function updateVideoPlayerSettingsStatement(
-  setSettings: VideoPlayerSettings,
   videoPlayerSettingsAccountIdEq: string,
+  setSettings: VideoPlayerSettings,
 ): Statement {
   return {
     sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
     params: {
-      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
       videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
     },
     types: {
-      setSettings: { type: "bytes" },
       videoPlayerSettingsAccountIdEq: { type: "string" },
+      setSettings: { type: "bytes" },
     }
   };
 }

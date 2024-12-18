@@ -18,9 +18,8 @@
     "**/*.json"
   ],
   "devDependencies": {
-    "@selfage/bundler_cli": "^5.2.0",
     "@selfage/cli": "^5.0.1",
-    "@selfage/generator_cli": "^3.2.4",
+    "@selfage/generator_cli": "^3.3.2",
     "@selfage/spanner_schema_update_cli": "^1.4.2",
     "@selfage/test_matcher": "^2.1.8",
     "@selfage/test_runner": "^5.2.0",
@@ -30,12 +29,12 @@
     "typescript": "^5.6.2"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.689.0",
-    "@aws-sdk/lib-storage": "^3.689.0",
-    "@google-cloud/spanner": "^7.15.0",
-    "@phading/constants": "^0.2.3",
-    "@phading/user_service_interface": "^0.18.1",
-    "@phading/user_session_service_interface": "^0.9.0",
+    "@aws-sdk/client-s3": "^3.714.0",
+    "@aws-sdk/lib-storage": "^3.714.0",
+    "@google-cloud/spanner": "^7.16.0",
+    "@phading/constants": "^0.2.5",
+    "@phading/user_service_interface": "^0.19.1",
+    "@phading/user_session_service_interface": "^0.10.0",
     "@selfage/env_var_getter": "^1.0.2",
     "@selfage/http_error": "^1.1.2",
     "@selfage/message": "^3.5.6",

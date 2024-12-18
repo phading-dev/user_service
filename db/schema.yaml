@@ -1,3 +1,18 @@
+- message:
+    name: AccountData
+    fields:
+      - name: naturalName
+        type: string
+        index: 1
+      - name: contactEmail
+        type: string
+        index: 2
+      - name: avatarSmallFilename
+        type: string
+        index: 3
+      - name: avatarLargeFilename
+        type: string
+        index: 4
 - spannerDatabase:
     name: UserDatabase
     tables:
@@ -30,15 +45,9 @@
           - name: accountType
             type: AccountType
             import: "@phading/user_service_interface/account_type"
-          - name: naturalName
-            type: string
+          - name: data
+            type: AccountData
           - name: description
-            type: string
-          - name: contactEmail
-            type: string
-          - name: avatarSmallFilename
-            type: string
-          - name: avatarLargeFilename
             type: string
           - name: createdTimestamp
             type: timestamp
@@ -63,7 +72,7 @@
             type: string
           - name: settings
             type: VideoPlayerSettings
-            import: "@phading/user_service_interface/frontend/self/video_player_settings"
+            import: "@phading/user_service_interface/web/self/video_player_settings"
         primaryKeys:
           - accountId
     inserts:
@@ -81,11 +90,8 @@
           - userId
           - accountId
           - accountType
-          - naturalName
+          - data
           - description
-          - contactEmail
-          - avatarSmallFilename
-          - avatarLargeFilename
           - createdTimestamp
           - lastAccessedTimestamp
       - name: InsertNewVideoPlayerSettings
@@ -115,23 +121,20 @@
           leftColumn: accountId
         setColumns:
           - lastAccessedTimestamp
-      - name: UpdateAccountInfo
+      - name: UpdateAccountData
         table: Account
         where:
           op: =
           leftColumn: accountId
         setColumns:
-          - naturalName
-          - contactEmail
+          - data
+      - name: UpdateAccountDescription
+        table: Account
+        where:
+          op: =
+          leftColumn: accountId
+        setColumns:
           - description
-      - name: UpdateAvatar
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        setColumns:
-          - avatarSmallFilename
-          - avatarLargeFilename
       - name: UpdateVideoPlayerSettings
         table: VideoPlayerSettings
         where:
@@ -193,11 +196,8 @@
         getColumns:
           - userId
           - accountType
-          - naturalName
-          - contactEmail
-          - avatarSmallFilename
-          - avatarLargeFilename
-      - name: GetFullAccountById
+          - data
+      - name: GetAccountWithDescriptionById
         table: Account
         where:
           op: =
@@ -205,11 +205,8 @@
         getColumns:
           - userId
           - accountType
-          - naturalName
+          - data
           - description
-          - contactEmail
-          - avatarSmallFilename
-          - avatarLargeFilename
       - name: GetAccounts
         table: Account
         where:
@@ -221,8 +218,7 @@
         getColumns:
           - accountId
           - accountType
-          - naturalName
-          - avatarSmallFilename
+          - data
       - name: ListAccountsByType
         table: Account
         where:
@@ -270,13 +266,9 @@
             table: u
           - name: recoveryEmail
             table: u
-          - name: naturalName
-            table: a
-          - name: contactEmail
+          - name: data
             table: a
           - name: description
-            table: a
-          - name: avatarLargeFilename
             table: a
       - name: GetVideoPlayerSettings
         table: VideoPlayerSettings

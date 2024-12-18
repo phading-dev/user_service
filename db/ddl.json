@@ -34,20 +34,11 @@
       "name": "accountType",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64 NOT NULL"
     }, {
-      "name": "naturalName",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN naturalName STRING(MAX) NOT NULL"
+      "name": "data",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN data BYTES(MAX) NOT NULL"
     }, {
       "name": "description",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN description STRING(MAX) NOT NULL"
-    }, {
-      "name": "contactEmail",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN contactEmail STRING(MAX) NOT NULL"
-    }, {
-      "name": "avatarSmallFilename",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallFilename STRING(MAX) NOT NULL"
-    }, {
-      "name": "avatarLargeFilename",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarLargeFilename STRING(MAX) NOT NULL"
     }, {
       "name": "createdTimestamp",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimestamp TIMESTAMP NOT NULL"
@@ -55,7 +46,7 @@
       "name": "lastAccessedTimestamp",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimestamp TIMESTAMP NOT NULL"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, naturalName STRING(MAX) NOT NULL, description STRING(MAX) NOT NULL, contactEmail STRING(MAX) NOT NULL, avatarSmallFilename STRING(MAX) NOT NULL, avatarLargeFilename STRING(MAX) NOT NULL, createdTimestamp TIMESTAMP NOT NULL, lastAccessedTimestamp TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, data BYTES(MAX) NOT NULL, description STRING(MAX) NOT NULL, createdTimestamp TIMESTAMP NOT NULL, lastAccessedTimestamp TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimestamp",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimestamp ON Account(userId, lastAccessedTimestamp DESC)"
