@@ -1,8 +1,19 @@
-## Unit testing setup
+## Local test setup
 
-1. Refer to Spanner unit testing
-1. Require a R2 bucket named as "avatar-test".
-1. For windows command prompt, run `set ACCOUNT_AVATAR_BUCKET_NAME=avatar-test`.
+### R2
+
+1. Create a bucket named as `avatar-test` bucket in Cloudflare R2.
+1. Create or assign a test API token to the bucket.
+1. Roll the API token and save access key ID and secret access key locally. Do not commit to codebase.
+
+### Setup
+
+`source local_test_env_setup.sh`
+`source .secret.sh`
+
+### TearDown
+
+`source local_test_env_teardown.sh`
 
 ## Create deployment and database table
 
