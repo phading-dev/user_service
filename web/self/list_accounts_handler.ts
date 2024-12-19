@@ -1,7 +1,7 @@
 import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../../common/env_vars";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccounts } from "../../db/sql";
+import { listAccounts } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { ListAccountsHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
@@ -39,7 +39,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
         signedSession: sessionStr,
       },
     );
-    let rows = getAccounts(this.database, userId);
+    let rows = listAccounts(this.database, userId);
     return {
       accounts: (await rows).map((row) => {
         return {

@@ -238,14 +238,14 @@ export async function getAccountWithDescriptionById(
   return resRows;
 }
 
-export interface GetAccountsRow {
+export interface ListAccountsRow {
   accountAccountId: string,
   accountAccountType: AccountType,
   accountData: AccountData,
 }
 
-export let GET_ACCOUNTS_ROW: MessageDescriptor<GetAccountsRow> = {
-  name: 'GetAccountsRow',
+export let LIST_ACCOUNTS_ROW: MessageDescriptor<ListAccountsRow> = {
+  name: 'ListAccountsRow',
   fields: [{
     name: 'accountAccountId',
     index: 1,
@@ -261,10 +261,10 @@ export let GET_ACCOUNTS_ROW: MessageDescriptor<GetAccountsRow> = {
   }],
 };
 
-export async function getAccounts(
+export async function listAccounts(
   runner: Database | Transaction,
   accountUserIdEq: string,
-): Promise<Array<GetAccountsRow>> {
+): Promise<Array<ListAccountsRow>> {
   let [rows] = await runner.run({
     sql: "SELECT Account.accountId, Account.accountType, Account.data FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC",
     params: {
@@ -274,7 +274,7 @@ export async function getAccounts(
       accountUserIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetAccountsRow>();
+  let resRows = new Array<ListAccountsRow>();
   for (let row of rows) {
     resRows.push({
       accountAccountId: row.at(0).value,

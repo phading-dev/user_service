@@ -207,7 +207,7 @@
           - accountType
           - data
           - description
-      - name: GetAccounts
+      - name: ListAccounts
         table: Account
         where:
           op: =
