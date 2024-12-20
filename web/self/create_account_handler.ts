@@ -7,7 +7,10 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { insertNewAccountStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { EMAIL_LIMIT, NATURAL_NAME_LIMIT } from "@phading/constants/account";
+import {
+  MAX_EMAIL_LENGTH,
+  MAX_NATURAL_NAME_LENGTH,
+} from "@phading/constants/account";
 import { CreateAccountHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
   CreateAccountRequestBody,
@@ -47,13 +50,13 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     if (!body.naturalName) {
       throw newBadRequestError(`"naturalName" is required.`);
     }
-    if (body.naturalName.length > NATURAL_NAME_LIMIT) {
+    if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
       throw newBadRequestError(`"naturalName" is too long.`);
     }
     if (!body.contactEmail) {
       throw newBadRequestError(`"contactEmail" is required.`);
     }
-    if (body.contactEmail.length > EMAIL_LIMIT) {
+    if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
     if (!body.accountType) {

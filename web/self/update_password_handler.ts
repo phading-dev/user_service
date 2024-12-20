@@ -3,17 +3,14 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getUserById, updatePasswordStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { PASSWORD_LIMIT } from "@phading/constants/account";
+import { MAX_PASSWORD_LENGTH } from "@phading/constants/account";
 import { UpdatePasswordHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
   UpdatePasswordRequestBody,
   UpdatePasswordResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
-import {
-  newBadRequestError,
-  newNotFoundError,
-} from "@selfage/http_error";
+import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
@@ -44,7 +41,7 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
     if (!body.newPassword) {
       throw newBadRequestError(`"newPassword" is required.`);
     }
-    if (body.newPassword.length > PASSWORD_LIMIT) {
+    if (body.newPassword.length > MAX_PASSWORD_LENGTH) {
       throw newBadRequestError(`"newPassword" is too long.`);
     }
     let { userId } = await exchangeSessionAndCheckCapability(

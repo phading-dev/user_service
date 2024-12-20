@@ -11,8 +11,8 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Database } from "@google-cloud/spanner";
 import {
-  AVATAR_SIZE_LIMIT,
   LARGE_AVATAR_SIZE,
+  MAX_AVATAR_SIZE,
   SMALL_AVATAR_SIZE,
 } from "@phading/constants/account";
 import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -81,7 +81,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     });
 
     let imageBuffer = await getStream.buffer(body, {
-      maxBuffer: AVATAR_SIZE_LIMIT,
+      maxBuffer: MAX_AVATAR_SIZE,
     });
     await Promise.all([
       this.resizeAndUpload(

@@ -128,12 +128,13 @@
           leftColumn: accountId
         setColumns:
           - data
-      - name: UpdateAccountDescription
+      - name: UpdateAccountDateAndDescription
         table: Account
         where:
           op: =
           leftColumn: accountId
         setColumns:
+          - data
           - description
       - name: UpdateVideoPlayerSettings
         table: VideoPlayerSettings

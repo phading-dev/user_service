@@ -598,18 +598,21 @@ export function updateAccountDataStatement(
   };
 }
 
-export function updateAccountDescriptionStatement(
+export function updateAccountDateAndDescriptionStatement(
   accountAccountIdEq: string,
+  setData: AccountData,
   setDescription: string,
 ): Statement {
   return {
-    sql: "UPDATE Account SET description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
+    sql: "UPDATE Account SET data = @setData, description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: accountAccountIdEq,
+      setData: Buffer.from(serializeMessage(setData, ACCOUNT_DATA).buffer),
       setDescription: setDescription,
     },
     types: {
       accountAccountIdEq: { type: "string" },
+      setData: { type: "bytes" },
       setDescription: { type: "string" },
     }
   };

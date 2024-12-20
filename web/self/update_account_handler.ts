@@ -1,24 +1,27 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccountById, updateAccountDataStatement } from "../../db/sql";
+import {
+  getAccountById,
+  updateAccountDateAndDescriptionStatement,
+} from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
-  DESCRIPTION_LIMIT,
-  EMAIL_LIMIT,
-  NATURAL_NAME_LIMIT,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_EMAIL_LENGTH,
+  MAX_NATURAL_NAME_LENGTH,
 } from "@phading/constants/account";
-import { UpdateAccountDataHandlerInterface } from "@phading/user_service_interface/web/self/handler";
+import { UpdateAccountHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
-  UpdateAccountDataRequestBody,
-  UpdateAccountDataResponse,
+  UpdateAccountRequestBody,
+  UpdateAccountResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
-export class UpdateAccountDataHandler extends UpdateAccountDataHandlerInterface {
-  public static create(): UpdateAccountDataHandler {
-    return new UpdateAccountDataHandler(SPANNER_DATABASE, SERVICE_CLIENT);
+export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
+  public static create(): UpdateAccountHandler {
+    return new UpdateAccountHandler(SPANNER_DATABASE, SERVICE_CLIENT);
   }
 
   public constructor(
@@ -30,23 +33,23 @@ export class UpdateAccountDataHandler extends UpdateAccountDataHandlerInterface 
 
   public async handle(
     loggingPrefix: string,
-    body: UpdateAccountDataRequestBody,
+    body: UpdateAccountRequestBody,
     sessionStr: string,
-  ): Promise<UpdateAccountDataResponse> {
+  ): Promise<UpdateAccountResponse> {
     if (!body.naturalName) {
       throw newBadRequestError(`"naturalName" is required.`);
     }
-    if (body.naturalName.length > NATURAL_NAME_LIMIT) {
+    if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
       throw newBadRequestError(`"naturalName" is too long.`);
     }
     if (!body.contactEmail) {
       throw newBadRequestError(`"contactEmail" is required.`);
     }
-    if (body.contactEmail.length > EMAIL_LIMIT) {
+    if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
     body.description ??= "";
-    if (body.description.length > DESCRIPTION_LIMIT) {
+    if (body.description.length > MAX_DESCRIPTION_LENGTH) {
       throw newBadRequestError(`"descrition" is too long.`);
     }
     let { accountId } = await exchangeSessionAndCheckCapability(
@@ -62,12 +65,16 @@ export class UpdateAccountDataHandler extends UpdateAccountDataHandlerInterface 
       }
       let accountData = accountRows[0].accountData;
       await transaction.batchUpdate([
-        updateAccountDataStatement(accountId, {
-          naturalName: body.naturalName,
-          contactEmail: body.contactEmail,
-          avatarSmallFilename: accountData.avatarSmallFilename,
-          avatarLargeFilename: accountData.avatarLargeFilename,
-        }),
+        updateAccountDateAndDescriptionStatement(
+          accountId,
+          {
+            naturalName: body.naturalName,
+            contactEmail: body.contactEmail,
+            avatarSmallFilename: accountData.avatarSmallFilename,
+            avatarLargeFilename: accountData.avatarLargeFilename,
+          },
+          body.description,
+        ),
       ]);
       await transaction.commit();
     });

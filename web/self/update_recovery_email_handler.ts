@@ -3,17 +3,14 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getUserById, updateRecoveryEmailStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { EMAIL_LIMIT } from "@phading/constants/account";
+import { MAX_EMAIL_LENGTH } from "@phading/constants/account";
 import { UpdateRecoveryEmailHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
   UpdateRecoveryEmailRequestBody,
   UpdateRecoveryEmailResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
-import {
-  newBadRequestError,
-  newNotFoundError,
-} from "@selfage/http_error";
+import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterface {
@@ -44,7 +41,7 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
     if (!body.newEmail) {
       throw newBadRequestError(`"newEmail" is required.`);
     }
-    if (body.newEmail.length > EMAIL_LIMIT) {
+    if (body.newEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"newEmail" is too long.`);
     }
     let { userId } = await exchangeSessionAndCheckCapability(

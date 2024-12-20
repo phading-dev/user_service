@@ -13,10 +13,10 @@ import {
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
-  EMAIL_LIMIT,
-  NATURAL_NAME_LIMIT,
-  PASSWORD_LIMIT,
-  USERNAME_LIMIT,
+  MAX_EMAIL_LENGTH,
+  MAX_NATURAL_NAME_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  MAX_USERNAME_LENGTH,
 } from "@phading/constants/account";
 import { SignUpHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
@@ -55,31 +55,31 @@ export class SignUpHandler extends SignUpHandlerInterface {
     if (!body.username) {
       throw newBadRequestError(`"username" is required.`);
     }
-    if (body.username.length > USERNAME_LIMIT) {
+    if (body.username.length > MAX_USERNAME_LENGTH) {
       throw newBadRequestError(`"username" is too long.`);
     }
     if (!body.recoveryEmail) {
       throw newBadRequestError(`"recoveryEmail" is required.`);
     }
-    if (body.recoveryEmail.length > EMAIL_LIMIT) {
+    if (body.recoveryEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"recoveryEmail" is too long.`);
     }
     if (!body.password) {
       throw newBadRequestError(`"password" is required.`);
     }
-    if (body.password.length > PASSWORD_LIMIT) {
+    if (body.password.length > MAX_PASSWORD_LENGTH) {
       throw newBadRequestError(`"password" is too long.`);
     }
     if (!body.naturalName) {
       throw newBadRequestError(`"naturalName" is required.`);
     }
-    if (body.naturalName.length > NATURAL_NAME_LIMIT) {
+    if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
       throw newBadRequestError(`"naturalName" is too long.`);
     }
     if (!body.contactEmail) {
       throw newBadRequestError(`"contactEmail" is required.`);
     }
-    if (body.contactEmail.length > EMAIL_LIMIT) {
+    if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
     if (!body.accountType) {
