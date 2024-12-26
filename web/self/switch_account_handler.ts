@@ -1,6 +1,6 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccountById } from "../../db/sql";
+import { getAccount } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { SwitchAccountHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
@@ -44,11 +44,12 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
         signedSession: sessionStr,
       },
     );
-    let rows = await getAccountById(this.database, body.accountId);
+    let rows = await getAccount(this.database, body.accountId);
     if (rows.length === 0) {
       throw newNotFoundError(`Account ${body.accountId} is not found.`);
     }
-    if (rows[0].accountUserId !== userId) {
+    let { accountData } = rows[0];
+    if (accountData.userId !== userId) {
       throw newForbiddenError(
         `Not authorized to switch to account ${body.accountId} owned by a different user.`,
       );
@@ -56,7 +57,7 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
     let response = await createSession(this.serviceClient, {
       userId: userId,
       accountId: body.accountId,
-      accountType: rows[0].accountAccountType,
+      accountType: accountData.accountType,
     });
     return {
       signedSession: response.signedSession,

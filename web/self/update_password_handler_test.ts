@@ -1,10 +1,10 @@
 import { PasswordSignerMock } from "../../common/password_signer_mock";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_USER_BY_ID_ROW,
+  GET_USER_ROW,
   deleteUserStatement,
-  getUserById,
-  insertNewUserStatement,
+  getUser,
+  insertUserStatement,
 } from "../../db/sql";
 import { UpdatePasswordHandler } from "./update_password_handler";
 import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
@@ -24,12 +24,11 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_current_pass",
-              "email",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_current_pass",
+            }),
           ]);
           await transaction.commit();
         });
@@ -66,15 +65,17 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getUserById(SPANNER_DATABASE, "user1"),
+          await getUser(SPANNER_DATABASE, "user1"),
           isArray([
             eqMessage(
               {
-                userUsername: "username1",
-                userPasswordHashV1: "signed_new_pass",
-                userRecoveryEmail: "email",
+                userData: {
+                  userId: "user1",
+                  username: "username1",
+                  passwordHashV1: "signed_new_pass",
+                },
               },
-              GET_USER_BY_ID_ROW,
+              GET_USER_ROW,
             ),
           ]),
           "user",
@@ -125,12 +126,11 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_current_pass",
-              "email",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_current_pass",
+            }),
           ]);
           await transaction.commit();
         });

@@ -1,10 +1,10 @@
 import { PasswordSignerMock } from "../../common/password_signer_mock";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_USER_BY_ID_ROW,
+  GET_USER_ROW,
   deleteUserStatement,
-  getUserById,
-  insertNewUserStatement,
+  getUser,
+  insertUserStatement,
 } from "../../db/sql";
 import { UpdateRecoveryEmailHandler } from "./update_recovery_email_handler";
 import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
@@ -24,12 +24,12 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_current_pass",
-              "email",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_current_pass",
+              recoveryEmail: "email",
+            }),
           ]);
           await transaction.commit();
         });
@@ -58,15 +58,18 @@ TEST_RUNNER.run({
         // Verify
         assertThat(signerMock.password, eq("current_pass"), "current password");
         assertThat(
-          await getUserById(SPANNER_DATABASE, "user1"),
+          await getUser(SPANNER_DATABASE, "user1"),
           isArray([
             eqMessage(
               {
-                userUsername: "username1",
-                userPasswordHashV1: "signed_current_pass",
-                userRecoveryEmail: "new_email",
+                userData: {
+                  userId: "user1",
+                  username: "username1",
+                  passwordHashV1: "signed_current_pass",
+                  recoveryEmail: "new_email",
+                },
               },
-              GET_USER_BY_ID_ROW,
+              GET_USER_ROW,
             ),
           ]),
           "user",
@@ -117,12 +120,12 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_current_pass",
-              "email",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_current_pass",
+              recoveryEmail: "email",
+            }),
           ]);
           await transaction.commit();
         });

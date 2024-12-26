@@ -1,289 +1,263 @@
-- message:
-    name: AccountData
-    fields:
-      - name: naturalName
-        type: string
-        index: 1
-      - name: contactEmail
-        type: string
-        index: 2
-      - name: avatarSmallFilename
-        type: string
-        index: 3
-      - name: avatarLargeFilename
-        type: string
-        index: 4
-- spannerDatabase:
-    name: UserDatabase
-    tables:
-      - name: User
-        columns:
-          - name: userId
-            type: string
-          - name: username
-            type: string
-          - name: passwordHashV1
-            type: string
-          - name: recoveryEmail
-            type: string
-          - name: createdTimestamp
-            type: timestamp
-            allowCommitTimestamp: true
-        primaryKeys:
-          - userId
-        indexes:
-          - name: UniqueUsername
-            columns:
-              - username
-            unique: true
-      - name: Account
-        columns:
-          - name: userId
-            type: string
-          - name: accountId
-            type: string
-          - name: accountType
-            type: AccountType
-            import: "@phading/user_service_interface/account_type"
-          - name: data
-            type: AccountData
-          - name: description
-            type: string
-          - name: createdTimestamp
-            type: timestamp
-          - name: lastAccessedTimestamp
-            type: timestamp
-        primaryKeys:
-          - accountId
-        indexes:
-          - name: ByUserAndLastAccessTimestamp
-            columns:
-              - userId
-              - name: lastAccessedTimestamp
-                desc: true
-          - name: ByTypeAndCreatedTimestamp
-            columns:
-              - accountType
-              - name: createdTimestamp
-                desc: true
-      - name: VideoPlayerSettings
-        columns:
-          - name: accountId
-            type: string
-          - name: settings
-            type: VideoPlayerSettings
-            import: "@phading/user_service_interface/web/self/video_player_settings"
-        primaryKeys:
-          - accountId
-    inserts:
-      - name: InsertNewUser
-        table: User
-        setColumns:
-          - userId
-          - username
-          - passwordHashV1
-          - recoveryEmail
-          - createdTimestamp
-      - name: InsertNewAccount
-        table: Account
-        setColumns:
-          - userId
-          - accountId
-          - accountType
-          - data
-          - description
-          - createdTimestamp
-          - lastAccessedTimestamp
-      - name: InsertNewVideoPlayerSettings
-        table: VideoPlayerSettings
-        setColumns:
-          - accountId
-          - settings
-    updates:
-      - name: UpdatePassword
-        table: User
-        where:
-          op: =
-          leftColumn: userId
-        setColumns:
-          - passwordHashV1
-      - name: UpdateRecoveryEmail
-        table: User
-        where:
-          op: =
-          leftColumn: userId
-        setColumns:
-          - recoveryEmail
-      - name: UpdateLastAccessedTimestmap
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        setColumns:
-          - lastAccessedTimestamp
-      - name: UpdateAccountData
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        setColumns:
-          - data
-      - name: UpdateAccountDateAndDescription
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        setColumns:
-          - data
-          - description
-      - name: UpdateVideoPlayerSettings
-        table: VideoPlayerSettings
-        where:
-          op: =
-          leftColumn: accountId
-        setColumns:
-          - settings
-    deletes:
-      - name: DeleteUser
-        table: User
-        where:
-          op: =
-          leftColumn: userId
-      - name: DeleteAccount
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-      - name: DeleteVideoPlaySettings
-        table: VideoPlayerSettings
-        where:
-          op: =
-          leftColumn: accountId
-    selects:
-      - name: GetUserById
-        table: User
-        where:
-          op: =
-          leftColumn: userId
-        getColumns:
-          - username
-          - passwordHashV1
-          - recoveryEmail
-      - name: GetUserByUsername
-        table: User
-        where:
-          op: =
-          leftColumn: username
-        getColumns:
-          - userId
-          - passwordHashV1
-      - name: GetLastAccessedAccount
-        table: Account
-        where:
-          op: =
-          leftColumn: userId
-        orderBy:
-          - column: lastAccessedTimestamp
-            desc: true
-        withLimit: true
-        getColumns:
-          - accountId
-          - accountType
-      - name: GetAccountById
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        getColumns:
-          - userId
-          - accountType
-          - data
-      - name: GetAccountWithDescriptionById
-        table: Account
-        where:
-          op: =
-          leftColumn: accountId
-        getColumns:
-          - userId
-          - accountType
-          - data
-          - description
-      - name: ListAccounts
-        table: Account
-        where:
-          op: =
-          leftColumn: userId
-        orderBy:
-          - column: lastAccessedTimestamp
-            desc: true
-        getColumns:
-          - accountId
-          - accountType
-          - data
-      - name: ListAccountsByType
-        table: Account
-        where:
-          op: AND
-          exps:
-            - op: <
-              leftColumn: createdTimestamp
-            - op: =
-              leftColumn: accountType
-        orderBy:
-          - column: createdTimestamp
-            desc: true
-        withLimit: true
-        getColumns:
-          - accountId
-          - createdTimestamp
-      - name: GetAccountAndUser
-        table:
-          name: User
-          as: u
-        join:
-          - type: INNER
-            table:
-              name: Account
-              as: a
-            on:
-              op: =
-              leftColumn:
-                name: userId
-                table: u
-              rightColumn: userId
-        where:
-          op: AND
-          exps:
-            - op: =
-              leftColumn:
-                name: userId
-                table: u
-            - op: =
-              leftColumn:
-                name: accountId
-                table: a
-        getColumns:
-          - name: username
-            table: u
-          - name: recoveryEmail
-            table: u
-          - name: data
-            table: a
-          - name: description
-            table: a
-      - name: GetVideoPlayerSettings
-        table: VideoPlayerSettings
-        where:
-          op: =
-          leftColumn: accountId
-        getColumns:
-          - settings
-      - name: CheckPresenceOfVideoPlayerSettings
-        table: VideoPlayerSettings
-        where:
-          op: =
-          leftColumn: accountId
-        getColumns:
-          - accountId
-    outputDdl: ./db/ddl
-    outputSql: ./db/sql
+- kind: Message
+  name: User
+  fields:
+    - name: userId
+      type: string
+      index: 1
+    - name: username
+      type: string
+      index: 2
+    - name: passwordHashV1
+      type: string
+      index: 3
+    - name: recoveryEmail
+      type: string
+      index: 4
+    - name: totalAccounts
+      type: number
+      index: 5
+    - name: createdTimeMs
+      type: number
+      index: 6
+- kind: Message
+  name: Account
+  fields:
+    - name: userId
+      type: string
+      index: 1
+    - name: accountId
+      type: string
+      index: 2
+    - name: accountType
+      type: AccountType
+      import: "@phading/user_service_interface/account_type"
+      index: 3
+    - name: naturalName
+      type: string
+      index: 4
+    - name: contactEmail
+      type: string
+      index: 5
+    - name: avatarSmallFilename
+      type: string
+      index: 6
+    - name: avatarLargeFilename
+      type: string
+      index: 7
+    - name: lastAccessedTimeMs
+      type: number
+      index: 8
+    - name: createdTimeMs
+      type: number
+      index: 9
+- kind: Message
+  name: AccountMore
+  fields:
+    - name: accountId
+      type: string
+      index: 1
+    - name: description
+      type: string
+      index: 2
+- kind: SpannerDatabase
+  name: UserDatabase
+  tables:
+    - kind: MessageTable
+      name: User
+      storedInColumn: data
+      columns:
+        - userId
+        - username
+      primaryKeys:
+        - userId
+      indexes:
+        - name: UniqueUsername
+          columns:
+            - username
+          unique: true
+      insertStatementName: InsertUser
+      deleteStatementName: DeleteUser
+      getStatementName: GetUser
+      updateStatementName: UpdateUser
+    - kind: MessageTable
+      name: Account
+      storedInColumn: data
+      columns:
+        - accountId
+        - userId
+        - accountType
+        - lastAccessedTimeMs
+        - createdTimeMs
+      primaryKeys:
+        - accountId
+      indexes:
+        - name: ByUserAndLastAccessTimeMs
+          columns:
+            - userId
+            - name: lastAccessedTimeMs
+              desc: true
+        - name: ByTypeAndCreatedTimeMs
+          columns:
+            - accountType
+            - name: createdTimeMs
+              desc: true
+      insertStatementName: InsertAccount
+      deleteStatementName: DeleteAccount
+      getStatementName: GetAccount
+      updateStatementName: UpdateAccount
+    - kind: MessageTable
+      name: AccountMore
+      storedInColumn: data
+      columns:
+        - accountId
+      primaryKeys:
+        - accountId
+      insertStatementName: InsertAccountMore
+      deleteStatementName: DeleteAccountMore
+      updateStatementName: UpdateAccountMore
+    - kind: Table
+      name: VideoPlayerSettings
+      columns:
+        - name: accountId
+          type: string
+        - name: settings
+          type: VideoPlayerSettings
+          import: "@phading/user_service_interface/web/self/video_player_settings"
+      primaryKeys:
+        - accountId
+  inserts:
+    - name: InsertVideoPlayerSettings
+      table: VideoPlayerSettings
+      setColumns:
+        - accountId
+        - settings
+  deletes:
+    - name: DeleteVideoPlayerSettings
+      table: VideoPlayerSettings
+      where:
+        op: =
+        leftColumn: accountId
+  updates:
+    - name: UpdateVideoPlayerSettings
+      table: VideoPlayerSettings
+      where:
+        op: =
+        leftColumn: accountId
+      setColumns:
+        - settings
+  selects:
+    - name: GetUserByUsername
+      table: User
+      where:
+        op: =
+        leftColumn: username
+      getColumns:
+        - data
+    - name: ListLastAccessedAccounts
+      table: Account
+      where:
+        op: =
+        leftColumn: userId
+      orderBy:
+        - column: lastAccessedTimeMs
+          desc: true
+      withLimit: true
+      getColumns:
+        - data
+    - name: GetAccountAndMoreById
+      table:
+        name: Account
+        as: a
+      join:
+        - type: INNER
+          table:
+            name: AccountMore
+            as: am
+          on:
+            op: =
+            leftColumn:
+              name: accountId
+              table: a
+            rightColumn: accountId
+      where:
+        op: =
+        leftColumn: accountId
+      getColumns:
+        - name: data
+          table: a
+        - name: data
+          table: am
+    - name: ListAccountsByType
+      table: Account
+      where:
+        op: AND
+        exps:
+          - op: <
+            leftColumn: createdTimeMs
+          - op: =
+            leftColumn: accountType
+      orderBy:
+        - column: createdTimeMs
+          desc: true
+      withLimit: true
+      getColumns:
+        - data
+    - name: GetUserAndAccountAndMore
+      table:
+        name: User
+        as: u
+      join:
+        - type: INNER
+          table:
+            name: Account
+            as: a
+          on:
+            op: =
+            leftColumn:
+              name: userId
+              table: u
+            rightColumn: userId
+        - type: INNER
+          table:
+            name: AccountMore
+            as: am
+          on:
+            op: =
+            leftColumn:
+              name: accountId
+              table: a
+            rightColumn: accountId
+      where:
+        op: AND
+        exps:
+          - op: =
+            leftColumn:
+              name: userId
+              table: u
+          - op: =
+            leftColumn:
+              name: accountId
+              table: a
+      getColumns:
+        - name: data
+          table: u
+        - name: data
+          table: a
+        - name: data
+          table: am
+    - name: GetVideoPlayerSettings
+      table: VideoPlayerSettings
+      where:
+        op: =
+        leftColumn: accountId
+      getColumns:
+        - settings
+    - name: CheckPresenceOfVideoPlayerSettings
+      table: VideoPlayerSettings
+      where:
+        op: =
+        leftColumn: accountId
+      getColumns:
+        - accountId
+  outputDdl: ./db/ddl
+  outputSql: ./db/sql

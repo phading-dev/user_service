@@ -1,8 +1,5 @@
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  deleteAccountStatement,
-  insertNewAccountStatement,
-} from "../../db/sql";
+import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { SWITCH_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
@@ -29,20 +26,13 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "email",
-                avatarSmallFilename: "avatar",
-                avatarLargeFilename: "avatar",
-              },
-              "",
-              1000,
-              1000,
-            ),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -147,20 +137,13 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user2",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "email",
-                avatarSmallFilename: "avatar",
-                avatarLargeFilename: "avatar",
-              },
-              "",
-              1000,
-              1000,
-            ),
+            insertAccountStatement({
+              userId: "user2",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });

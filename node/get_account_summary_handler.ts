@@ -1,6 +1,6 @@
 import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../common/env_vars";
 import { SPANNER_DATABASE } from "../common/spanner_database";
-import { getAccountById } from "../db/sql";
+import { getAccount } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { GetAccountSummaryHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {
@@ -28,16 +28,16 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
     loggingPrefix: string,
     body: GetAccountSummaryRequestBody,
   ): Promise<GetAccountSummaryResponse> {
-    let rows = await getAccountById(this.database, body.accountId);
+    let rows = await getAccount(this.database, body.accountId);
     if (rows.length === 0) {
       throw newBadRequestError(`Account ${body.accountId} is not found.`);
     }
-    let userRow = rows[0];
+    let { accountData } = rows[0];
     return {
       account: {
-        accountId: body.accountId,
-        naturalName: userRow.accountData.naturalName,
-        avatarSmallUrl: `${this.publicAccessDomain}${userRow.accountData.avatarSmallFilename}`,
+        accountId: accountData.accountId,
+        naturalName: accountData.naturalName,
+        avatarSmallUrl: `${this.publicAccessDomain}${accountData.avatarSmallFilename}`,
       },
     };
   }

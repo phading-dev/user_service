@@ -1,7 +1,7 @@
 import { PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getUserById, updateRecoveryEmailStatement } from "../../db/sql";
+import { getUser, updateUserStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { MAX_EMAIL_LENGTH } from "@phading/constants/account";
 import { UpdateRecoveryEmailHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -50,21 +50,19 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
         signedSession: sessionStr,
       },
     );
-    let rows = await getUserById(this.database, userId);
+    let rows = await getUser(this.database, userId);
     if (rows.length === 0) {
       throw newNotFoundError(`User ${userId} is not found.`);
     }
-    let userRow = rows[0];
+    let { userData } = rows[0];
     if (
-      this.passwordSigner.sign(body.currentPassword) !==
-      userRow.userPasswordHashV1
+      this.passwordSigner.sign(body.currentPassword) !== userData.passwordHashV1
     ) {
       throw newBadRequestError(`Password is incorrect.`);
     }
+    userData.recoveryEmail = body.newEmail;
     await this.database.runTransactionAsync(async (transaction) => {
-      await transaction.batchUpdate([
-        updateRecoveryEmailStatement(userId, body.newEmail),
-      ]);
+      await transaction.batchUpdate([updateUserStatement(userData)]);
       await transaction.commit();
     });
     return {};

@@ -8,16 +8,10 @@
       "name": "username",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN username STRING(MAX) NOT NULL"
     }, {
-      "name": "passwordHashV1",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN passwordHashV1 STRING(MAX) NOT NULL"
-    }, {
-      "name": "recoveryEmail",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN recoveryEmail STRING(MAX) NOT NULL"
-    }, {
-      "name": "createdTimestamp",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)"
+      "name": "data",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN data BYTES(MAX) NOT NULL"
     }],
-    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, passwordHashV1 STRING(MAX) NOT NULL, recoveryEmail STRING(MAX) NOT NULL, createdTimestamp TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true)) PRIMARY KEY (userId ASC)",
+    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (userId ASC)",
     "indexes": [{
       "name": "UniqueUsername",
       "createIndexDdl": "CREATE UNIQUE INDEX UniqueUsername ON User(username)"
@@ -25,35 +19,43 @@
   }, {
     "name": "Account",
     "columns": [{
-      "name": "userId",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN userId STRING(MAX) NOT NULL"
-    }, {
       "name": "accountId",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "userId",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN userId STRING(MAX) NOT NULL"
     }, {
       "name": "accountType",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64 NOT NULL"
     }, {
+      "name": "lastAccessedTimeMs",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimeMs FLOAT64 NOT NULL"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs FLOAT64 NOT NULL"
+    }, {
       "name": "data",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN data BYTES(MAX) NOT NULL"
-    }, {
-      "name": "description",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN description STRING(MAX) NOT NULL"
-    }, {
-      "name": "createdTimestamp",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimestamp TIMESTAMP NOT NULL"
-    }, {
-      "name": "lastAccessedTimestamp",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimestamp TIMESTAMP NOT NULL"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, data BYTES(MAX) NOT NULL, description STRING(MAX) NOT NULL, createdTimestamp TIMESTAMP NOT NULL, lastAccessedTimestamp TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (accountId STRING(MAX) NOT NULL, userId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, lastAccessedTimeMs FLOAT64 NOT NULL, createdTimeMs FLOAT64 NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
     "indexes": [{
-      "name": "ByUserAndLastAccessTimestamp",
-      "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimestamp ON Account(userId, lastAccessedTimestamp DESC)"
+      "name": "ByUserAndLastAccessTimeMs",
+      "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
     }, {
-      "name": "ByTypeAndCreatedTimestamp",
-      "createIndexDdl": "CREATE INDEX ByTypeAndCreatedTimestamp ON Account(accountType, createdTimestamp DESC)"
+      "name": "ByTypeAndCreatedTimeMs",
+      "createIndexDdl": "CREATE INDEX ByTypeAndCreatedTimeMs ON Account(accountType, createdTimeMs DESC)"
     }]
+  }, {
+    "name": "AccountMore",
+    "columns": [{
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE AccountMore ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "data",
+      "addColumnDdl": "ALTER TABLE AccountMore ADD COLUMN data BYTES(MAX) NOT NULL"
+    }],
+    "createTableDdl": "CREATE TABLE AccountMore (accountId STRING(MAX) NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
+    "indexes": []
   }, {
     "name": "VideoPlayerSettings",
     "columns": [{

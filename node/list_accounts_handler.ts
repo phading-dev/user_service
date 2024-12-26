@@ -28,8 +28,8 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
     );
     let createdTimeMsCursor: number;
     let accountIds = rows.map((row) => {
-      createdTimeMsCursor = row.accountCreatedTimestamp;
-      return row.accountAccountId;
+      createdTimeMsCursor = row.accountData.createdTimeMs;
+      return row.accountData.accountId;
     });
     if (accountIds.length < body.limit) {
       createdTimeMsCursor = undefined;

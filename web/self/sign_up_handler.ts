@@ -8,8 +8,9 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   getUserByUsername,
-  insertNewAccountStatement,
-  insertNewUserStatement,
+  insertAccountMoreStatement,
+  insertAccountStatement,
+  insertUserStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
@@ -98,26 +99,29 @@ export class SignUpHandler extends SignUpHandlerInterface {
       }
       let now = this.getNow();
       await transaction.batchUpdate([
-        insertNewUserStatement(
+        insertUserStatement({
           userId,
-          body.username,
-          passwordHash,
-          body.recoveryEmail,
-        ),
-        insertNewAccountStatement(
+          username: body.username,
+          passwordHashV1: passwordHash,
+          recoveryEmail: body.recoveryEmail,
+          totalAccounts: 1,
+          createdTimeMs: now,
+        }),
+        insertAccountStatement({
           userId,
           accountId,
-          body.accountType,
-          {
-            naturalName: body.naturalName,
-            contactEmail: body.contactEmail,
-            avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-            avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-          },
-          "",
-          now,
-          now,
-        ),
+          accountType: body.accountType,
+          naturalName: body.naturalName,
+          contactEmail: body.contactEmail,
+          avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+          avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+          createdTimeMs: now,
+          lastAccessedTimeMs: now,
+        }),
+        insertAccountMoreStatement({
+          accountId,
+          description: "",
+        }),
       ]);
       await transaction.commit();
     });

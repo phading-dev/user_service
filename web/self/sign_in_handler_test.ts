@@ -3,8 +3,8 @@ import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   deleteAccountStatement,
   deleteUserStatement,
-  insertNewAccountStatement,
-  insertNewUserStatement,
+  insertAccountStatement,
+  insertUserStatement,
 } from "../../db/sql";
 import { SignInHandler } from "./sign_in_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -30,40 +30,25 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_password",
-              "email",
-            ),
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "email",
-                avatarSmallFilename: "avatar",
-                avatarLargeFilename: "avatar",
-              },
-              "",
-              100,
-              100,
-            ),
-            insertNewAccountStatement(
-              "user1",
-              "account2",
-              AccountType.PUBLISHER,
-              {
-                naturalName: "name2",
-                contactEmail: "email2",
-                avatarSmallFilename: "avatar2",
-                avatarLargeFilename: "avatar2",
-              },
-              "",
-              100,
-              200,
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_password",
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              createdTimeMs: 100,
+              lastAccessedTimeMs: 100,
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account2",
+              accountType: AccountType.PUBLISHER,
+              createdTimeMs: 100,
+              lastAccessedTimeMs: 200,
+            }),
           ]);
           await transaction.commit();
         });
@@ -159,12 +144,13 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "signed_password",
-              "email",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              passwordHashV1: "signed_password",
+              recoveryEmail: "email",
+              createdTimeMs: 100,
+            }),
           ]);
           await transaction.commit();
         });

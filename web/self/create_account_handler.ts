@@ -5,9 +5,15 @@ import {
 } from "../../common/params";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { insertNewAccountStatement } from "../../db/sql";
+import {
+  getUser,
+  insertAccountMoreStatement,
+  insertAccountStatement,
+  updateUserStatement,
+} from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
+  MAX_ACCOUNTS_PER_USER,
   MAX_EMAIL_LENGTH,
   MAX_NATURAL_NAME_LENGTH,
 } from "@phading/constants/account";
@@ -20,7 +26,10 @@ import {
   createSession,
   exchangeSessionAndCheckCapability,
 } from "@phading/user_session_service_interface/node/client";
-import { newBadRequestError } from "@selfage/http_error";
+import {
+  newBadRequestError,
+  newInternalServerErrorError,
+} from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class CreateAccountHandler extends CreateAccountHandlerInterface {
@@ -71,22 +80,35 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     );
     let accountId = this.generateUuid();
     await this.database.runTransactionAsync(async (transaction) => {
+      let userRows = await getUser(transaction, userId);
+      if (userRows.length === 0) {
+        throw newInternalServerErrorError(`User ${userId} is not found.`);
+      }
+      let { userData } = userRows[0];
+      if (userData.totalAccounts >= MAX_ACCOUNTS_PER_USER) {
+        throw newBadRequestError(
+          `User ${userId} has reached the maximum number of accounts.`,
+        );
+      }
+      userData.totalAccounts++;
       let now = this.getNow();
       await transaction.batchUpdate([
-        insertNewAccountStatement(
+        updateUserStatement(userData),
+        insertAccountStatement({
           userId,
           accountId,
-          body.accountType,
-          {
-            naturalName: body.naturalName,
-            contactEmail: body.contactEmail,
-            avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-            avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-          },
-          "",
-          now,
-          now,
-        ),
+          accountType: body.accountType,
+          naturalName: body.naturalName,
+          contactEmail: body.contactEmail,
+          avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+          avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+          createdTimeMs: now,
+          lastAccessedTimeMs: now,
+        }),
+        insertAccountMoreStatement({
+          accountId,
+          description: "",
+        }),
       ]);
       await transaction.commit();
     });

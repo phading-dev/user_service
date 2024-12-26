@@ -1,5 +1,5 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
-import { deleteAccountStatement, insertNewAccountStatement } from "../db/sql";
+import { deleteAccountStatement, insertAccountStatement } from "../db/sql";
 import { ListAccountsHandler } from "./list_accounts_handler";
 import { Statement } from "@google-cloud/spanner/build/src/transaction";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -12,22 +12,15 @@ function createNewAccountState(
   userId: string,
   accountId: string,
   accountType: AccountType,
-  createdTimestamp: number,
+  createdTimeMs: number,
 ): Statement {
-  return insertNewAccountStatement(
+  return insertAccountStatement({
     userId,
     accountId,
     accountType,
-    {
-      naturalName: "",
-      contactEmail: "",
-      avatarSmallFilename: "",
-      avatarLargeFilename: "",
-    },
-    "",
-    createdTimestamp,
-    100,
-  );
+    createdTimeMs,
+    lastAccessedTimeMs: 100,
+  });
 }
 
 TEST_RUNNER.run({

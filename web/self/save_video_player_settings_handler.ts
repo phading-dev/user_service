@@ -2,7 +2,7 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   checkPresenceOfVideoPlayerSettings,
-  insertNewVideoPlayerSettingsStatement,
+  insertVideoPlayerSettingsStatement,
   updateVideoPlayerSettingsStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -48,7 +48,7 @@ export class SaveVideoPlayerSettingsHandler extends SaveVideoPlayerSettingsHandl
       );
       if (rows.length === 0) {
         await transaction.batchUpdate([
-          insertNewVideoPlayerSettingsStatement(accountId, body.settings),
+          insertVideoPlayerSettingsStatement(accountId, body.settings),
         ]);
       } else {
         await transaction.batchUpdate([

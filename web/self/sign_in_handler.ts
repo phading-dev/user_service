@@ -1,10 +1,11 @@
 import { PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
+import { Account } from "../../db/schema";
 import {
-  getLastAccessedAccount,
   getUserByUsername,
-  updateLastAccessedTimestmapStatement,
+  listLastAccessedAccounts,
+  updateAccountStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { SignInHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -51,25 +52,25 @@ export class SignInHandler extends SignInHandlerInterface {
       console.log(`${loggingPrefix} username ${body.username} is not found.`);
       throw newUnauthorizedError("Failed to sign in.");
     }
-    let userRow = rows[0];
+    let { userData } = rows[0];
     let signedPassword = this.passwordSigner.sign(body.password);
-    if (signedPassword !== userRow.userPasswordHashV1) {
+    if (signedPassword !== userData.passwordHashV1) {
       console.log(
         `${loggingPrefix} password doesn't match for username ${body.username}.`,
       );
       throw newUnauthorizedError("Failed to sign in.");
     }
-    let [accountRow] = await getLastAccessedAccount(
+    let [accountRow] = await listLastAccessedAccounts(
       this.database,
-      userRow.userUserId,
-      1
+      userData.userId,
+      1,
     );
     let [_, response] = await Promise.all([
-      this.updateLastAccessedTimestmap(accountRow.accountAccountId),
+      this.updateLastAccessedTimestmap(accountRow.accountData),
       createSession(this.serviceClient, {
-        userId: userRow.userUserId,
-        accountId: accountRow.accountAccountId,
-        accountType: accountRow.accountAccountType,
+        userId: accountRow.accountData.userId,
+        accountId: accountRow.accountData.accountId,
+        accountType: accountRow.accountData.accountType,
       }),
     ]);
     return {
@@ -77,11 +78,12 @@ export class SignInHandler extends SignInHandlerInterface {
     };
   }
 
-  private async updateLastAccessedTimestmap(accountId: string): Promise<void> {
+  private async updateLastAccessedTimestmap(
+    accountData: Account,
+  ): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
-      await transaction.batchUpdate([
-        updateLastAccessedTimestmapStatement(accountId, this.getNow()),
-      ]);
+      accountData.lastAccessedTimeMs = this.getNow();
+      await transaction.batchUpdate([updateAccountStatement(accountData)]);
       await transaction.commit();
     });
   }

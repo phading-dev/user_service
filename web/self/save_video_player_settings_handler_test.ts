@@ -1,7 +1,7 @@
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   GET_VIDEO_PLAYER_SETTINGS_ROW,
-  deleteVideoPlaySettingsStatement,
+  deleteVideoPlayerSettingsStatement,
   getVideoPlayerSettings,
 } from "../../db/sql";
 import { SaveVideoPlayerSettingsHandler } from "./save_video_player_settings_handler";
@@ -92,7 +92,7 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteVideoPlaySettingsStatement("account1"),
+            deleteVideoPlayerSettingsStatement("account1"),
           ]);
           await transaction.commit();
         });

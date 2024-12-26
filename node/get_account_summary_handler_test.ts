@@ -1,5 +1,5 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
-import { deleteAccountStatement, insertNewAccountStatement } from "../db/sql";
+import { deleteAccountStatement, insertAccountStatement } from "../db/sql";
 import { GetAccountSummaryHandler } from "./get_account_summary_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { GET_ACCOUNT_SUMMARY_RESPONSE } from "@phading/user_service_interface/node/interface";
@@ -18,20 +18,15 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact",
-                avatarSmallFilename: "avatarS",
-                avatarLargeFilename: "avatarL",
-              },
-              "",
-              1000,
-              1000,
-            ),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              naturalName: "name1",
+              avatarSmallFilename: "avatarS",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });

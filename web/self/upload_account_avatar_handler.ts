@@ -6,7 +6,7 @@ import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
 import { S3_CLIENT } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccountById, updateAccountDataStatement } from "../../db/sql";
+import { getAccount, updateAccountStatement } from "../../db/sql";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Database } from "@google-cloud/spanner";
@@ -54,11 +54,11 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     let avatarSmallFilename: string;
     let avatarLargeFilename: string;
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccountById(transaction, accountId);
+      let rows = await getAccount(transaction, accountId);
       if (rows.length === 0) {
         throw newInternalServerErrorError(`Account ${accountId} is not found.`);
       }
-      let accountData = rows[0].accountData;
+      let { accountData } = rows[0];
       if (
         accountData.avatarSmallFilename !==
         DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME
@@ -69,14 +69,9 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
       }
       avatarSmallFilename = `${accountId}s.png`;
       avatarLargeFilename = `${accountId}l.png`;
-      await transaction.batchUpdate([
-        updateAccountDataStatement(accountId, {
-          naturalName: accountData.naturalName,
-          contactEmail: accountData.contactEmail,
-          avatarSmallFilename,
-          avatarLargeFilename,
-        }),
-      ]);
+      accountData.avatarSmallFilename = avatarSmallFilename;
+      accountData.avatarLargeFilename = avatarLargeFilename;
+      await transaction.batchUpdate([updateAccountStatement(accountData)]);
       await transaction.commit();
     });
 

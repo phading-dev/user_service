@@ -7,10 +7,10 @@ import {
 import { S3_CLIENT } from "../../common/s3_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_ACCOUNT_BY_ID_ROW,
+  GET_ACCOUNT_ROW,
   deleteAccountStatement,
-  getAccountById,
-  insertNewAccountStatement,
+  getAccount,
+  insertAccountStatement,
 } from "../../db/sql";
 import { UploadAccountAvatarHandler } from "./upload_account_avatar_handler";
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
@@ -47,20 +47,15 @@ TEST_RUNNER.run({
         // Prepar
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact1",
-                avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-                avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-              },
-              "",
-              1000,
-              1000,
-            ),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+              avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -83,20 +78,21 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountById(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, "account1"),
           isArray([
             eqMessage(
               {
-                accountUserId: "user1",
-                accountAccountType: AccountType.CONSUMER,
                 accountData: {
-                  naturalName: "name1",
-                  contactEmail: "contact1",
+                  userId: "user1",
+                  accountId: "account1",
+                  accountType: AccountType.CONSUMER,
                   avatarSmallFilename: "account1s.png",
                   avatarLargeFilename: "account1l.png",
+                  createdTimeMs: 1000,
+                  lastAccessedTimeMs: 1000,
                 },
               },
-              GET_ACCOUNT_BY_ID_ROW,
+              GET_ACCOUNT_ROW,
             ),
           ]),
           "account",
@@ -131,20 +127,15 @@ TEST_RUNNER.run({
       execute: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact1",
-                avatarSmallFilename: "account1s.png",
-                avatarLargeFilename: "account1l.png",
-              },
-              "",
-              1000,
-              1000,
-            ),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              avatarSmallFilename: "account1s.png",
+              avatarLargeFilename: "account1l.png",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -167,20 +158,21 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountById(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, "account1"),
           isArray([
             eqMessage(
               {
-                accountUserId: "user1",
-                accountAccountType: AccountType.CONSUMER,
                 accountData: {
-                  naturalName: "name1",
-                  contactEmail: "contact1",
+                  userId: "user1",
+                  accountId: "account1",
+                  accountType: AccountType.CONSUMER,
                   avatarSmallFilename: "account1s.png",
                   avatarLargeFilename: "account1l.png",
+                  createdTimeMs: 1000,
+                  lastAccessedTimeMs: 1000,
                 },
               },
-              GET_ACCOUNT_BY_ID_ROW,
+              GET_ACCOUNT_ROW,
             ),
           ]),
           "account",

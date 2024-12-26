@@ -1,9 +1,11 @@
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
+  deleteAccountMoreStatement,
   deleteAccountStatement,
   deleteUserStatement,
-  insertNewAccountStatement,
-  insertNewUserStatement,
+  insertAccountMoreStatement,
+  insertAccountStatement,
+  insertUserStatement,
 } from "../../db/sql";
 import { GetAccountAndUserHandler } from "./get_account_and_user_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -25,21 +27,25 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement("user1", "username1", "pass1", "recovery1"),
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact1",
-                avatarSmallFilename: "avatarS",
-                avatarLargeFilename: "avatarL",
-              },
-              "something something",
-              1000,
-              1000,
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              recoveryEmail: "recovery1",
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              naturalName: "name1",
+              contactEmail: "contact1",
+              avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
+            insertAccountMoreStatement({
+              accountId: "account1",
+              description: "something something",
+            }),
           ]);
           await transaction.commit();
         });
@@ -81,6 +87,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement("user1"),
             deleteAccountStatement("account1"),
+            deleteAccountMoreStatement("account1"),
           ]);
           await transaction.commit();
         });
@@ -119,7 +126,11 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement("user1", "username1", "pass1", "recovery1"),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              recoveryEmail: "recovery1",
+            }),
           ]);
           await transaction.commit();
         });
@@ -157,21 +168,25 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement("user1", "username1", "pass1", "recovery1"),
-            insertNewAccountStatement(
-              "user1",
-              "account2",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact1",
-                avatarSmallFilename: "avatarS",
-                avatarLargeFilename: "avatarL",
-              },
-              "something something",
-              1000,
-              1000,
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              recoveryEmail: "recovery1",
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account2",
+              accountType: AccountType.CONSUMER,
+              naturalName: "name1",
+              contactEmail: "contact1",
+              avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
+            insertAccountMoreStatement({
+              accountId: "account2",
+              description: "something something",
+            }),
           ]);
           await transaction.commit();
         });
@@ -201,6 +216,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement("user1"),
             deleteAccountStatement("account2"),
+            deleteAccountMoreStatement("account2"),
           ]);
           await transaction.commit();
         });
@@ -212,21 +228,25 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement("user1", "username1", "pass1", "recovery1"),
-            insertNewAccountStatement(
-              "user2",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "contact1",
-                avatarSmallFilename: "avatarS",
-                avatarLargeFilename: "avatarL",
-              },
-              "something something",
-              1000,
-              1000,
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              recoveryEmail: "recovery1",
+            }),
+            insertAccountStatement({
+              userId: "user2",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              naturalName: "name1",
+              contactEmail: "contact1",
+              avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
+            insertAccountMoreStatement({
+              accountId: "account1",
+              description: "something something",
+            }),
           ]);
           await transaction.commit();
         });
@@ -256,6 +276,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement("user1"),
             deleteAccountStatement("account1"),
+            deleteAccountMoreStatement("account1"),
           ]);
           await transaction.commit();
         });

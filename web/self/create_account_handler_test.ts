@@ -4,11 +4,15 @@ import {
 } from "../../common/params";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW,
+  GET_USER_AND_ACCOUNT_AND_MORE_ROW,
+  deleteAccountMoreStatement,
   deleteAccountStatement,
-  getAccountWithDescriptionById,
+  deleteUserStatement,
+  getUserAndAccountAndMore,
+  insertUserStatement,
 } from "../../db/sql";
 import { CreateAccountHandler } from "./create_account_handler";
+import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { CREATE_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
@@ -18,9 +22,11 @@ import {
   EXCHANGE_SESSION_AND_CHECK_CAPABILITY,
   ExchangeSessionAndCheckCapabilityResponse,
 } from "@phading/user_session_service_interface/node/interface";
+import { newBadRequestError } from "@selfage/http_error";
+import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertThat, isArray } from "@selfage/test_matcher";
+import { assertReject, assertThat, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
@@ -30,6 +36,16 @@ TEST_RUNNER.run({
       name: "Success",
       execute: async () => {
         // Prepare
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              totalAccounts: 1,
+            }),
+          ]);
+          await transaction.commit();
+        });
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
             if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
@@ -66,21 +82,32 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountWithDescriptionById(SPANNER_DATABASE, "account2"),
+          await getUserAndAccountAndMore(SPANNER_DATABASE, "user1", "account2"),
           isArray([
             eqMessage(
               {
-                accountUserId: "user1",
-                accountAccountType: AccountType.CONSUMER,
-                accountData: {
+                uData: {
+                  userId: "user1",
+                  username: "username1",
+                  totalAccounts: 2,
+                },
+                aData: {
+                  userId: "user1",
+                  accountId: "account2",
+                  accountType: AccountType.CONSUMER,
                   naturalName: "name2",
                   contactEmail: "contact@example.com",
                   avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
                   avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+                  createdTimeMs: 1000,
+                  lastAccessedTimeMs: 1000,
                 },
-                accountDescription: "",
+                amData: {
+                  accountId: "account2",
+                  description: "",
+                },
               },
-              GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW,
+              GET_USER_AND_ACCOUNT_AND_MORE_ROW,
             ),
           ]),
           "account",
@@ -110,7 +137,78 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account2")]);
+          await transaction.batchUpdate([
+            deleteUserStatement("user1"),
+            deleteAccountStatement("account2"),
+            deleteAccountMoreStatement("account2"),
+          ]);
+          await transaction.commit();
+        });
+      },
+    },
+    {
+      name: "TooManyAccounts",
+      execute: async () => {
+        // Prepare
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+              totalAccounts: MAX_ACCOUNTS_PER_USER,
+            }),
+          ]);
+          await transaction.commit();
+        });
+        let clientMock = new (class extends NodeServiceClientMock {
+          public async send(request: any): Promise<any> {
+            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+              return {
+                userId: "user1",
+              } as ExchangeSessionAndCheckCapabilityResponse;
+            } else {
+              throw new Error("Not unhandled.");
+            }
+          }
+        })();
+        let handler = new CreateAccountHandler(
+          SPANNER_DATABASE,
+          clientMock,
+          () => "account2",
+          () => 1000,
+        );
+
+        // Execute
+        let error = await assertReject(
+          handler.handle(
+            "",
+            {
+              accountType: AccountType.CONSUMER,
+              contactEmail: "contact@example.com",
+              naturalName: "name2",
+            },
+            "session1",
+          ),
+        );
+
+        // Verify
+        assertThat(
+          error,
+          eqHttpError(
+            newBadRequestError(
+              "User user1 has reached the maximum number of accounts",
+            ),
+          ),
+          "error",
+        );
+      },
+      tearDown: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            deleteUserStatement("user1"),
+            deleteAccountStatement("account2"),
+            deleteAccountMoreStatement("account2"),
+          ]);
           await transaction.commit();
         });
       },

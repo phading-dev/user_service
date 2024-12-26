@@ -1,8 +1,9 @@
 import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../../common/env_vars";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { listAccounts } from "../../db/sql";
+import { listLastAccessedAccounts } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
+import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
 import { ListAccountsHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
   ListAccountsRequestBody,
@@ -39,12 +40,16 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
         signedSession: sessionStr,
       },
     );
-    let rows = listAccounts(this.database, userId);
+    let rows = listLastAccessedAccounts(
+      this.database,
+      userId,
+      MAX_ACCOUNTS_PER_USER,
+    );
     return {
       accounts: (await rows).map((row) => {
         return {
-          accountId: row.accountAccountId,
-          accountType: row.accountAccountType,
+          accountId: row.accountData.accountId,
+          accountType: row.accountData.accountType,
           naturalName: row.accountData.naturalName,
           avatarSmallUrl: `${this.publicAccessDomain}${row.accountData.avatarSmallFilename}`,
         };

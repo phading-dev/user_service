@@ -5,13 +5,13 @@ import {
 import { PasswordSignerMock } from "../../common/password_signer_mock";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW,
-  GET_USER_BY_ID_ROW,
+  GET_USER_AND_ACCOUNT_AND_MORE_ROW,
+  deleteAccountMoreStatement,
   deleteAccountStatement,
   deleteUserStatement,
-  getAccountWithDescriptionById,
-  getUserById,
-  insertNewUserStatement,
+  getUser,
+  getUserAndAccountAndMore,
+  insertUserStatement,
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -61,38 +61,38 @@ TEST_RUNNER.run({
         // Verify
         assertThat(signerMock.password, eq("pass1"), "raw password");
         assertThat(
-          await getUserById(SPANNER_DATABASE, "id1"),
+          await getUserAndAccountAndMore(SPANNER_DATABASE, "id1", "id2"),
           isArray([
             eqMessage(
               {
-                userUsername: "username1",
-                userPasswordHashV1: "signed_password",
-                userRecoveryEmail: "recovery@example.com",
-              },
-              GET_USER_BY_ID_ROW,
-            ),
-          ]),
-          "user created",
-        );
-        assertThat(
-          await getAccountWithDescriptionById(SPANNER_DATABASE, "id2"),
-          isArray([
-            eqMessage(
-              {
-                accountUserId: "id1",
-                accountAccountType: AccountType.CONSUMER,
-                accountData: {
+                uData: {
+                  userId: "id1",
+                  username: "username1",
+                  passwordHashV1: "signed_password",
+                  recoveryEmail: "recovery@example.com",
+                  totalAccounts: 1,
+                  createdTimeMs: 1000,
+                },
+                aData: {
+                  userId: "id1",
+                  accountId: "id2",
+                  accountType: AccountType.CONSUMER,
                   naturalName: "first second",
                   contactEmail: "contact@example.com",
                   avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
                   avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+                  createdTimeMs: 1000,
+                  lastAccessedTimeMs: 1000,
                 },
-                accountDescription: "",
+                amData: {
+                  accountId: "id2",
+                  description: "",
+                },
               },
-              GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW,
+              GET_USER_AND_ACCOUNT_AND_MORE_ROW,
             ),
           ]),
-          "account created",
+          "user and account created",
         );
         assertThat(
           response,
@@ -124,6 +124,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement("id1"),
             deleteAccountStatement("id2"),
+            deleteAccountMoreStatement("id2"),
           ]);
           await transaction.commit();
         });
@@ -135,12 +136,10 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewUserStatement(
-              "user1",
-              "username1",
-              "random_password",
-              "random@example.com",
-            ),
+            insertUserStatement({
+              userId: "user1",
+              username: "username1",
+            }),
           ]);
           await transaction.commit();
         });
@@ -182,7 +181,7 @@ TEST_RUNNER.run({
         );
         assertThat(signerMock.password, eq("pass1"), "raw password");
         assertThat(
-          (await getUserById(SPANNER_DATABASE, "id1")).length,
+          (await getUser(SPANNER_DATABASE, "id1")).length,
           eq(0),
           "user not created",
         );

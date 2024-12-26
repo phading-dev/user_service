@@ -1,7 +1,7 @@
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  deleteVideoPlaySettingsStatement,
-  insertNewVideoPlayerSettingsStatement,
+  deleteVideoPlayerSettingsStatement,
+  insertVideoPlayerSettingsStatement,
 } from "../../db/sql";
 import { GetVideoPlayerSettingsHandler } from "./get_video_player_settings_handler";
 import { GET_VIDEO_PLAYER_SETTINGS_RESPONSE } from "@phading/user_service_interface/web/self/interface";
@@ -50,7 +50,7 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transction) => {
           await transction.batchUpdate([
-            insertNewVideoPlayerSettingsStatement("account1", {
+            insertVideoPlayerSettingsStatement("account1", {
               videoSettings: {
                 playbackSpeed: 10,
               },
@@ -89,7 +89,7 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transction) => {
           await transction.batchUpdate([
-            deleteVideoPlaySettingsStatement("account1"),
+            deleteVideoPlayerSettingsStatement("account1"),
           ]);
           await transction.commit();
         });

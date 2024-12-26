@@ -1,8 +1,9 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  getAccountById,
-  updateAccountDateAndDescriptionStatement,
+  getAccountAndMoreById,
+  updateAccountMoreStatement,
+  updateAccountStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
@@ -59,22 +60,17 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
       },
     );
     await this.database.runTransactionAsync(async (transaction) => {
-      let accountRows = await getAccountById(transaction, accountId);
+      let accountRows = await getAccountAndMoreById(transaction, accountId);
       if (accountRows.length === 0) {
         throw newNotFoundError(`Account ${accountId} is not found.`);
       }
-      let accountData = accountRows[0].accountData;
+      let { aData, amData } = accountRows[0];
+      aData.naturalName = body.naturalName;
+      aData.contactEmail = body.contactEmail;
+      amData.description = body.description;
       await transaction.batchUpdate([
-        updateAccountDateAndDescriptionStatement(
-          accountId,
-          {
-            naturalName: body.naturalName,
-            contactEmail: body.contactEmail,
-            avatarSmallFilename: accountData.avatarSmallFilename,
-            avatarLargeFilename: accountData.avatarLargeFilename,
-          },
-          body.description,
-        ),
+        updateAccountStatement(aData),
+        updateAccountMoreStatement(amData),
       ]);
       await transaction.commit();
     });

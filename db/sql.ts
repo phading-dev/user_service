@@ -1,40 +1,74 @@
-import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
-import { Database, Transaction, Spanner } from '@google-cloud/spanner';
-import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
-import { toEnumFromNumber, deserializeMessage, serializeMessage } from '@selfage/message/serializer';
-import { AccountData, ACCOUNT_DATA } from './schema';
-import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
 import { Statement } from '@google-cloud/spanner/build/src/transaction';
+import { User, USER, Account, ACCOUNT, AccountMore, ACCOUNT_MORE } from './schema';
+import { serializeMessage, deserializeMessage } from '@selfage/message/serializer';
+import { Database, Transaction, Spanner } from '@google-cloud/spanner';
+import { MessageDescriptor, PrimitiveType } from '@selfage/message/descriptor';
+import { AccountType } from '@phading/user_service_interface/account_type';
+import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
 
-export interface GetUserByIdRow {
-  userUsername: string,
-  userPasswordHashV1: string,
-  userRecoveryEmail: string,
+export function insertUserStatement(
+  data: User,
+): Statement {
+  return insertUserInternalStatement(
+    data.userId,
+    data.username,
+    data
+  );
 }
 
-export let GET_USER_BY_ID_ROW: MessageDescriptor<GetUserByIdRow> = {
-  name: 'GetUserByIdRow',
+export function insertUserInternalStatement(
+  userId: string,
+  username: string,
+  data: User,
+): Statement {
+  return {
+    sql: "INSERT User (userId, username, data) VALUES (@userId, @username, @data)",
+    params: {
+      userId: userId,
+      username: username,
+      data: Buffer.from(serializeMessage(data, USER).buffer),
+    },
+    types: {
+      userId: { type: "string" },
+      username: { type: "string" },
+      data: { type: "bytes" },
+    }
+  };
+}
+
+export function deleteUserStatement(
+  userUserIdEq: string,
+): Statement {
+  return {
+    sql: "DELETE User WHERE (User.userId = @userUserIdEq)",
+    params: {
+      userUserIdEq: userUserIdEq,
+    },
+    types: {
+      userUserIdEq: { type: "string" },
+    }
+  };
+}
+
+export interface GetUserRow {
+  userData: User,
+}
+
+export let GET_USER_ROW: MessageDescriptor<GetUserRow> = {
+  name: 'GetUserRow',
   fields: [{
-    name: 'userUsername',
+    name: 'userData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'userPasswordHashV1',
-    index: 2,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'userRecoveryEmail',
-    index: 3,
-    primitiveType: PrimitiveType.STRING,
+    messageType: USER,
   }],
 };
 
-export async function getUserById(
+export async function getUser(
   runner: Database | Transaction,
   userUserIdEq: string,
-): Promise<Array<GetUserByIdRow>> {
+): Promise<Array<GetUserRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT User.username, User.passwordHashV1, User.recoveryEmail FROM User WHERE User.userId = @userUserIdEq",
+    sql: "SELECT User.data FROM User WHERE (User.userId = @userUserIdEq)",
     params: {
       userUserIdEq: userUserIdEq,
     },
@@ -42,32 +76,302 @@ export async function getUserById(
       userUserIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetUserByIdRow>();
+  let resRows = new Array<GetUserRow>();
   for (let row of rows) {
     resRows.push({
-      userUsername: row.at(0).value,
-      userPasswordHashV1: row.at(1).value,
-      userRecoveryEmail: row.at(2).value,
+      userData: deserializeMessage(row.at(0).value, USER),
     });
   }
   return resRows;
 }
 
+export function updateUserStatement(
+  data: User,
+): Statement {
+  return updateUserInternalStatement(
+    data.userId,
+    data.username,
+    data
+  );
+}
+
+export function updateUserInternalStatement(
+  userUserIdEq: string,
+  setUsername: string,
+  setData: User,
+): Statement {
+  return {
+    sql: "UPDATE User SET username = @setUsername, data = @setData WHERE (User.userId = @userUserIdEq)",
+    params: {
+      userUserIdEq: userUserIdEq,
+      setUsername: setUsername,
+      setData: Buffer.from(serializeMessage(setData, USER).buffer),
+    },
+    types: {
+      userUserIdEq: { type: "string" },
+      setUsername: { type: "string" },
+      setData: { type: "bytes" },
+    }
+  };
+}
+
+export function insertAccountStatement(
+  data: Account,
+): Statement {
+  return insertAccountInternalStatement(
+    data.accountId,
+    data.userId,
+    data.accountType,
+    data.lastAccessedTimeMs,
+    data.createdTimeMs,
+    data
+  );
+}
+
+export function insertAccountInternalStatement(
+  accountId: string,
+  userId: string,
+  accountType: AccountType,
+  lastAccessedTimeMs: number,
+  createdTimeMs: number,
+  data: Account,
+): Statement {
+  return {
+    sql: "INSERT Account (accountId, userId, accountType, lastAccessedTimeMs, createdTimeMs, data) VALUES (@accountId, @userId, @accountType, @lastAccessedTimeMs, @createdTimeMs, @data)",
+    params: {
+      accountId: accountId,
+      userId: userId,
+      accountType: Spanner.float(accountType),
+      lastAccessedTimeMs: Spanner.float(lastAccessedTimeMs),
+      createdTimeMs: Spanner.float(createdTimeMs),
+      data: Buffer.from(serializeMessage(data, ACCOUNT).buffer),
+    },
+    types: {
+      accountId: { type: "string" },
+      userId: { type: "string" },
+      accountType: { type: "float64" },
+      lastAccessedTimeMs: { type: "float64" },
+      createdTimeMs: { type: "float64" },
+      data: { type: "bytes" },
+    }
+  };
+}
+
+export function deleteAccountStatement(
+  accountAccountIdEq: string,
+): Statement {
+  return {
+    sql: "DELETE Account WHERE (Account.accountId = @accountAccountIdEq)",
+    params: {
+      accountAccountIdEq: accountAccountIdEq,
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+    }
+  };
+}
+
+export interface GetAccountRow {
+  accountData: Account,
+}
+
+export let GET_ACCOUNT_ROW: MessageDescriptor<GetAccountRow> = {
+  name: 'GetAccountRow',
+  fields: [{
+    name: 'accountData',
+    index: 1,
+    messageType: ACCOUNT,
+  }],
+};
+
+export async function getAccount(
+  runner: Database | Transaction,
+  accountAccountIdEq: string,
+): Promise<Array<GetAccountRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT Account.data FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
+    params: {
+      accountAccountIdEq: accountAccountIdEq,
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetAccountRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
+    });
+  }
+  return resRows;
+}
+
+export function updateAccountStatement(
+  data: Account,
+): Statement {
+  return updateAccountInternalStatement(
+    data.accountId,
+    data.userId,
+    data.accountType,
+    data.lastAccessedTimeMs,
+    data.createdTimeMs,
+    data
+  );
+}
+
+export function updateAccountInternalStatement(
+  accountAccountIdEq: string,
+  setUserId: string,
+  setAccountType: AccountType,
+  setLastAccessedTimeMs: number,
+  setCreatedTimeMs: number,
+  setData: Account,
+): Statement {
+  return {
+    sql: "UPDATE Account SET userId = @setUserId, accountType = @setAccountType, lastAccessedTimeMs = @setLastAccessedTimeMs, createdTimeMs = @setCreatedTimeMs, data = @setData WHERE (Account.accountId = @accountAccountIdEq)",
+    params: {
+      accountAccountIdEq: accountAccountIdEq,
+      setUserId: setUserId,
+      setAccountType: Spanner.float(setAccountType),
+      setLastAccessedTimeMs: Spanner.float(setLastAccessedTimeMs),
+      setCreatedTimeMs: Spanner.float(setCreatedTimeMs),
+      setData: Buffer.from(serializeMessage(setData, ACCOUNT).buffer),
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setUserId: { type: "string" },
+      setAccountType: { type: "float64" },
+      setLastAccessedTimeMs: { type: "float64" },
+      setCreatedTimeMs: { type: "float64" },
+      setData: { type: "bytes" },
+    }
+  };
+}
+
+export function insertAccountMoreStatement(
+  data: AccountMore,
+): Statement {
+  return insertAccountMoreInternalStatement(
+    data.accountId,
+    data
+  );
+}
+
+export function insertAccountMoreInternalStatement(
+  accountId: string,
+  data: AccountMore,
+): Statement {
+  return {
+    sql: "INSERT AccountMore (accountId, data) VALUES (@accountId, @data)",
+    params: {
+      accountId: accountId,
+      data: Buffer.from(serializeMessage(data, ACCOUNT_MORE).buffer),
+    },
+    types: {
+      accountId: { type: "string" },
+      data: { type: "bytes" },
+    }
+  };
+}
+
+export function deleteAccountMoreStatement(
+  accountMoreAccountIdEq: string,
+): Statement {
+  return {
+    sql: "DELETE AccountMore WHERE (AccountMore.accountId = @accountMoreAccountIdEq)",
+    params: {
+      accountMoreAccountIdEq: accountMoreAccountIdEq,
+    },
+    types: {
+      accountMoreAccountIdEq: { type: "string" },
+    }
+  };
+}
+
+export function updateAccountMoreStatement(
+  data: AccountMore,
+): Statement {
+  return updateAccountMoreInternalStatement(
+    data.accountId,
+    data
+  );
+}
+
+export function updateAccountMoreInternalStatement(
+  accountMoreAccountIdEq: string,
+  setData: AccountMore,
+): Statement {
+  return {
+    sql: "UPDATE AccountMore SET data = @setData WHERE (AccountMore.accountId = @accountMoreAccountIdEq)",
+    params: {
+      accountMoreAccountIdEq: accountMoreAccountIdEq,
+      setData: Buffer.from(serializeMessage(setData, ACCOUNT_MORE).buffer),
+    },
+    types: {
+      accountMoreAccountIdEq: { type: "string" },
+      setData: { type: "bytes" },
+    }
+  };
+}
+
+export function insertVideoPlayerSettingsStatement(
+  accountId: string,
+  settings: VideoPlayerSettings,
+): Statement {
+  return {
+    sql: "INSERT VideoPlayerSettings (accountId, settings) VALUES (@accountId, @settings)",
+    params: {
+      accountId: accountId,
+      settings: Buffer.from(serializeMessage(settings, VIDEO_PLAYER_SETTINGS).buffer),
+    },
+    types: {
+      accountId: { type: "string" },
+      settings: { type: "bytes" },
+    }
+  };
+}
+
+export function updateVideoPlayerSettingsStatement(
+  videoPlayerSettingsAccountIdEq: string,
+  setSettings: VideoPlayerSettings,
+): Statement {
+  return {
+    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
+    params: {
+      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
+    },
+    types: {
+      videoPlayerSettingsAccountIdEq: { type: "string" },
+      setSettings: { type: "bytes" },
+    }
+  };
+}
+
+export function deleteVideoPlayerSettingsStatement(
+  videoPlayerSettingsAccountIdEq: string,
+): Statement {
+  return {
+    sql: "DELETE VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
+    params: {
+      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+    },
+    types: {
+      videoPlayerSettingsAccountIdEq: { type: "string" },
+    }
+  };
+}
+
 export interface GetUserByUsernameRow {
-  userUserId: string,
-  userPasswordHashV1: string,
+  userData: User,
 }
 
 export let GET_USER_BY_USERNAME_ROW: MessageDescriptor<GetUserByUsernameRow> = {
   name: 'GetUserByUsernameRow',
   fields: [{
-    name: 'userUserId',
+    name: 'userData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'userPasswordHashV1',
-    index: 2,
-    primitiveType: PrimitiveType.STRING,
+    messageType: USER,
   }],
 };
 
@@ -76,7 +380,7 @@ export async function getUserByUsername(
   userUsernameEq: string,
 ): Promise<Array<GetUserByUsernameRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT User.userId, User.passwordHashV1 FROM User WHERE User.username = @userUsernameEq",
+    sql: "SELECT User.data FROM User WHERE User.username = @userUsernameEq",
     params: {
       userUsernameEq: userUsernameEq,
     },
@@ -87,38 +391,32 @@ export async function getUserByUsername(
   let resRows = new Array<GetUserByUsernameRow>();
   for (let row of rows) {
     resRows.push({
-      userUserId: row.at(0).value,
-      userPasswordHashV1: row.at(1).value,
+      userData: deserializeMessage(row.at(0).value, USER),
     });
   }
   return resRows;
 }
 
-export interface GetLastAccessedAccountRow {
-  accountAccountId: string,
-  accountAccountType: AccountType,
+export interface ListLastAccessedAccountsRow {
+  accountData: Account,
 }
 
-export let GET_LAST_ACCESSED_ACCOUNT_ROW: MessageDescriptor<GetLastAccessedAccountRow> = {
-  name: 'GetLastAccessedAccountRow',
+export let LIST_LAST_ACCESSED_ACCOUNTS_ROW: MessageDescriptor<ListLastAccessedAccountsRow> = {
+  name: 'ListLastAccessedAccountsRow',
   fields: [{
-    name: 'accountAccountId',
+    name: 'accountData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'accountAccountType',
-    index: 2,
-    enumType: ACCOUNT_TYPE,
+    messageType: ACCOUNT,
   }],
 };
 
-export async function getLastAccessedAccount(
+export async function listLastAccessedAccounts(
   runner: Database | Transaction,
   accountUserIdEq: string,
   limit: number,
-): Promise<Array<GetLastAccessedAccountRow>> {
+): Promise<Array<ListLastAccessedAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.accountId, Account.accountType FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC LIMIT @limit",
+    sql: "SELECT Account.data FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
     params: {
       accountUserIdEq: accountUserIdEq,
       limit: limit.toString(),
@@ -128,196 +426,84 @@ export async function getLastAccessedAccount(
       limit: { type: "int64" },
     }
   });
-  let resRows = new Array<GetLastAccessedAccountRow>();
+  let resRows = new Array<ListLastAccessedAccountsRow>();
   for (let row of rows) {
     resRows.push({
-      accountAccountId: row.at(0).value,
-      accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
+      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
     });
   }
   return resRows;
 }
 
-export interface GetAccountByIdRow {
-  accountUserId: string,
-  accountAccountType: AccountType,
-  accountData: AccountData,
+export interface GetAccountAndMoreByIdRow {
+  aData: Account,
+  amData: AccountMore,
 }
 
-export let GET_ACCOUNT_BY_ID_ROW: MessageDescriptor<GetAccountByIdRow> = {
-  name: 'GetAccountByIdRow',
+export let GET_ACCOUNT_AND_MORE_BY_ID_ROW: MessageDescriptor<GetAccountAndMoreByIdRow> = {
+  name: 'GetAccountAndMoreByIdRow',
   fields: [{
-    name: 'accountUserId',
+    name: 'aData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
+    messageType: ACCOUNT,
   }, {
-    name: 'accountAccountType',
+    name: 'amData',
     index: 2,
-    enumType: ACCOUNT_TYPE,
-  }, {
-    name: 'accountData',
-    index: 3,
-    messageType: ACCOUNT_DATA,
+    messageType: ACCOUNT_MORE,
   }],
 };
 
-export async function getAccountById(
+export async function getAccountAndMoreById(
   runner: Database | Transaction,
-  accountAccountIdEq: string,
-): Promise<Array<GetAccountByIdRow>> {
+  aAccountIdEq: string,
+): Promise<Array<GetAccountAndMoreByIdRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountType, Account.data FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    sql: "SELECT a.data, am.data FROM Account AS a INNER JOIN AccountMore AS am ON a.accountId = am.accountId WHERE a.accountId = @aAccountIdEq",
     params: {
-      accountAccountIdEq: accountAccountIdEq,
+      aAccountIdEq: aAccountIdEq,
     },
     types: {
-      accountAccountIdEq: { type: "string" },
+      aAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetAccountByIdRow>();
+  let resRows = new Array<GetAccountAndMoreByIdRow>();
   for (let row of rows) {
     resRows.push({
-      accountUserId: row.at(0).value,
-      accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
-    });
-  }
-  return resRows;
-}
-
-export interface GetAccountWithDescriptionByIdRow {
-  accountUserId: string,
-  accountAccountType: AccountType,
-  accountData: AccountData,
-  accountDescription: string,
-}
-
-export let GET_ACCOUNT_WITH_DESCRIPTION_BY_ID_ROW: MessageDescriptor<GetAccountWithDescriptionByIdRow> = {
-  name: 'GetAccountWithDescriptionByIdRow',
-  fields: [{
-    name: 'accountUserId',
-    index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'accountAccountType',
-    index: 2,
-    enumType: ACCOUNT_TYPE,
-  }, {
-    name: 'accountData',
-    index: 3,
-    messageType: ACCOUNT_DATA,
-  }, {
-    name: 'accountDescription',
-    index: 4,
-    primitiveType: PrimitiveType.STRING,
-  }],
-};
-
-export async function getAccountWithDescriptionById(
-  runner: Database | Transaction,
-  accountAccountIdEq: string,
-): Promise<Array<GetAccountWithDescriptionByIdRow>> {
-  let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountType, Account.data, Account.description FROM Account WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      accountAccountIdEq: accountAccountIdEq,
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-    }
-  });
-  let resRows = new Array<GetAccountWithDescriptionByIdRow>();
-  for (let row of rows) {
-    resRows.push({
-      accountUserId: row.at(0).value,
-      accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
-      accountDescription: row.at(3).value,
-    });
-  }
-  return resRows;
-}
-
-export interface ListAccountsRow {
-  accountAccountId: string,
-  accountAccountType: AccountType,
-  accountData: AccountData,
-}
-
-export let LIST_ACCOUNTS_ROW: MessageDescriptor<ListAccountsRow> = {
-  name: 'ListAccountsRow',
-  fields: [{
-    name: 'accountAccountId',
-    index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'accountAccountType',
-    index: 2,
-    enumType: ACCOUNT_TYPE,
-  }, {
-    name: 'accountData',
-    index: 3,
-    messageType: ACCOUNT_DATA,
-  }],
-};
-
-export async function listAccounts(
-  runner: Database | Transaction,
-  accountUserIdEq: string,
-): Promise<Array<ListAccountsRow>> {
-  let [rows] = await runner.run({
-    sql: "SELECT Account.accountId, Account.accountType, Account.data FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimestamp DESC",
-    params: {
-      accountUserIdEq: accountUserIdEq,
-    },
-    types: {
-      accountUserIdEq: { type: "string" },
-    }
-  });
-  let resRows = new Array<ListAccountsRow>();
-  for (let row of rows) {
-    resRows.push({
-      accountAccountId: row.at(0).value,
-      accountAccountType: toEnumFromNumber(row.at(1).value.value, ACCOUNT_TYPE),
-      accountData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
+      aData: deserializeMessage(row.at(0).value, ACCOUNT),
+      amData: deserializeMessage(row.at(1).value, ACCOUNT_MORE),
     });
   }
   return resRows;
 }
 
 export interface ListAccountsByTypeRow {
-  accountAccountId: string,
-  accountCreatedTimestamp: number,
+  accountData: Account,
 }
 
 export let LIST_ACCOUNTS_BY_TYPE_ROW: MessageDescriptor<ListAccountsByTypeRow> = {
   name: 'ListAccountsByTypeRow',
   fields: [{
-    name: 'accountAccountId',
+    name: 'accountData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'accountCreatedTimestamp',
-    index: 2,
-    primitiveType: PrimitiveType.NUMBER,
+    messageType: ACCOUNT,
   }],
 };
 
 export async function listAccountsByType(
   runner: Database | Transaction,
-  accountCreatedTimestampLt: number,
+  accountCreatedTimeMsLt: number,
   accountAccountTypeEq: AccountType,
   limit: number,
 ): Promise<Array<ListAccountsByTypeRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.accountId, Account.createdTimestamp FROM Account WHERE (Account.createdTimestamp < @accountCreatedTimestampLt AND Account.accountType = @accountAccountTypeEq) ORDER BY Account.createdTimestamp DESC LIMIT @limit",
+    sql: "SELECT Account.data FROM Account WHERE (Account.createdTimeMs < @accountCreatedTimeMsLt AND Account.accountType = @accountAccountTypeEq) ORDER BY Account.createdTimeMs DESC LIMIT @limit",
     params: {
-      accountCreatedTimestampLt: new Date(accountCreatedTimestampLt).toISOString(),
+      accountCreatedTimeMsLt: Spanner.float(accountCreatedTimeMsLt),
       accountAccountTypeEq: Spanner.float(accountAccountTypeEq),
       limit: limit.toString(),
     },
     types: {
-      accountCreatedTimestampLt: { type: "timestamp" },
+      accountCreatedTimeMsLt: { type: "float64" },
       accountAccountTypeEq: { type: "float64" },
       limit: { type: "int64" },
     }
@@ -325,48 +511,42 @@ export async function listAccountsByType(
   let resRows = new Array<ListAccountsByTypeRow>();
   for (let row of rows) {
     resRows.push({
-      accountAccountId: row.at(0).value,
-      accountCreatedTimestamp: row.at(1).value.valueOf(),
+      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
     });
   }
   return resRows;
 }
 
-export interface GetAccountAndUserRow {
-  uUsername: string,
-  uRecoveryEmail: string,
-  aData: AccountData,
-  aDescription: string,
+export interface GetUserAndAccountAndMoreRow {
+  uData: User,
+  aData: Account,
+  amData: AccountMore,
 }
 
-export let GET_ACCOUNT_AND_USER_ROW: MessageDescriptor<GetAccountAndUserRow> = {
-  name: 'GetAccountAndUserRow',
+export let GET_USER_AND_ACCOUNT_AND_MORE_ROW: MessageDescriptor<GetUserAndAccountAndMoreRow> = {
+  name: 'GetUserAndAccountAndMoreRow',
   fields: [{
-    name: 'uUsername',
+    name: 'uData',
     index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'uRecoveryEmail',
-    index: 2,
-    primitiveType: PrimitiveType.STRING,
+    messageType: USER,
   }, {
     name: 'aData',
-    index: 3,
-    messageType: ACCOUNT_DATA,
+    index: 2,
+    messageType: ACCOUNT,
   }, {
-    name: 'aDescription',
-    index: 4,
-    primitiveType: PrimitiveType.STRING,
+    name: 'amData',
+    index: 3,
+    messageType: ACCOUNT_MORE,
   }],
 };
 
-export async function getAccountAndUser(
+export async function getUserAndAccountAndMore(
   runner: Database | Transaction,
   uUserIdEq: string,
   aAccountIdEq: string,
-): Promise<Array<GetAccountAndUserRow>> {
+): Promise<Array<GetUserAndAccountAndMoreRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT u.username, u.recoveryEmail, a.data, a.description FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
+    sql: "SELECT u.data, a.data, am.data FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId INNER JOIN AccountMore AS am ON a.accountId = am.accountId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
     params: {
       uUserIdEq: uUserIdEq,
       aAccountIdEq: aAccountIdEq,
@@ -376,13 +556,12 @@ export async function getAccountAndUser(
       aAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetAccountAndUserRow>();
+  let resRows = new Array<GetUserAndAccountAndMoreRow>();
   for (let row of rows) {
     resRows.push({
-      uUsername: row.at(0).value,
-      uRecoveryEmail: row.at(1).value,
-      aData: deserializeMessage(row.at(2).value, ACCOUNT_DATA),
-      aDescription: row.at(3).value,
+      uData: deserializeMessage(row.at(0).value, USER),
+      aData: deserializeMessage(row.at(1).value, ACCOUNT),
+      amData: deserializeMessage(row.at(2).value, ACCOUNT_MORE),
     });
   }
   return resRows;
@@ -456,223 +635,4 @@ export async function checkPresenceOfVideoPlayerSettings(
     });
   }
   return resRows;
-}
-
-export function insertNewUserStatement(
-  userId: string,
-  username: string,
-  passwordHashV1: string,
-  recoveryEmail: string,
-): Statement {
-  return {
-    sql: "INSERT User (userId, username, passwordHashV1, recoveryEmail, createdTimestamp) VALUES (@userId, @username, @passwordHashV1, @recoveryEmail, PENDING_COMMIT_TIMESTAMP())",
-    params: {
-      userId: userId,
-      username: username,
-      passwordHashV1: passwordHashV1,
-      recoveryEmail: recoveryEmail,
-    },
-    types: {
-      userId: { type: "string" },
-      username: { type: "string" },
-      passwordHashV1: { type: "string" },
-      recoveryEmail: { type: "string" },
-    }
-  };
-}
-
-export function insertNewAccountStatement(
-  userId: string,
-  accountId: string,
-  accountType: AccountType,
-  data: AccountData,
-  description: string,
-  createdTimestamp: number,
-  lastAccessedTimestamp: number,
-): Statement {
-  return {
-    sql: "INSERT Account (userId, accountId, accountType, data, description, createdTimestamp, lastAccessedTimestamp) VALUES (@userId, @accountId, @accountType, @data, @description, @createdTimestamp, @lastAccessedTimestamp)",
-    params: {
-      userId: userId,
-      accountId: accountId,
-      accountType: Spanner.float(accountType),
-      data: Buffer.from(serializeMessage(data, ACCOUNT_DATA).buffer),
-      description: description,
-      createdTimestamp: new Date(createdTimestamp).toISOString(),
-      lastAccessedTimestamp: new Date(lastAccessedTimestamp).toISOString(),
-    },
-    types: {
-      userId: { type: "string" },
-      accountId: { type: "string" },
-      accountType: { type: "float64" },
-      data: { type: "bytes" },
-      description: { type: "string" },
-      createdTimestamp: { type: "timestamp" },
-      lastAccessedTimestamp: { type: "timestamp" },
-    }
-  };
-}
-
-export function insertNewVideoPlayerSettingsStatement(
-  accountId: string,
-  settings: VideoPlayerSettings,
-): Statement {
-  return {
-    sql: "INSERT VideoPlayerSettings (accountId, settings) VALUES (@accountId, @settings)",
-    params: {
-      accountId: accountId,
-      settings: Buffer.from(serializeMessage(settings, VIDEO_PLAYER_SETTINGS).buffer),
-    },
-    types: {
-      accountId: { type: "string" },
-      settings: { type: "bytes" },
-    }
-  };
-}
-
-export function updatePasswordStatement(
-  userUserIdEq: string,
-  setPasswordHashV1: string,
-): Statement {
-  return {
-    sql: "UPDATE User SET passwordHashV1 = @setPasswordHashV1 WHERE User.userId = @userUserIdEq",
-    params: {
-      userUserIdEq: userUserIdEq,
-      setPasswordHashV1: setPasswordHashV1,
-    },
-    types: {
-      userUserIdEq: { type: "string" },
-      setPasswordHashV1: { type: "string" },
-    }
-  };
-}
-
-export function updateRecoveryEmailStatement(
-  userUserIdEq: string,
-  setRecoveryEmail: string,
-): Statement {
-  return {
-    sql: "UPDATE User SET recoveryEmail = @setRecoveryEmail WHERE User.userId = @userUserIdEq",
-    params: {
-      userUserIdEq: userUserIdEq,
-      setRecoveryEmail: setRecoveryEmail,
-    },
-    types: {
-      userUserIdEq: { type: "string" },
-      setRecoveryEmail: { type: "string" },
-    }
-  };
-}
-
-export function updateLastAccessedTimestmapStatement(
-  accountAccountIdEq: string,
-  setLastAccessedTimestamp: number,
-): Statement {
-  return {
-    sql: "UPDATE Account SET lastAccessedTimestamp = @setLastAccessedTimestamp WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      accountAccountIdEq: accountAccountIdEq,
-      setLastAccessedTimestamp: new Date(setLastAccessedTimestamp).toISOString(),
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-      setLastAccessedTimestamp: { type: "timestamp" },
-    }
-  };
-}
-
-export function updateAccountDataStatement(
-  accountAccountIdEq: string,
-  setData: AccountData,
-): Statement {
-  return {
-    sql: "UPDATE Account SET data = @setData WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      accountAccountIdEq: accountAccountIdEq,
-      setData: Buffer.from(serializeMessage(setData, ACCOUNT_DATA).buffer),
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-      setData: { type: "bytes" },
-    }
-  };
-}
-
-export function updateAccountDateAndDescriptionStatement(
-  accountAccountIdEq: string,
-  setData: AccountData,
-  setDescription: string,
-): Statement {
-  return {
-    sql: "UPDATE Account SET data = @setData, description = @setDescription WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      accountAccountIdEq: accountAccountIdEq,
-      setData: Buffer.from(serializeMessage(setData, ACCOUNT_DATA).buffer),
-      setDescription: setDescription,
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-      setData: { type: "bytes" },
-      setDescription: { type: "string" },
-    }
-  };
-}
-
-export function updateVideoPlayerSettingsStatement(
-  videoPlayerSettingsAccountIdEq: string,
-  setSettings: VideoPlayerSettings,
-): Statement {
-  return {
-    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
-    params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
-      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
-    },
-    types: {
-      videoPlayerSettingsAccountIdEq: { type: "string" },
-      setSettings: { type: "bytes" },
-    }
-  };
-}
-
-export function deleteUserStatement(
-  userUserIdEq: string,
-): Statement {
-  return {
-    sql: "DELETE User WHERE User.userId = @userUserIdEq",
-    params: {
-      userUserIdEq: userUserIdEq,
-    },
-    types: {
-      userUserIdEq: { type: "string" },
-    }
-  };
-}
-
-export function deleteAccountStatement(
-  accountAccountIdEq: string,
-): Statement {
-  return {
-    sql: "DELETE Account WHERE Account.accountId = @accountAccountIdEq",
-    params: {
-      accountAccountIdEq: accountAccountIdEq,
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-    }
-  };
-}
-
-export function deleteVideoPlaySettingsStatement(
-  videoPlayerSettingsAccountIdEq: string,
-): Statement {
-  return {
-    sql: "DELETE VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
-    params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
-    },
-    types: {
-      videoPlayerSettingsAccountIdEq: { type: "string" },
-    }
-  };
 }

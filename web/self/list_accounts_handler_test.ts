@@ -1,8 +1,5 @@
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  deleteAccountStatement,
-  insertNewAccountStatement,
-} from "../../db/sql";
+import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
 import { ListAccountsHandler } from "./list_accounts_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { LIST_ACCOUNTS_RESPONSE } from "@phading/user_service_interface/web/self/interface";
@@ -21,48 +18,33 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertNewAccountStatement(
-              "user1",
-              "account1",
-              AccountType.CONSUMER,
-              {
-                naturalName: "name1",
-                contactEmail: "email1",
-                avatarSmallFilename: "avatar1",
-                avatarLargeFilename: "avatar1",
-              },
-              "",
-              1000,
-              1000,
-            ),
-            insertNewAccountStatement(
-              "user1",
-              "account2",
-              AccountType.PUBLISHER,
-              {
-                naturalName: "name2",
-                contactEmail: "email2",
-                avatarSmallFilename: "avatar2",
-                avatarLargeFilename: "avatar2",
-              },
-              "",
-              1000,
-              3000,
-            ),
-            insertNewAccountStatement(
-              "user1",
-              "account3",
-              AccountType.PUBLISHER,
-              {
-                naturalName: "name3",
-                contactEmail: "email3",
-                avatarSmallFilename: "avatar3",
-                avatarLargeFilename: "avatar3",
-              },
-              "",
-              1000,
-              2000,
-            ),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              naturalName: "name1",
+              avatarSmallFilename: "avatar1",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 1000,
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account2",
+              accountType: AccountType.PUBLISHER,
+              naturalName: "name2",
+              avatarSmallFilename: "avatar2",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 3000,
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account3",
+              accountType: AccountType.PUBLISHER,
+              naturalName: "name3",
+              avatarSmallFilename: "avatar3",
+              createdTimeMs: 1000,
+              lastAccessedTimeMs: 2000,
+            }),
           ]);
           await transaction.commit();
         });
