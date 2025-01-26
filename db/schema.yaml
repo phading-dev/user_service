@@ -20,6 +20,16 @@
       type: number
       index: 6
 - kind: Message
+  name: BillingAccountStateInfo
+  fields:
+    - name: version
+      type: number
+      index: 1
+    - name: state
+      type: BillingAccountState
+      import: "@phading/user_service_interface/node/billing_account_state"
+      index: 2
+- kind: Message
   name: Account
   fields:
     - name: userId
@@ -50,6 +60,12 @@
     - name: createdTimeMs
       type: number
       index: 9
+    - name: billingAccountStateInfo
+      type: BillingAccountStateInfo
+      index: 10
+    - name: capabilitiesVersion
+      type: number
+      index: 11
 - kind: Message
   name: AccountMore
   fields:
@@ -125,18 +141,52 @@
           import: "@phading/user_service_interface/web/self/video_player_settings"
       primaryKeys:
         - accountId
+    - kind: Table
+      name: AccountCapabilitiesUpdatingTask
+      columns:
+        - name: accountId
+          type: string
+        - name: capabilitiesVersion
+          type: float64
+        - name: executionTimeMs
+          type: timestamp
+        - name: createdTimeMs
+          type: timestamp
+      primaryKeys:
+        - accountId
+        - capabilitiesVersion
+      indexes:
+        - name: AccountCapabilitiesUpdatingTaskByExecutionTimeMs
+          columns:
+            - executionTimeMs
   inserts:
     - name: InsertVideoPlayerSettings
       table: VideoPlayerSettings
       setColumns:
         - accountId
         - settings
+    - name: InsertAccountCapabilitiesUpdatingTask
+      table: AccountCapabilitiesUpdatingTask
+      setColumns:
+        - accountId
+        - capabilitiesVersion
+        - executionTimeMs
+        - createdTimeMs
   deletes:
     - name: DeleteVideoPlayerSettings
       table: VideoPlayerSettings
       where:
         op: =
         leftColumn: accountId
+    - name: DeleteAccountCapabilitiesUpdatingTask
+      table: AccountCapabilitiesUpdatingTask
+      where:
+        op: AND
+        exps:
+          - op: =
+            leftColumn: accountId
+          - op: =
+            leftColumn: capabilitiesVersion
   updates:
     - name: UpdateVideoPlayerSettings
       table: VideoPlayerSettings
@@ -145,6 +195,17 @@
         leftColumn: accountId
       setColumns:
         - settings
+    - name: UpdateAccountCapabilitiesUpdatingTask
+      table: AccountCapabilitiesUpdatingTask
+      where:
+        op: AND
+        exps:
+          - op: =
+            leftColumn: accountId
+          - op: =
+            leftColumn: capabilitiesVersion
+      setColumns:
+        - executionTimeMs
   selects:
     - name: GetUserByUsername
       table: User
@@ -187,21 +248,6 @@
           table: a
         - name: data
           table: am
-    - name: ListAccountsByType
-      table: Account
-      where:
-        op: AND
-        exps:
-          - op: <
-            leftColumn: createdTimeMs
-          - op: =
-            leftColumn: accountType
-      orderBy:
-        - column: createdTimeMs
-          desc: true
-      withLimit: true
-      getColumns:
-        - data
     - name: GetUserAndAccountAndMore
       table:
         name: User
@@ -259,5 +305,16 @@
         leftColumn: accountId
       getColumns:
         - accountId
+    - name: ListAccountCapabilitiesUpdatingTasks
+      table: AccountCapabilitiesUpdatingTask
+      where:
+        op: <=
+        leftColumn: executionTimeMs
+      orderBy:
+        - executionTimeMs
+      getColumns:
+        - accountId
+        - capabilitiesVersion
+        - executionTimeMs
   outputDdl: ./db/ddl
   outputSql: ./db/sql

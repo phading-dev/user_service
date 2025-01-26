@@ -1,11 +1,10 @@
 import crypto = require("crypto");
-import {
-  DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-  DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-} from "../../common/params";
+import { toCapabilities } from "../../common/capabilities_converter";
+import { initAccount, initAccountMore } from "../../common/init_account";
 import { PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
+import { Account } from "../../db/schema";
 import {
   getUserByUsername,
   insertAccountMoreStatement,
@@ -88,8 +87,7 @@ export class SignUpHandler extends SignUpHandlerInterface {
     }
 
     let userId = this.generateUuid();
-    let accountId = this.generateUuid();
-    let passwordHash = this.passwordSigner.sign(body.password);
+    let account: Account;
     let usernameIsAvailable = true;
     await this.database.runTransactionAsync(async (transaction) => {
       let rows = await getUserByUsername(transaction, body.username);
@@ -98,6 +96,15 @@ export class SignUpHandler extends SignUpHandlerInterface {
         return;
       }
       let now = this.getNow();
+      let passwordHash = this.passwordSigner.sign(body.password);
+      account = initAccount(
+        userId,
+        this.generateUuid(),
+        body.accountType,
+        body.naturalName,
+        body.contactEmail,
+        now,
+      );
       await transaction.batchUpdate([
         insertUserStatement({
           userId,
@@ -107,21 +114,8 @@ export class SignUpHandler extends SignUpHandlerInterface {
           totalAccounts: 1,
           createdTimeMs: now,
         }),
-        insertAccountStatement({
-          userId,
-          accountId,
-          accountType: body.accountType,
-          naturalName: body.naturalName,
-          contactEmail: body.contactEmail,
-          avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-          avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-          createdTimeMs: now,
-          lastAccessedTimeMs: now,
-        }),
-        insertAccountMoreStatement({
-          accountId,
-          description: "",
-        }),
+        insertAccountStatement(account),
+        insertAccountMoreStatement(initAccountMore(account.accountId)),
       ]);
       await transaction.commit();
     });
@@ -133,8 +127,9 @@ export class SignUpHandler extends SignUpHandlerInterface {
 
     let response = await createSession(this.serviceClient, {
       userId,
-      accountId,
-      accountType: body.accountType,
+      accountId: account.accountId,
+      capabilitiesVersion: account.capabilitiesVersion,
+      capabilities: toCapabilities(account),
     });
     return {
       signedSession: response.signedSession,

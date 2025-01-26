@@ -14,6 +14,7 @@ import {
 import { CreateAccountHandler } from "./create_account_handler";
 import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
 import { AccountType } from "@phading/user_service_interface/account_type";
+import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { CREATE_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -101,6 +102,11 @@ TEST_RUNNER.run({
                   avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
                   createdTimeMs: 1000,
                   lastAccessedTimeMs: 1000,
+                  capabilitiesVersion: 0,
+                  billingAccountStateInfo: {
+                    version: 0,
+                    state: BillingAccountState.HEALTHY,
+                  },
                 },
                 amData: {
                   accountId: "account2",
@@ -118,7 +124,13 @@ TEST_RUNNER.run({
             {
               userId: "user1",
               accountId: "account2",
-              accountType: AccountType.CONSUMER,
+              capabilitiesVersion: 0,
+              capabilities: {
+                canConsumeShows: true,
+                canPublishShows: false,
+                canBeBilled: true,
+                canEarn: false,
+              },
             },
             CREATE_SESSION_REQUEST_BODY,
           ),

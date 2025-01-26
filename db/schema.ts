@@ -1,4 +1,5 @@
 import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
+import { BillingAccountState, BILLING_ACCOUNT_STATE } from '@phading/user_service_interface/node/billing_account_state';
 import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
 
 export interface User {
@@ -39,6 +40,24 @@ export let USER: MessageDescriptor<User> = {
   }],
 };
 
+export interface BillingAccountStateInfo {
+  version?: number,
+  state?: BillingAccountState,
+}
+
+export let BILLING_ACCOUNT_STATE_INFO: MessageDescriptor<BillingAccountStateInfo> = {
+  name: 'BillingAccountStateInfo',
+  fields: [{
+    name: 'version',
+    index: 1,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'state',
+    index: 2,
+    enumType: BILLING_ACCOUNT_STATE,
+  }],
+};
+
 export interface Account {
   userId?: string,
   accountId?: string,
@@ -49,6 +68,8 @@ export interface Account {
   avatarLargeFilename?: string,
   lastAccessedTimeMs?: number,
   createdTimeMs?: number,
+  billingAccountStateInfo?: BillingAccountStateInfo,
+  capabilitiesVersion?: number,
 }
 
 export let ACCOUNT: MessageDescriptor<Account> = {
@@ -88,6 +109,14 @@ export let ACCOUNT: MessageDescriptor<Account> = {
   }, {
     name: 'createdTimeMs',
     index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'billingAccountStateInfo',
+    index: 10,
+    messageType: BILLING_ACCOUNT_STATE_INFO,
+  }, {
+    name: 'capabilitiesVersion',
+    index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };

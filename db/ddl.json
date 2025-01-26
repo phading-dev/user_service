@@ -67,5 +67,25 @@
     }],
     "createTableDdl": "CREATE TABLE VideoPlayerSettings (accountId STRING(MAX) NOT NULL, settings BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
     "indexes": []
+  }, {
+    "name": "AccountCapabilitiesUpdatingTask",
+    "columns": [{
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "capabilitiesVersion",
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN capabilitiesVersion FLOAT64 NOT NULL"
+    }, {
+      "name": "executionTimeMs",
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN executionTimeMs TIMESTAMP NOT NULL"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN createdTimeMs TIMESTAMP NOT NULL"
+    }],
+    "createTableDdl": "CREATE TABLE AccountCapabilitiesUpdatingTask (accountId STRING(MAX) NOT NULL, capabilitiesVersion FLOAT64 NOT NULL, executionTimeMs TIMESTAMP NOT NULL, createdTimeMs TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC, capabilitiesVersion ASC)",
+    "indexes": [{
+      "name": "AccountCapabilitiesUpdatingTaskByExecutionTimeMs",
+      "createIndexDdl": "CREATE INDEX AccountCapabilitiesUpdatingTaskByExecutionTimeMs ON AccountCapabilitiesUpdatingTask(executionTimeMs)"
+    }]
   }]
 }

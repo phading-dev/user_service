@@ -15,6 +15,7 @@ import {
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
+import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { SIGN_UP_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -83,6 +84,11 @@ TEST_RUNNER.run({
                   avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
                   createdTimeMs: 1000,
                   lastAccessedTimeMs: 1000,
+                  capabilitiesVersion: 0,
+                  billingAccountStateInfo: {
+                    version: 0,
+                    state: BillingAccountState.HEALTHY,
+                  },
                 },
                 amData: {
                   accountId: "id2",
@@ -112,7 +118,13 @@ TEST_RUNNER.run({
             {
               userId: "id1",
               accountId: "id2",
-              accountType: AccountType.CONSUMER,
+              capabilitiesVersion: 0,
+              capabilities: {
+                canConsumeShows: true,
+                canPublishShows: false,
+                canBeBilled: true,
+                canEarn: false,
+              },
             },
             CREATE_SESSION_REQUEST_BODY,
           ),
@@ -179,7 +191,6 @@ TEST_RUNNER.run({
           ),
           "response",
         );
-        assertThat(signerMock.password, eq("pass1"), "raw password");
         assertThat(
           (await getUser(SPANNER_DATABASE, "id1")).length,
           eq(0),

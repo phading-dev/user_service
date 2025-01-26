@@ -1,3 +1,4 @@
+import { toCapabilities } from "../../common/capabilities_converter";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccount } from "../../db/sql";
@@ -57,7 +58,8 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
     let response = await createSession(this.serviceClient, {
       userId: userId,
       accountId: body.accountId,
-      accountType: accountData.accountType,
+      capabilitiesVersion: accountData.capabilitiesVersion,
+      capabilities: toCapabilities(accountData),
     });
     return {
       signedSession: response.signedSession,

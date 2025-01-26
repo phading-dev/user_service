@@ -1,3 +1,4 @@
+import { toCapabilities } from "../../common/capabilities_converter";
 import { PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
@@ -65,12 +66,14 @@ export class SignInHandler extends SignInHandlerInterface {
       userData.userId,
       1,
     );
+    let account = accountRow.accountData;
     let [_, response] = await Promise.all([
-      this.updateLastAccessedTimestmap(accountRow.accountData),
+      this.updateLastAccessedTimestmap(account),
       createSession(this.serviceClient, {
-        userId: accountRow.accountData.userId,
-        accountId: accountRow.accountData.accountId,
-        accountType: accountRow.accountData.accountType,
+        userId: account.userId,
+        accountId: account.accountId,
+        capabilitiesVersion: account.capabilitiesVersion,
+        capabilities: toCapabilities(account),
       }),
     ]);
     return {

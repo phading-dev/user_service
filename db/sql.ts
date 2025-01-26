@@ -331,6 +331,29 @@ export function insertVideoPlayerSettingsStatement(
   };
 }
 
+export function insertAccountCapabilitiesUpdatingTaskStatement(
+  accountId: string,
+  capabilitiesVersion: number,
+  executionTimeMs: number,
+  createdTimeMs: number,
+): Statement {
+  return {
+    sql: "INSERT AccountCapabilitiesUpdatingTask (accountId, capabilitiesVersion, executionTimeMs, createdTimeMs) VALUES (@accountId, @capabilitiesVersion, @executionTimeMs, @createdTimeMs)",
+    params: {
+      accountId: accountId,
+      capabilitiesVersion: Spanner.float(capabilitiesVersion),
+      executionTimeMs: new Date(executionTimeMs).toISOString(),
+      createdTimeMs: new Date(createdTimeMs).toISOString(),
+    },
+    types: {
+      accountId: { type: "string" },
+      capabilitiesVersion: { type: "float64" },
+      executionTimeMs: { type: "timestamp" },
+      createdTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
 export function updateVideoPlayerSettingsStatement(
   videoPlayerSettingsAccountIdEq: string,
   setSettings: VideoPlayerSettings,
@@ -348,6 +371,26 @@ export function updateVideoPlayerSettingsStatement(
   };
 }
 
+export function updateAccountCapabilitiesUpdatingTaskStatement(
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  setExecutionTimeMs: number,
+): Statement {
+  return {
+    sql: "UPDATE AccountCapabilitiesUpdatingTask SET executionTimeMs = @setExecutionTimeMs WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      setExecutionTimeMs: new Date(setExecutionTimeMs).toISOString(),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
+      setExecutionTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
 export function deleteVideoPlayerSettingsStatement(
   videoPlayerSettingsAccountIdEq: string,
 ): Statement {
@@ -358,6 +401,23 @@ export function deleteVideoPlayerSettingsStatement(
     },
     types: {
       videoPlayerSettingsAccountIdEq: { type: "string" },
+    }
+  };
+}
+
+export function deleteAccountCapabilitiesUpdatingTaskStatement(
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+): Statement {
+  return {
+    sql: "DELETE AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
     }
   };
 }
@@ -471,47 +531,6 @@ export async function getAccountAndMoreById(
     resRows.push({
       aData: deserializeMessage(row.at(0).value, ACCOUNT),
       amData: deserializeMessage(row.at(1).value, ACCOUNT_MORE),
-    });
-  }
-  return resRows;
-}
-
-export interface ListAccountsByTypeRow {
-  accountData: Account,
-}
-
-export let LIST_ACCOUNTS_BY_TYPE_ROW: MessageDescriptor<ListAccountsByTypeRow> = {
-  name: 'ListAccountsByTypeRow',
-  fields: [{
-    name: 'accountData',
-    index: 1,
-    messageType: ACCOUNT,
-  }],
-};
-
-export async function listAccountsByType(
-  runner: Database | Transaction,
-  accountCreatedTimeMsLt: number,
-  accountAccountTypeEq: AccountType,
-  limit: number,
-): Promise<Array<ListAccountsByTypeRow>> {
-  let [rows] = await runner.run({
-    sql: "SELECT Account.data FROM Account WHERE (Account.createdTimeMs < @accountCreatedTimeMsLt AND Account.accountType = @accountAccountTypeEq) ORDER BY Account.createdTimeMs DESC LIMIT @limit",
-    params: {
-      accountCreatedTimeMsLt: Spanner.float(accountCreatedTimeMsLt),
-      accountAccountTypeEq: Spanner.float(accountAccountTypeEq),
-      limit: limit.toString(),
-    },
-    types: {
-      accountCreatedTimeMsLt: { type: "float64" },
-      accountAccountTypeEq: { type: "float64" },
-      limit: { type: "int64" },
-    }
-  });
-  let resRows = new Array<ListAccountsByTypeRow>();
-  for (let row of rows) {
-    resRows.push({
-      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
     });
   }
   return resRows;
@@ -632,6 +651,53 @@ export async function checkPresenceOfVideoPlayerSettings(
   for (let row of rows) {
     resRows.push({
       videoPlayerSettingsAccountId: row.at(0).value,
+    });
+  }
+  return resRows;
+}
+
+export interface ListAccountCapabilitiesUpdatingTasksRow {
+  accountCapabilitiesUpdatingTaskAccountId: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
+  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
+}
+
+export let LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW: MessageDescriptor<ListAccountCapabilitiesUpdatingTasksRow> = {
+  name: 'ListAccountCapabilitiesUpdatingTasksRow',
+  fields: [{
+    name: 'accountCapabilitiesUpdatingTaskAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskCapabilitiesVersion',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskExecutionTimeMs',
+    index: 3,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function listAccountCapabilitiesUpdatingTasks(
+  runner: Database | Transaction,
+  accountCapabilitiesUpdatingTaskExecutionTimeMsLe: number,
+): Promise<Array<ListAccountCapabilitiesUpdatingTasksRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion, AccountCapabilitiesUpdatingTask.executionTimeMs FROM AccountCapabilitiesUpdatingTask WHERE AccountCapabilitiesUpdatingTask.executionTimeMs <= @accountCapabilitiesUpdatingTaskExecutionTimeMsLe ORDER BY AccountCapabilitiesUpdatingTask.executionTimeMs",
+    params: {
+      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: new Date(accountCapabilitiesUpdatingTaskExecutionTimeMsLe).toISOString(),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: { type: "timestamp" },
+    }
+  });
+  let resRows = new Array<ListAccountCapabilitiesUpdatingTasksRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
+      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(2).value.valueOf(),
     });
   }
   return resRows;
