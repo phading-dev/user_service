@@ -28,7 +28,7 @@ import { ServiceHandler } from "@selfage/service_handler/service_handler";
 async function main() {
   let [passwordSignerSecret] = await Promise.all([
     getStream(
-      STORAGE_CLIENT.bucket(ENV_VARS.secretBucketName)
+      STORAGE_CLIENT.bucket(ENV_VARS.gcsSecretBucketName)
         .file(ENV_VARS.passwordSignerSecretFile)
         .createReadStream(),
     ),

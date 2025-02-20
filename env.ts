@@ -6,9 +6,6 @@ export interface EnvVars extends ClusterEnvVars {
   databaseInstanceId?: string;
   databaseId?: string;
   passwordSignerSecretFile?: string;
-  cloudflareAccountIdFile?: string;
-  cloudflareR2AccessKeyIdFile?: string;
-  cloudflareR2SecretAccessKeyFile?: string;
   accountAvatarR2BucketName?: string;
   accountAvatarR2PublicAccessDomain?: string;
   builderAccount?: string;

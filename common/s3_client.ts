@@ -10,17 +10,17 @@ export async function createS3Client(): Promise<S3Client> {
     cloudflareR2SecretAccessKey,
   ] = await Promise.all([
     getStream(
-      STORAGE_CLIENT.bucket(ENV_VARS.secretBucketName)
+      STORAGE_CLIENT.bucket(ENV_VARS.gcsSecretBucketName)
         .file(ENV_VARS.cloudflareAccountIdFile)
         .createReadStream(),
     ),
     getStream(
-      STORAGE_CLIENT.bucket(ENV_VARS.secretBucketName)
+      STORAGE_CLIENT.bucket(ENV_VARS.gcsSecretBucketName)
         .file(ENV_VARS.cloudflareR2AccessKeyIdFile)
         .createReadStream(),
     ),
     getStream(
-      STORAGE_CLIENT.bucket(ENV_VARS.secretBucketName)
+      STORAGE_CLIENT.bucket(ENV_VARS.gcsSecretBucketName)
         .file(ENV_VARS.cloudflareR2SecretAccessKeyFile)
         .createReadStream(),
     ),
