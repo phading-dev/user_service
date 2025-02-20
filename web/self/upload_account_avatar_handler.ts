@@ -104,7 +104,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     let upload = new Upload({
       client: this.s3Client,
       params: {
-        Bucket: ENV_VARS.accountAvatarR2BucketName,
+        Bucket: ENV_VARS.r2AvatarBucketName,
         Key: outputFile,
         Body: passThrough,
         ContentType: "image/png",

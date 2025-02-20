@@ -4,8 +4,8 @@ export interface EnvVars extends ClusterEnvVars {
   databaseInstanceId?: string;
   databaseId?: string;
   passwordSignerSecretFile?: string;
-  accountAvatarR2BucketName?: string;
-  accountAvatarR2PublicAccessDomain?: string;
+  r2AvatarBucketName?: string;
+  r2AvatarPublicAccessDomain?: string;
   releaseServiceName?: string;
   port?: number;
   builderAccount?: string;

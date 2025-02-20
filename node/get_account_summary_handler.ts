@@ -13,7 +13,7 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
   public static create(): GetAccountSummaryHandler {
     return new GetAccountSummaryHandler(
       SPANNER_DATABASE,
-      ENV_VARS.accountAvatarR2PublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessDomain,
     );
   }
 

@@ -17,7 +17,7 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
     return new GetAccountAndUserHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ENV_VARS.accountAvatarR2PublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessDomain,
     );
   }
 

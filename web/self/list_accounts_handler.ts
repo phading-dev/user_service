@@ -17,7 +17,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
     return new ListAccountsHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ENV_VARS.accountAvatarR2PublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessDomain,
     );
   }
 

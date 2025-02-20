@@ -27,7 +27,7 @@ async function cleanupFiles(files: Array<string>) {
     await S3_CLIENT_PROMISE
   ).send(
     new DeleteObjectsCommand({
-      Bucket: ENV_VARS.accountAvatarR2BucketName,
+      Bucket: ENV_VARS.r2AvatarBucketName,
       Delete: {
         Objects: files.map((file) => {
           return {
@@ -103,7 +103,7 @@ TEST_RUNNER.run({
           await S3_CLIENT_PROMISE
         ).send(
           new ListObjectsV2Command({
-            Bucket: ENV_VARS.accountAvatarR2BucketName,
+            Bucket: ENV_VARS.r2AvatarBucketName,
           }),
         );
         assertThat(response.Contents.length, eq(2), "number of avatars");
@@ -185,7 +185,7 @@ TEST_RUNNER.run({
           await S3_CLIENT_PROMISE
         ).send(
           new ListObjectsV2Command({
-            Bucket: ENV_VARS.accountAvatarR2BucketName,
+            Bucket: ENV_VARS.r2AvatarBucketName,
           }),
         );
         assertThat(response.Contents.length, eq(2), "number of avatars");
