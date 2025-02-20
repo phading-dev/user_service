@@ -11,7 +11,7 @@ import {
   SaveVideoPlayerSettingsRequestBody,
   SaveVideoPlayerSettingsResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -30,16 +30,15 @@ export class SaveVideoPlayerSettingsHandler extends SaveVideoPlayerSettingsHandl
   public async handle(
     loggingPrefix: string,
     body: SaveVideoPlayerSettingsRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<SaveVideoPlayerSettingsResponse> {
     if (!body.settings) {
       throw newBadRequestError(`"settings" is required.`);
     }
-    let { accountId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { accountId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     await this.database.runTransactionAsync(async (transaction) => {
       let rows = await checkPresenceOfVideoPlayerSettings(

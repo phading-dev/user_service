@@ -1,7 +1,7 @@
-import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../../common/env_vars";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { listLastAccessedAccounts } from "../../db/sql";
+import { ENV_VARS } from "../../env";
 import { Database } from "@google-cloud/spanner";
 import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
 import { ListAccountsHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -9,7 +9,7 @@ import {
   ListAccountsRequestBody,
   ListAccountsResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class ListAccountsHandler extends ListAccountsHandlerInterface {
@@ -17,7 +17,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
     return new ListAccountsHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN,
+      ENV_VARS.accountAvatarR2PublicAccessDomain,
     );
   }
 
@@ -32,13 +32,12 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
   public async handle(
     loggingPrefix: string,
     body: ListAccountsRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<ListAccountsResponse> {
-    let { userId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { userId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let rows = listLastAccessedAccounts(
       this.database,

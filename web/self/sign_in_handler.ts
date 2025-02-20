@@ -14,7 +14,7 @@ import {
   SignInRequestBody,
   SignInResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { createSession } from "@phading/user_session_service_interface/node/client";
+import { newCreateSessionRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newUnauthorizedError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -69,12 +69,14 @@ export class SignInHandler extends SignInHandlerInterface {
     let account = accountRow.accountData;
     let [_, response] = await Promise.all([
       this.updateLastAccessedTimestmap(account),
-      createSession(this.serviceClient, {
-        userId: account.userId,
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account),
-      }),
+      this.serviceClient.send(
+        newCreateSessionRequest({
+          userId: account.userId,
+          accountId: account.accountId,
+          capabilitiesVersion: account.capabilitiesVersion,
+          capabilities: toCapabilities(account),
+        }),
+      ),
     ]);
     return {
       signedSession: response.signedSession,

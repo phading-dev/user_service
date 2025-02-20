@@ -1,13 +1,14 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
+  GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
   GET_ACCOUNT_ROW,
-  LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW,
   deleteAccountCapabilitiesUpdatingTaskStatement,
   deleteAccountStatement,
   getAccount,
+  getAccountCapabilitiesUpdatingTaskMetadata,
   insertAccountCapabilitiesUpdatingTaskStatement,
   insertAccountStatement,
-  listAccountCapabilitiesUpdatingTasks,
+  listPendingAccountCapabilitiesUpdatingTasks,
 } from "../db/sql";
 import { SyncBillingAccountStateHandler } from "./sync_billing_account_state_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -88,15 +89,18 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await listAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, 1000000),
+          await getAccountCapabilitiesUpdatingTaskMetadata(
+            SPANNER_DATABASE,
+            "account1",
+            11,
+          ),
           isArray([
             eqMessage(
               {
-                accountCapabilitiesUpdatingTaskAccountId: "account1",
-                accountCapabilitiesUpdatingTaskCapabilitiesVersion: 11,
+                accountCapabilitiesUpdatingTaskRetryCount: 0,
                 accountCapabilitiesUpdatingTaskExecutionTimeMs: 2000,
               },
-              LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW,
+              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
             ),
           ]),
           "tasks",
@@ -127,6 +131,7 @@ TEST_RUNNER.run({
             insertAccountCapabilitiesUpdatingTaskStatement(
               "account1",
               10,
+              0,
               1000,
               1000,
             ),
@@ -170,15 +175,18 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await listAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, 1000000),
+          await getAccountCapabilitiesUpdatingTaskMetadata(
+            SPANNER_DATABASE,
+            "account1",
+            11,
+          ),
           isArray([
             eqMessage(
               {
-                accountCapabilitiesUpdatingTaskAccountId: "account1",
-                accountCapabilitiesUpdatingTaskCapabilitiesVersion: 11,
+                accountCapabilitiesUpdatingTaskRetryCount: 0,
                 accountCapabilitiesUpdatingTaskExecutionTimeMs: 2000,
               },
-              LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW,
+              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
             ),
           ]),
           "tasks",
@@ -246,7 +254,10 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await listAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, 1000000),
+          await listPendingAccountCapabilitiesUpdatingTasks(
+            SPANNER_DATABASE,
+            1000000,
+          ),
           isArray([]),
           "tasks",
         );

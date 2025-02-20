@@ -9,7 +9,7 @@ import {
   UpdatePasswordRequestBody,
   UpdatePasswordResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -33,7 +33,7 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
   public async handle(
     loggingPrefix: string,
     body: UpdatePasswordRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<UpdatePasswordResponse> {
     if (!body.currentPassword) {
       throw newBadRequestError(`"currentPassword" is required.`);
@@ -44,11 +44,10 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
     if (body.newPassword.length > MAX_PASSWORD_LENGTH) {
       throw newBadRequestError(`"newPassword" is too long.`);
     }
-    let { userId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { userId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let rows = await getUser(this.database, userId);
     if (rows.length === 0) {

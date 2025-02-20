@@ -21,13 +21,21 @@ TEST_RUNNER.run({
             insertAccountCapabilitiesUpdatingTaskStatement(
               "account1",
               1,
+              0,
               100,
               0,
             ),
-            insertAccountCapabilitiesUpdatingTaskStatement("account2", 1, 0, 0),
+            insertAccountCapabilitiesUpdatingTaskStatement(
+              "account2",
+              1,
+              0,
+              0,
+              0,
+            ),
             insertAccountCapabilitiesUpdatingTaskStatement(
               "account3",
               1,
+              0,
               1000,
               0,
             ),

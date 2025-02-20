@@ -9,8 +9,8 @@ import {
   SwitchAccountResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import {
-  createSession,
-  exchangeSessionAndCheckCapability,
+  newCreateSessionRequest,
+  newExchangeSessionAndCheckCapabilityRequest,
 } from "@phading/user_session_service_interface/node/client";
 import {
   newBadRequestError,
@@ -34,16 +34,15 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
   public async handle(
     loggingPrefix: string,
     body: SwitchAccountRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<SwitchAccountResponse> {
     if (!body.accountId) {
       throw newBadRequestError(`"accountId" is required.`);
     }
-    let { userId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { userId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let rows = await getAccount(this.database, body.accountId);
     if (rows.length === 0) {
@@ -55,12 +54,14 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
         `Not authorized to switch to account ${body.accountId} owned by a different user.`,
       );
     }
-    let response = await createSession(this.serviceClient, {
-      userId: userId,
-      accountId: body.accountId,
-      capabilitiesVersion: accountData.capabilitiesVersion,
-      capabilities: toCapabilities(accountData),
-    });
+    let response = await this.serviceClient.send(
+      newCreateSessionRequest({
+        userId: userId,
+        accountId: body.accountId,
+        capabilitiesVersion: accountData.capabilitiesVersion,
+        capabilities: toCapabilities(accountData),
+      }),
+    );
     return {
       signedSession: response.signedSession,
     };

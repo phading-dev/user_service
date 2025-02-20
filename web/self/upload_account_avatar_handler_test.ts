@@ -1,10 +1,9 @@
 import path from "path";
-import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
 } from "../../common/params";
-import { S3_CLIENT } from "../../common/s3_client";
+import { S3_CLIENT_PROMISE } from "../../common/s3_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   GET_ACCOUNT_ROW,
@@ -12,6 +11,7 @@ import {
   getAccount,
   insertAccountStatement,
 } from "../../db/sql";
+import { ENV_VARS } from "../../env";
 import { UploadAccountAvatarHandler } from "./upload_account_avatar_handler";
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -23,9 +23,11 @@ import { TEST_RUNNER } from "@selfage/test_runner";
 import { createReadStream } from "fs";
 
 async function cleanupFiles(files: Array<string>) {
-  await S3_CLIENT.send(
+  await (
+    await S3_CLIENT_PROMISE
+  ).send(
     new DeleteObjectsCommand({
-      Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+      Bucket: ENV_VARS.accountAvatarR2BucketName,
       Delete: {
         Objects: files.map((file) => {
           return {
@@ -65,7 +67,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          S3_CLIENT,
+          await S3_CLIENT_PROMISE,
           clientMock,
         );
 
@@ -97,9 +99,11 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await S3_CLIENT.send(
+        let response = await (
+          await S3_CLIENT_PROMISE
+        ).send(
           new ListObjectsV2Command({
-            Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+            Bucket: ENV_VARS.accountAvatarR2BucketName,
           }),
         );
         assertThat(response.Contents.length, eq(2), "number of avatars");
@@ -145,7 +149,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          S3_CLIENT,
+          await S3_CLIENT_PROMISE,
           clientMock,
         );
 
@@ -177,9 +181,11 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await S3_CLIENT.send(
+        let response = await (
+          await S3_CLIENT_PROMISE
+        ).send(
           new ListObjectsV2Command({
-            Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+            Bucket: ENV_VARS.accountAvatarR2BucketName,
           }),
         );
         assertThat(response.Contents.length, eq(2), "number of avatars");

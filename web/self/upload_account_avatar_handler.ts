@@ -1,12 +1,12 @@
 import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
-import { ACCOUNT_AVATAR_BUCKET_NAME } from "../../common/env_vars";
 import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
-import { S3_CLIENT } from "../../common/s3_client";
+import { S3_CLIENT_PROMISE } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccount, updateAccountStatement } from "../../db/sql";
+import { ENV_VARS } from "../../env";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Database } from "@google-cloud/spanner";
@@ -17,24 +17,24 @@ import {
 } from "@phading/constants/account";
 import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import { UploadAccountAvatarResponse } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "stream";
 
 export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterface {
-  public static create(): UploadAccountAvatarHandler {
+  public static async create(): Promise<UploadAccountAvatarHandler> {
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
-      S3_CLIENT,
+      await S3_CLIENT_PROMISE,
       SERVICE_CLIENT,
     );
   }
 
   public constructor(
     private database: Database,
-    private r2Client: S3Client,
+    private s3Client: S3Client,
     private serviceClient: NodeServiceClient,
   ) {
     super();
@@ -43,13 +43,12 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
   public async handle(
     loggingPrefix: string,
     body: Readable,
-    sessionStr: string,
+    authStr: string,
   ): Promise<UploadAccountAvatarResponse> {
-    let { accountId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { accountId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let avatarSmallFilename: string;
     let avatarLargeFilename: string;
@@ -103,9 +102,9 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
   ): Promise<void> {
     let passThrough = new stream.PassThrough();
     let upload = new Upload({
-      client: this.r2Client,
+      client: this.s3Client,
       params: {
-        Bucket: ACCOUNT_AVATAR_BUCKET_NAME,
+        Bucket: ENV_VARS.accountAvatarR2BucketName,
         Key: outputFile,
         Body: passThrough,
         ContentType: "image/png",

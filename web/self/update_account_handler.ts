@@ -16,7 +16,7 @@ import {
   UpdateAccountRequestBody,
   UpdateAccountResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -35,7 +35,7 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
   public async handle(
     loggingPrefix: string,
     body: UpdateAccountRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<UpdateAccountResponse> {
     if (!body.naturalName) {
       throw newBadRequestError(`"naturalName" is required.`);
@@ -53,11 +53,10 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
     if (body.description.length > MAX_DESCRIPTION_LENGTH) {
       throw newBadRequestError(`"descrition" is too long.`);
     }
-    let { accountId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { accountId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     await this.database.runTransactionAsync(async (transaction) => {
       let accountRows = await getAccountAndMoreById(transaction, accountId);

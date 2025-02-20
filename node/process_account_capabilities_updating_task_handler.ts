@@ -1,11 +1,11 @@
 import { toCapabilities } from "../common/capabilities_converter";
 import { SERVICE_CLIENT } from "../common/service_client";
 import { SPANNER_DATABASE } from "../common/spanner_database";
-import { Account } from "../db/schema";
 import {
   deleteAccountCapabilitiesUpdatingTaskStatement,
   getAccount,
-  updateAccountCapabilitiesUpdatingTaskStatement,
+  getAccountCapabilitiesUpdatingTaskMetadata,
+  updateAccountCapabilitiesUpdatingTaskMetadataStatement,
 } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { ProcessAccountCapabilitiesUpdatingTaskHandlerInterface } from "@phading/user_service_interface/node/handler";
@@ -13,100 +13,109 @@ import {
   ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ProcessAccountCapabilitiesUpdatingTaskResponse,
 } from "@phading/user_service_interface/node/interface";
-import { updateAccountCapabilities } from "@phading/user_session_service_interface/node/client";
+import { newUpdateAccountCapabilitiesRequest } from "@phading/user_session_service_interface/node/client";
 import {
   newBadRequestError,
   newInternalServerErrorError,
 } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
+import { ProcessTaskHandlerWrapper } from "@selfage/service_handler/process_task_handler_wrapper";
 
 export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccountCapabilitiesUpdatingTaskHandlerInterface {
   public static create(): ProcessAccountCapabilitiesUpdatingTaskHandler {
     return new ProcessAccountCapabilitiesUpdatingTaskHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      () => Date.now(),
     );
   }
 
-  private static RETRY_BACKOFF_MS = 5 * 60 * 1000;
-  public doneCallbackFn: () => void = () => {};
+  private taskHandler: ProcessTaskHandlerWrapper;
 
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,
-    private getNow: () => number,
   ) {
     super();
+    this.taskHandler = ProcessTaskHandlerWrapper.create(
+      5 * 60 * 1000,
+      24 * 60 * 60 * 1000,
+    );
   }
 
   public async handle(
     loggingPrefix: string,
     body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<ProcessAccountCapabilitiesUpdatingTaskResponse> {
-    let { account } = await this.getPayloadAndClaimTask(
-      body.accountId,
-      body.capabilitiesVersion,
+    await this.taskHandler.wrap(
+      loggingPrefix,
+      this.descriptor.service.path + this.descriptor.path,
+      () => this.claimTask(body),
+      () => this.processTask(loggingPrefix, body),
     );
-    loggingPrefix = `${loggingPrefix} Account capabilities updating task for account ${body.accountId} version ${body.capabilitiesVersion}:`;
-    this.startProcessingAndCatchError(loggingPrefix, account);
     return {};
   }
 
-  private async getPayloadAndClaimTask(
-    accountId: string,
-    version: number,
-  ): Promise<{
-    account: Account;
-  }> {
-    let account: Account;
+  public async claimTask(
+    body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
+  ): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccount(transaction, accountId);
+      let rows = await getAccountCapabilitiesUpdatingTaskMetadata(
+        transaction,
+        body.accountId,
+        body.capabilitiesVersion,
+      );
       if (rows.length === 0) {
-        throw newInternalServerErrorError(`Account ${accountId} is not found.`);
-      }
-      let { accountData } = rows[0];
-      if (version !== accountData.capabilitiesVersion) {
         throw newBadRequestError(
-          `Account ${accountId} capability version is ${accountData.capabilitiesVersion} which doesn't match the task with version ${version}.`,
+          `Account ${body.accountId} capabilities updating task with version ${body.capabilitiesVersion} is not found.`,
         );
       }
-      account = accountData;
+      let task = rows[0];
       await transaction.batchUpdate([
-        updateAccountCapabilitiesUpdatingTaskStatement(
-          accountData.accountId,
-          version,
-          this.getNow() +
-            ProcessAccountCapabilitiesUpdatingTaskHandler.RETRY_BACKOFF_MS,
+        updateAccountCapabilitiesUpdatingTaskMetadataStatement(
+          body.accountId,
+          body.capabilitiesVersion,
+          task.accountCapabilitiesUpdatingTaskRetryCount + 1,
+          task.accountCapabilitiesUpdatingTaskExecutionTimeMs +
+            this.taskHandler.getBackoffTime(
+              task.accountCapabilitiesUpdatingTaskRetryCount,
+            ),
         ),
       ]);
       await transaction.commit();
     });
-    return { account };
   }
 
-  private async startProcessingAndCatchError(
+  public async processTask(
     loggingPrefix: string,
-    account: Account,
+    body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<void> {
-    try {
-      await updateAccountCapabilities(this.serviceClient, {
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account),
-      });
-      await this.database.runTransactionAsync(async (transaction) => {
-        await transaction.batchUpdate([
-          deleteAccountCapabilitiesUpdatingTaskStatement(
-            account.accountId,
-            account.capabilitiesVersion,
-          ),
-        ]);
-        await transaction.commit();
-      });
-    } catch (e) {
-      console.error(`${loggingPrefix} Task failed! ${e.stack ?? e}`);
+    let rows = await getAccount(this.database, body.accountId);
+    if (rows.length === 0) {
+      throw newInternalServerErrorError(
+        `Account ${body.accountId} is not found.`,
+      );
     }
-    this.doneCallbackFn();
+    let { accountData } = rows[0];
+    if (body.capabilitiesVersion !== accountData.capabilitiesVersion) {
+      throw newBadRequestError(
+        `Account ${body.accountId} capability version is ${accountData.capabilitiesVersion} which doesn't match the task with version ${body.capabilitiesVersion}.`,
+      );
+    }
+    await this.serviceClient.send(
+      newUpdateAccountCapabilitiesRequest({
+        accountId: body.accountId,
+        capabilitiesVersion: body.capabilitiesVersion,
+        capabilities: toCapabilities(accountData),
+      }),
+    );
+    await this.database.runTransactionAsync(async (transaction) => {
+      await transaction.batchUpdate([
+        deleteAccountCapabilitiesUpdatingTaskStatement(
+          body.accountId,
+          body.capabilitiesVersion,
+        ),
+      ]);
+      await transaction.commit();
+    });
   }
 }

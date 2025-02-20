@@ -1,6 +1,6 @@
-import { ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN } from "../common/env_vars";
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import { getAccount } from "../db/sql";
+import { ENV_VARS } from "../env";
 import { Database } from "@google-cloud/spanner";
 import { GetAccountSummaryHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {
@@ -13,7 +13,7 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
   public static create(): GetAccountSummaryHandler {
     return new GetAccountSummaryHandler(
       SPANNER_DATABASE,
-      ACCOUNT_AVATAR_PUBLIC_ACCESS_DOMAIN,
+      ENV_VARS.accountAvatarR2PublicAccessDomain,
     );
   }
 

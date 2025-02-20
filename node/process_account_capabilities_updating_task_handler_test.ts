@@ -1,11 +1,12 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
-  LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW,
+  GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
   deleteAccountCapabilitiesUpdatingTaskStatement,
   deleteAccountStatement,
+  getAccountCapabilitiesUpdatingTaskMetadata,
   insertAccountCapabilitiesUpdatingTaskStatement,
   insertAccountStatement,
-  listAccountCapabilitiesUpdatingTasks,
+  listPendingAccountCapabilitiesUpdatingTasks,
 } from "../db/sql";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./process_account_capabilities_updating_task_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
@@ -18,7 +19,13 @@ import { newBadRequestError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertReject, assertThat, eq, isArray } from "@selfage/test_matcher";
+import {
+  assertReject,
+  assertThat,
+  eq,
+  eqError,
+  isArray,
+} from "@selfage/test_matcher";
 import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 
 class UpdateCapabilitiesCase implements TestCase {
@@ -52,6 +59,7 @@ class UpdateCapabilitiesCase implements TestCase {
         insertAccountCapabilitiesUpdatingTaskStatement(
           "account1",
           1,
+          0,
           1000,
           1000,
         ),
@@ -62,15 +70,13 @@ class UpdateCapabilitiesCase implements TestCase {
     let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
       SPANNER_DATABASE,
       clientMock,
-      () => 2000,
     );
 
     // Execute
-    handler.handle("", {
+    await handler.processTask("", {
       accountId: "account1",
       capabilitiesVersion: 1,
     });
-    await new Promise<void>((resolve) => (handler.doneCallbackFn = resolve));
 
     // Verify
     assertThat(
@@ -91,7 +97,10 @@ class UpdateCapabilitiesCase implements TestCase {
       "body",
     );
     assertThat(
-      await listAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, 1000000),
+      await listPendingAccountCapabilitiesUpdatingTasks(
+        SPANNER_DATABASE,
+        1000000,
+      ),
       isArray([]),
       "tasks",
     );
@@ -156,6 +165,62 @@ TEST_RUNNER.run({
       },
     ),
     {
+      name: "ClaimTask",
+      execute: async () => {
+        // Prepare
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertAccountCapabilitiesUpdatingTaskStatement(
+              "account1",
+              1,
+              0,
+              1000,
+              1000,
+            ),
+          ]);
+          await transaction.commit();
+        });
+        let clientMock = new NodeServiceClientMock();
+        let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
+          SPANNER_DATABASE,
+          clientMock,
+        );
+
+        // Execute
+        await handler.claimTask({
+          accountId: "account1",
+          capabilitiesVersion: 1,
+        });
+
+        // Verify
+        assertThat(
+          await getAccountCapabilitiesUpdatingTaskMetadata(
+            SPANNER_DATABASE,
+            "account1",
+            1,
+          ),
+          isArray([
+            eqMessage(
+              {
+                accountCapabilitiesUpdatingTaskRetryCount: 1,
+                accountCapabilitiesUpdatingTaskExecutionTimeMs: 301000,
+              },
+              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
+            ),
+          ]),
+          "task",
+        );
+      },
+      tearDown: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
+          ]);
+          await transaction.commit();
+        });
+      },
+    },
+    {
       name: "UpdateFailedAndRetrying",
       execute: async () => {
         // Prepare
@@ -175,6 +240,7 @@ TEST_RUNNER.run({
             insertAccountCapabilitiesUpdatingTaskStatement(
               "account1",
               1,
+              0,
               1000,
               1000,
             ),
@@ -186,33 +252,18 @@ TEST_RUNNER.run({
         let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
-          () => 1000,
         );
 
         // Execute
-        handler.handle("", {
-          accountId: "account1",
-          capabilitiesVersion: 1,
-        });
-        await new Promise<void>(
-          (resolve) => (handler.doneCallbackFn = resolve),
+        let error = await assertReject(
+          handler.processTask("", {
+            accountId: "account1",
+            capabilitiesVersion: 1,
+          }),
         );
 
         // Verify
-        assertThat(
-          await listAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, 1000000),
-          isArray([
-            eqMessage(
-              {
-                accountCapabilitiesUpdatingTaskAccountId: "account1",
-                accountCapabilitiesUpdatingTaskCapabilitiesVersion: 1,
-                accountCapabilitiesUpdatingTaskExecutionTimeMs: 301000,
-              },
-              LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW,
-            ),
-          ]),
-          "tasks",
-        );
+        assertThat(error, eqError(new Error("Fake error")), "error");
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
@@ -248,12 +299,11 @@ TEST_RUNNER.run({
         let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
-          () => 1000,
         );
 
         // Execute
         let error = await assertReject(
-          handler.handle("", {
+          handler.processTask("", {
             accountId: "account1",
             capabilitiesVersion: 1,
           }),

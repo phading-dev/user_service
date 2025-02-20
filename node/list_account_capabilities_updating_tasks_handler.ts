@@ -1,5 +1,5 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
-import { listAccountCapabilitiesUpdatingTasks } from "../db/sql";
+import { listPendingAccountCapabilitiesUpdatingTasks } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { ListAccountCapabilitiesUpdatingTasksHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {
@@ -27,7 +27,7 @@ export class ListAccountCapabilitiesUpdatingTasksHandler extends ListAccountCapa
     loggingPrefix: string,
     body: ListAccountCapabilitiesUpdatingTasksRequestBody,
   ): Promise<ListAccountCapabilitiesUpdatingTasksResponse> {
-    let rows = await listAccountCapabilitiesUpdatingTasks(
+    let rows = await listPendingAccountCapabilitiesUpdatingTasks(
       this.database,
       this.getNow(),
     );

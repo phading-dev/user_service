@@ -22,8 +22,8 @@ import {
   CreateAccountResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import {
-  createSession,
-  exchangeSessionAndCheckCapability,
+  newCreateSessionRequest,
+  newExchangeSessionAndCheckCapabilityRequest,
 } from "@phading/user_session_service_interface/node/client";
 import {
   newBadRequestError,
@@ -53,7 +53,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
   public async handle(
     loggingPrefix: string,
     body: CreateAccountRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<CreateAccountResponse> {
     if (!body.naturalName) {
       throw newBadRequestError(`"naturalName" is required.`);
@@ -71,11 +71,10 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       throw newBadRequestError(`"accountType" is required.`);
     }
 
-    let { userId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { userId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let account: Account;
     await this.database.runTransactionAsync(async (transaction) => {
@@ -106,12 +105,14 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       ]);
       await transaction.commit();
     });
-    let response = await createSession(this.serviceClient, {
-      userId,
-      accountId: account.accountId,
-      capabilitiesVersion: account.capabilitiesVersion,
-      capabilities: toCapabilities(account),
-    });
+    let response = await this.serviceClient.send(
+      newCreateSessionRequest({
+        userId,
+        accountId: account.accountId,
+        capabilitiesVersion: account.capabilitiesVersion,
+        capabilities: toCapabilities(account),
+      }),
+    );
     return {
       signedSession: response.signedSession,
     };

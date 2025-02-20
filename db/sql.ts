@@ -314,6 +314,219 @@ export function updateAccountMoreInternalStatement(
   };
 }
 
+export function insertAccountCapabilitiesUpdatingTaskStatement(
+  accountId: string,
+  capabilitiesVersion: number,
+  retryCount: number,
+  executionTimeMs: number,
+  createdTimeMs: number,
+): Statement {
+  return {
+    sql: "INSERT AccountCapabilitiesUpdatingTask (accountId, capabilitiesVersion, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @capabilitiesVersion, @retryCount, @executionTimeMs, @createdTimeMs)",
+    params: {
+      accountId: accountId,
+      capabilitiesVersion: Spanner.float(capabilitiesVersion),
+      retryCount: Spanner.float(retryCount),
+      executionTimeMs: new Date(executionTimeMs).toISOString(),
+      createdTimeMs: new Date(createdTimeMs).toISOString(),
+    },
+    types: {
+      accountId: { type: "string" },
+      capabilitiesVersion: { type: "float64" },
+      retryCount: { type: "float64" },
+      executionTimeMs: { type: "timestamp" },
+      createdTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
+export function deleteAccountCapabilitiesUpdatingTaskStatement(
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+): Statement {
+  return {
+    sql: "DELETE AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
+    }
+  };
+}
+
+export interface GetAccountCapabilitiesUpdatingTaskRow {
+  accountCapabilitiesUpdatingTaskAccountId: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
+  accountCapabilitiesUpdatingTaskRetryCount: number,
+  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
+  accountCapabilitiesUpdatingTaskCreatedTimeMs: number,
+}
+
+export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_ROW: MessageDescriptor<GetAccountCapabilitiesUpdatingTaskRow> = {
+  name: 'GetAccountCapabilitiesUpdatingTaskRow',
+  fields: [{
+    name: 'accountCapabilitiesUpdatingTaskAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskCapabilitiesVersion',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskRetryCount',
+    index: 3,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskExecutionTimeMs',
+    index: 4,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskCreatedTimeMs',
+    index: 5,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getAccountCapabilitiesUpdatingTask(
+  runner: Database | Transaction,
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+): Promise<Array<GetAccountCapabilitiesUpdatingTaskRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion, AccountCapabilitiesUpdatingTask.retryCount, AccountCapabilitiesUpdatingTask.executionTimeMs, AccountCapabilitiesUpdatingTask.createdTimeMs FROM AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
+    }
+  });
+  let resRows = new Array<GetAccountCapabilitiesUpdatingTaskRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
+      accountCapabilitiesUpdatingTaskRetryCount: row.at(2).value.value,
+      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(3).value.valueOf(),
+      accountCapabilitiesUpdatingTaskCreatedTimeMs: row.at(4).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export interface ListPendingAccountCapabilitiesUpdatingTasksRow {
+  accountCapabilitiesUpdatingTaskAccountId: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
+}
+
+export let LIST_PENDING_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW: MessageDescriptor<ListPendingAccountCapabilitiesUpdatingTasksRow> = {
+  name: 'ListPendingAccountCapabilitiesUpdatingTasksRow',
+  fields: [{
+    name: 'accountCapabilitiesUpdatingTaskAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskCapabilitiesVersion',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function listPendingAccountCapabilitiesUpdatingTasks(
+  runner: Database | Transaction,
+  accountCapabilitiesUpdatingTaskExecutionTimeMsLe: number,
+): Promise<Array<ListPendingAccountCapabilitiesUpdatingTasksRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion FROM AccountCapabilitiesUpdatingTask WHERE AccountCapabilitiesUpdatingTask.executionTimeMs <= @accountCapabilitiesUpdatingTaskExecutionTimeMsLe",
+    params: {
+      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: new Date(accountCapabilitiesUpdatingTaskExecutionTimeMsLe).toISOString(),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: { type: "timestamp" },
+    }
+  });
+  let resRows = new Array<ListPendingAccountCapabilitiesUpdatingTasksRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
+    });
+  }
+  return resRows;
+}
+
+export interface GetAccountCapabilitiesUpdatingTaskMetadataRow {
+  accountCapabilitiesUpdatingTaskRetryCount: number,
+  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
+}
+
+export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW: MessageDescriptor<GetAccountCapabilitiesUpdatingTaskMetadataRow> = {
+  name: 'GetAccountCapabilitiesUpdatingTaskMetadataRow',
+  fields: [{
+    name: 'accountCapabilitiesUpdatingTaskRetryCount',
+    index: 1,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCapabilitiesUpdatingTaskExecutionTimeMs',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getAccountCapabilitiesUpdatingTaskMetadata(
+  runner: Database | Transaction,
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+): Promise<Array<GetAccountCapabilitiesUpdatingTaskMetadataRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AccountCapabilitiesUpdatingTask.retryCount, AccountCapabilitiesUpdatingTask.executionTimeMs FROM AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
+    }
+  });
+  let resRows = new Array<GetAccountCapabilitiesUpdatingTaskMetadataRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountCapabilitiesUpdatingTaskRetryCount: row.at(0).value.value,
+      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(1).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export function updateAccountCapabilitiesUpdatingTaskMetadataStatement(
+  accountCapabilitiesUpdatingTaskAccountIdEq: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  setRetryCount: number,
+  setExecutionTimeMs: number,
+): Statement {
+  return {
+    sql: "UPDATE AccountCapabilitiesUpdatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
+    params: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      setRetryCount: Spanner.float(setRetryCount),
+      setExecutionTimeMs: new Date(setExecutionTimeMs).toISOString(),
+    },
+    types: {
+      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
+      setRetryCount: { type: "float64" },
+      setExecutionTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
 export function insertVideoPlayerSettingsStatement(
   accountId: string,
   settings: VideoPlayerSettings,
@@ -327,29 +540,6 @@ export function insertVideoPlayerSettingsStatement(
     types: {
       accountId: { type: "string" },
       settings: { type: "bytes" },
-    }
-  };
-}
-
-export function insertAccountCapabilitiesUpdatingTaskStatement(
-  accountId: string,
-  capabilitiesVersion: number,
-  executionTimeMs: number,
-  createdTimeMs: number,
-): Statement {
-  return {
-    sql: "INSERT AccountCapabilitiesUpdatingTask (accountId, capabilitiesVersion, executionTimeMs, createdTimeMs) VALUES (@accountId, @capabilitiesVersion, @executionTimeMs, @createdTimeMs)",
-    params: {
-      accountId: accountId,
-      capabilitiesVersion: Spanner.float(capabilitiesVersion),
-      executionTimeMs: new Date(executionTimeMs).toISOString(),
-      createdTimeMs: new Date(createdTimeMs).toISOString(),
-    },
-    types: {
-      accountId: { type: "string" },
-      capabilitiesVersion: { type: "float64" },
-      executionTimeMs: { type: "timestamp" },
-      createdTimeMs: { type: "timestamp" },
     }
   };
 }
@@ -371,26 +561,6 @@ export function updateVideoPlayerSettingsStatement(
   };
 }
 
-export function updateAccountCapabilitiesUpdatingTaskStatement(
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
-  setExecutionTimeMs: number,
-): Statement {
-  return {
-    sql: "UPDATE AccountCapabilitiesUpdatingTask SET executionTimeMs = @setExecutionTimeMs WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
-    params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
-      setExecutionTimeMs: new Date(setExecutionTimeMs).toISOString(),
-    },
-    types: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
-      setExecutionTimeMs: { type: "timestamp" },
-    }
-  };
-}
-
 export function deleteVideoPlayerSettingsStatement(
   videoPlayerSettingsAccountIdEq: string,
 ): Statement {
@@ -401,23 +571,6 @@ export function deleteVideoPlayerSettingsStatement(
     },
     types: {
       videoPlayerSettingsAccountIdEq: { type: "string" },
-    }
-  };
-}
-
-export function deleteAccountCapabilitiesUpdatingTaskStatement(
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
-): Statement {
-  return {
-    sql: "DELETE AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
-    params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
-    },
-    types: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: { type: "float64" },
     }
   };
 }
@@ -651,53 +804,6 @@ export async function checkPresenceOfVideoPlayerSettings(
   for (let row of rows) {
     resRows.push({
       videoPlayerSettingsAccountId: row.at(0).value,
-    });
-  }
-  return resRows;
-}
-
-export interface ListAccountCapabilitiesUpdatingTasksRow {
-  accountCapabilitiesUpdatingTaskAccountId: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
-  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
-}
-
-export let LIST_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW: MessageDescriptor<ListAccountCapabilitiesUpdatingTasksRow> = {
-  name: 'ListAccountCapabilitiesUpdatingTasksRow',
-  fields: [{
-    name: 'accountCapabilitiesUpdatingTaskAccountId',
-    index: 1,
-    primitiveType: PrimitiveType.STRING,
-  }, {
-    name: 'accountCapabilitiesUpdatingTaskCapabilitiesVersion',
-    index: 2,
-    primitiveType: PrimitiveType.NUMBER,
-  }, {
-    name: 'accountCapabilitiesUpdatingTaskExecutionTimeMs',
-    index: 3,
-    primitiveType: PrimitiveType.NUMBER,
-  }],
-};
-
-export async function listAccountCapabilitiesUpdatingTasks(
-  runner: Database | Transaction,
-  accountCapabilitiesUpdatingTaskExecutionTimeMsLe: number,
-): Promise<Array<ListAccountCapabilitiesUpdatingTasksRow>> {
-  let [rows] = await runner.run({
-    sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion, AccountCapabilitiesUpdatingTask.executionTimeMs FROM AccountCapabilitiesUpdatingTask WHERE AccountCapabilitiesUpdatingTask.executionTimeMs <= @accountCapabilitiesUpdatingTaskExecutionTimeMsLe ORDER BY AccountCapabilitiesUpdatingTask.executionTimeMs",
-    params: {
-      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: new Date(accountCapabilitiesUpdatingTaskExecutionTimeMsLe).toISOString(),
-    },
-    types: {
-      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: { type: "timestamp" },
-    }
-  });
-  let resRows = new Array<ListAccountCapabilitiesUpdatingTasksRow>();
-  for (let row of rows) {
-    resRows.push({
-      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
-      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(2).value.valueOf(),
     });
   }
   return resRows;

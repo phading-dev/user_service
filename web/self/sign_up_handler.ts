@@ -23,7 +23,7 @@ import {
   SignUpRequestBody,
   SignUpResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { createSession } from "@phading/user_session_service_interface/node/client";
+import { newCreateSessionRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -125,12 +125,14 @@ export class SignUpHandler extends SignUpHandlerInterface {
       };
     }
 
-    let response = await createSession(this.serviceClient, {
-      userId,
-      accountId: account.accountId,
-      capabilitiesVersion: account.capabilitiesVersion,
-      capabilities: toCapabilities(account),
-    });
+    let response = await this.serviceClient.send(
+      newCreateSessionRequest({
+        userId,
+        accountId: account.accountId,
+        capabilitiesVersion: account.capabilitiesVersion,
+        capabilities: toCapabilities(account),
+      }),
+    );
     return {
       signedSession: response.signedSession,
       usernameIsAvailable: true,

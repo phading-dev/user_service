@@ -9,7 +9,7 @@ import {
   UpdateRecoveryEmailRequestBody,
   UpdateRecoveryEmailResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -33,7 +33,7 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
   public async handle(
     loggingPrefix: string,
     body: UpdateRecoveryEmailRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<UpdateRecoveryEmailResponse> {
     if (!body.currentPassword) {
       throw newBadRequestError(`"currentPassword" is required.`);
@@ -44,11 +44,10 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
     if (body.newEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"newEmail" is too long.`);
     }
-    let { userId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { userId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let rows = await getUser(this.database, userId);
     if (rows.length === 0) {

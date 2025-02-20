@@ -76,13 +76,16 @@
       "name": "capabilitiesVersion",
       "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN capabilitiesVersion FLOAT64 NOT NULL"
     }, {
+      "name": "retryCount",
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN retryCount FLOAT64 NOT NULL"
+    }, {
       "name": "executionTimeMs",
       "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN executionTimeMs TIMESTAMP NOT NULL"
     }, {
       "name": "createdTimeMs",
       "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN createdTimeMs TIMESTAMP NOT NULL"
     }],
-    "createTableDdl": "CREATE TABLE AccountCapabilitiesUpdatingTask (accountId STRING(MAX) NOT NULL, capabilitiesVersion FLOAT64 NOT NULL, executionTimeMs TIMESTAMP NOT NULL, createdTimeMs TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC, capabilitiesVersion ASC)",
+    "createTableDdl": "CREATE TABLE AccountCapabilitiesUpdatingTask (accountId STRING(MAX) NOT NULL, capabilitiesVersion FLOAT64 NOT NULL, retryCount FLOAT64 NOT NULL, executionTimeMs TIMESTAMP NOT NULL, createdTimeMs TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC, capabilitiesVersion ASC)",
     "indexes": [{
       "name": "AccountCapabilitiesUpdatingTaskByExecutionTimeMs",
       "createIndexDdl": "CREATE INDEX AccountCapabilitiesUpdatingTaskByExecutionTimeMs ON AccountCapabilitiesUpdatingTask(executionTimeMs)"

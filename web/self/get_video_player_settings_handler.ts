@@ -7,7 +7,7 @@ import {
   GetVideoPlayerSettingsRequestBody,
   GetVideoPlayerSettingsResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { exchangeSessionAndCheckCapability } from "@phading/user_session_service_interface/node/client";
+import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class GetVideoPlayerSettingsHandler extends GetVideoPlayerSettingsHandlerInterface {
@@ -25,13 +25,12 @@ export class GetVideoPlayerSettingsHandler extends GetVideoPlayerSettingsHandler
   public async handle(
     loggingPrefix: string,
     body: GetVideoPlayerSettingsRequestBody,
-    sessionStr: string,
+    authStr: string,
   ): Promise<GetVideoPlayerSettingsResponse> {
-    let { accountId } = await exchangeSessionAndCheckCapability(
-      this.serviceClient,
-      {
-        signedSession: sessionStr,
-      },
+    let { accountId } = await this.serviceClient.send(
+      newExchangeSessionAndCheckCapabilityRequest({
+        signedSession: authStr,
+      }),
     );
     let rows = await getVideoPlayerSettings(this.database, accountId);
     if (rows.length === 0) {

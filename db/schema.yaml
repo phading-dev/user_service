@@ -91,10 +91,10 @@
           columns:
             - username
           unique: true
-      insertStatementName: InsertUser
-      deleteStatementName: DeleteUser
-      getStatementName: GetUser
-      updateStatementName: UpdateUser
+      insert: InsertUser
+      delete: DeleteUser
+      get: GetUser
+      update: UpdateUser
     - kind: MessageTable
       name: Account
       storedInColumn: data
@@ -117,10 +117,10 @@
             - accountType
             - name: createdTimeMs
               desc: true
-      insertStatementName: InsertAccount
-      deleteStatementName: DeleteAccount
-      getStatementName: GetAccount
-      updateStatementName: UpdateAccount
+      insert: InsertAccount
+      delete: DeleteAccount
+      get: GetAccount
+      update: UpdateAccount
     - kind: MessageTable
       name: AccountMore
       storedInColumn: data
@@ -128,9 +128,9 @@
         - accountId
       primaryKeys:
         - accountId
-      insertStatementName: InsertAccountMore
-      deleteStatementName: DeleteAccountMore
-      updateStatementName: UpdateAccountMore
+      insert: InsertAccountMore
+      delete: DeleteAccountMore
+      update: UpdateAccountMore
     - kind: Table
       name: VideoPlayerSettings
       columns:
@@ -141,52 +141,38 @@
           import: "@phading/user_service_interface/web/self/video_player_settings"
       primaryKeys:
         - accountId
-    - kind: Table
+    - kind: TaskTable
       name: AccountCapabilitiesUpdatingTask
       columns:
         - name: accountId
           type: string
         - name: capabilitiesVersion
           type: float64
-        - name: executionTimeMs
-          type: timestamp
-        - name: createdTimeMs
-          type: timestamp
+      retryCountColumn: retryCount
+      executionTimeColumn: executionTimeMs
+      createdTimeColumn: createdTimeMs
       primaryKeys:
         - accountId
         - capabilitiesVersion
-      indexes:
-        - name: AccountCapabilitiesUpdatingTaskByExecutionTimeMs
-          columns:
-            - executionTimeMs
+      executionTimeIndex: AccountCapabilitiesUpdatingTaskByExecutionTimeMs
+      insert: InsertAccountCapabilitiesUpdatingTask
+      delete: DeleteAccountCapabilitiesUpdatingTask
+      get: GetAccountCapabilitiesUpdatingTask
+      listPendingTasks: ListPendingAccountCapabilitiesUpdatingTasks
+      getMetadata: GetAccountCapabilitiesUpdatingTaskMetadata
+      updateMetadata: UpdateAccountCapabilitiesUpdatingTaskMetadata
   inserts:
     - name: InsertVideoPlayerSettings
       table: VideoPlayerSettings
       setColumns:
         - accountId
         - settings
-    - name: InsertAccountCapabilitiesUpdatingTask
-      table: AccountCapabilitiesUpdatingTask
-      setColumns:
-        - accountId
-        - capabilitiesVersion
-        - executionTimeMs
-        - createdTimeMs
   deletes:
     - name: DeleteVideoPlayerSettings
       table: VideoPlayerSettings
       where:
         op: =
         leftColumn: accountId
-    - name: DeleteAccountCapabilitiesUpdatingTask
-      table: AccountCapabilitiesUpdatingTask
-      where:
-        op: AND
-        exps:
-          - op: =
-            leftColumn: accountId
-          - op: =
-            leftColumn: capabilitiesVersion
   updates:
     - name: UpdateVideoPlayerSettings
       table: VideoPlayerSettings
@@ -195,17 +181,6 @@
         leftColumn: accountId
       setColumns:
         - settings
-    - name: UpdateAccountCapabilitiesUpdatingTask
-      table: AccountCapabilitiesUpdatingTask
-      where:
-        op: AND
-        exps:
-          - op: =
-            leftColumn: accountId
-          - op: =
-            leftColumn: capabilitiesVersion
-      setColumns:
-        - executionTimeMs
   selects:
     - name: GetUserByUsername
       table: User
@@ -305,16 +280,5 @@
         leftColumn: accountId
       getColumns:
         - accountId
-    - name: ListAccountCapabilitiesUpdatingTasks
-      table: AccountCapabilitiesUpdatingTask
-      where:
-        op: <=
-        leftColumn: executionTimeMs
-      orderBy:
-        - executionTimeMs
-      getColumns:
-        - accountId
-        - capabilitiesVersion
-        - executionTimeMs
   outputDdl: ./db/ddl
   outputSql: ./db/sql

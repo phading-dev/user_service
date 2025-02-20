@@ -53,6 +53,7 @@ export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandl
         insertAccountCapabilitiesUpdatingTaskStatement(
           accountData.accountId,
           accountData.capabilitiesVersion,
+          0,
           now,
           now,
         ),
