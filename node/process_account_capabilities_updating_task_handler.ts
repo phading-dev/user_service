@@ -46,6 +46,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     loggingPrefix: string,
     body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<ProcessAccountCapabilitiesUpdatingTaskResponse> {
+    loggingPrefix = `${loggingPrefix} Account capabilities updating task for account ${body.accountId} version ${body.capabilitiesVersion}:`;
     await this.taskHandler.wrap(
       loggingPrefix,
       this.descriptor.service.path + this.descriptor.path,
