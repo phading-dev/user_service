@@ -37,6 +37,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
   ) {
     super();
     this.taskHandler = ProcessTaskHandlerWrapper.create(
+      this.descriptor,
       5 * 60 * 1000,
       24 * 60 * 60 * 1000,
     );
@@ -49,7 +50,6 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     loggingPrefix = `${loggingPrefix} Account capabilities updating task for account ${body.accountId} version ${body.capabilitiesVersion}:`;
     await this.taskHandler.wrap(
       loggingPrefix,
-      this.descriptor.service.path + this.descriptor.path,
       () => this.claimTask(body),
       () => this.processTask(loggingPrefix, body),
     );
