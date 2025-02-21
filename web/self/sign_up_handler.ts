@@ -1,7 +1,7 @@
 import crypto = require("crypto");
 import { toCapabilities } from "../../common/capabilities_converter";
 import { initAccount, initAccountMore } from "../../common/init_account";
-import { PasswordSigner } from "../../common/password_signer";
+import { PASSWORD_SIGNER, PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { Account } from "../../db/schema";
@@ -32,7 +32,7 @@ export class SignUpHandler extends SignUpHandlerInterface {
     return new SignUpHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      new PasswordSigner(),
+      PASSWORD_SIGNER,
       () => crypto.randomUUID(),
       () => Date.now(),
     );

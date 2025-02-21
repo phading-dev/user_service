@@ -1,5 +1,5 @@
 import { toCapabilities } from "../../common/capabilities_converter";
-import { PasswordSigner } from "../../common/password_signer";
+import { PASSWORD_SIGNER, PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { Account } from "../../db/schema";
@@ -23,7 +23,7 @@ export class SignInHandler extends SignInHandlerInterface {
     return new SignInHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      new PasswordSigner(),
+      PASSWORD_SIGNER,
       () => Date.now(),
     );
   }

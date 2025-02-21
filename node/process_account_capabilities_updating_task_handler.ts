@@ -66,9 +66,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
         body.capabilitiesVersion,
       );
       if (rows.length === 0) {
-        throw newBadRequestError(
-          `Account ${body.accountId} capabilities updating task with version ${body.capabilitiesVersion} is not found.`,
-        );
+        throw newBadRequestError(`Task is not found.`);
       }
       let task = rows[0];
       await transaction.batchUpdate([

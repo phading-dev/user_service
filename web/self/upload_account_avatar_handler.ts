@@ -2,7 +2,7 @@ import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
 import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
-import { S3_CLIENT_PROMISE } from "../../common/s3_client";
+import { S3_CLIENT } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getAccount, updateAccountStatement } from "../../db/sql";
@@ -24,10 +24,10 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "stream";
 
 export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterface {
-  public static async create(): Promise<UploadAccountAvatarHandler> {
+  public static create(): UploadAccountAvatarHandler {
     return new UploadAccountAvatarHandler(
       SPANNER_DATABASE,
-      await S3_CLIENT_PROMISE,
+      S3_CLIENT,
       SERVICE_CLIENT,
     );
   }

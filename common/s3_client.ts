@@ -3,7 +3,9 @@ import { ENV_VARS } from "../env";
 import { STORAGE_CLIENT } from "./storage_client";
 import { S3Client } from "@aws-sdk/client-s3";
 
-export async function createS3Client(): Promise<S3Client> {
+export let S3_CLIENT: S3Client;
+
+export async function initS3Client(): Promise<void> {
   let [
     cloudflareAccountId,
     cloudflareR2AccessKeyId,
@@ -25,7 +27,7 @@ export async function createS3Client(): Promise<S3Client> {
         .createReadStream(),
     ),
   ]);
-  return new S3Client({
+  S3_CLIENT = new S3Client({
     region: "auto",
     endpoint: `https://${cloudflareAccountId}.r2.cloudflarestorage.com`,
     credentials: {
@@ -34,5 +36,3 @@ export async function createS3Client(): Promise<S3Client> {
     },
   });
 }
-
-export let S3_CLIENT_PROMISE = createS3Client();

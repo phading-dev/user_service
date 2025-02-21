@@ -3,7 +3,7 @@ import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
 } from "../../common/params";
-import { S3_CLIENT_PROMISE } from "../../common/s3_client";
+import { S3_CLIENT, initS3Client } from "../../common/s3_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   GET_ACCOUNT_ROW,
@@ -23,9 +23,7 @@ import { TEST_RUNNER } from "@selfage/test_runner";
 import { createReadStream } from "fs";
 
 async function cleanupFiles(files: Array<string>) {
-  await (
-    await S3_CLIENT_PROMISE
-  ).send(
+  await S3_CLIENT.send(
     new DeleteObjectsCommand({
       Bucket: ENV_VARS.r2AvatarBucketName,
       Delete: {
@@ -42,6 +40,11 @@ async function cleanupFiles(files: Array<string>) {
 
 TEST_RUNNER.run({
   name: "UploadAccountAvatarHandlerTest",
+  environment: {
+    async setUp() {
+      await initS3Client();
+    },
+  },
   cases: [
     {
       name: "FirstTimeUpload",
@@ -67,7 +70,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          await S3_CLIENT_PROMISE,
+          S3_CLIENT,
           clientMock,
         );
 
@@ -99,9 +102,7 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await (
-          await S3_CLIENT_PROMISE
-        ).send(
+        let response = await S3_CLIENT.send(
           new ListObjectsV2Command({
             Bucket: ENV_VARS.r2AvatarBucketName,
           }),
@@ -149,7 +150,7 @@ TEST_RUNNER.run({
         } as ExchangeSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
-          await S3_CLIENT_PROMISE,
+          S3_CLIENT,
           clientMock,
         );
 
@@ -181,9 +182,7 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await (
-          await S3_CLIENT_PROMISE
-        ).send(
+        let response = await S3_CLIENT.send(
           new ListObjectsV2Command({
             Bucket: ENV_VARS.r2AvatarBucketName,
           }),

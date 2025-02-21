@@ -1,7 +1,6 @@
-import getStream = require("get-stream");
 import http = require("http");
-import { PasswordSigner } from "./common/password_signer";
-import { STORAGE_CLIENT } from "./common/storage_client";
+import { initPasswordSigner } from "./common/password_signer";
+import { initS3Client } from "./common/s3_client";
 import { ENV_VARS } from "./env";
 import { GetAccountContactHandler } from "./node/get_account_contact_handler";
 import { GetAccountSummaryHandler } from "./node/get_account_summary_handler";
@@ -26,14 +25,7 @@ import {
 import { ServiceHandler } from "@selfage/service_handler/service_handler";
 
 async function main() {
-  let [passwordSignerSecret] = await Promise.all([
-    getStream(
-      STORAGE_CLIENT.bucket(ENV_VARS.gcsSecretBucketName)
-        .file(ENV_VARS.passwordSignerSecretFile)
-        .createReadStream(),
-    ),
-  ]);
-  PasswordSigner.SECRET_KEY = passwordSignerSecret;
+  await Promise.all([initPasswordSigner(), initS3Client()]);
   let service = ServiceHandler.create(http.createServer())
     .addCorsAllowedPreflightHandler()
     .addHealthCheckHandler()
@@ -57,7 +49,7 @@ async function main() {
     .add(SwitchAccountHandler.create())
     .add(UpdateAccountHandler.create())
     .add(UpdatePasswordHandler.create())
-    .add(await UploadAccountAvatarHandler.create());
+    .add(UploadAccountAvatarHandler.create());
   await service.start(ENV_VARS.port);
 }
 
