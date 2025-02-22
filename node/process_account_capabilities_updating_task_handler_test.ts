@@ -264,6 +264,23 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(error, eqError(new Error("Fake error")), "error");
+        assertThat(
+          await getAccountCapabilitiesUpdatingTaskMetadata(
+            SPANNER_DATABASE,
+            "account1",
+            1,
+          ),
+          isArray([
+            eqMessage(
+              {
+                accountCapabilitiesUpdatingTaskRetryCount: 0,
+                accountCapabilitiesUpdatingTaskExecutionTimeMs: 1000,
+              },
+              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
+            ),
+          ]),
+          "task",
+        );
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
