@@ -26,6 +26,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     return new ProcessAccountCapabilitiesUpdatingTaskHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
+      () => Date.now(),
     );
   }
 
@@ -34,6 +35,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,
+    private getNow: () => number,
   ) {
     super();
     this.taskHandler = ProcessTaskHandlerWrapper.create(
@@ -50,13 +52,14 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     loggingPrefix = `${loggingPrefix} Account capabilities updating task for account ${body.accountId} version ${body.capabilitiesVersion}:`;
     await this.taskHandler.wrap(
       loggingPrefix,
-      () => this.claimTask(body),
+      () => this.claimTask(loggingPrefix, body),
       () => this.processTask(loggingPrefix, body),
     );
     return {};
   }
 
   public async claimTask(
+    loggingPrefix: string,
     body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
@@ -74,7 +77,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
           body.accountId,
           body.capabilitiesVersion,
           task.accountCapabilitiesUpdatingTaskRetryCount + 1,
-          task.accountCapabilitiesUpdatingTaskExecutionTimeMs +
+          this.getNow() +
             this.taskHandler.getBackoffTime(
               task.accountCapabilitiesUpdatingTaskRetryCount,
             ),

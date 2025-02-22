@@ -70,6 +70,7 @@ class UpdateCapabilitiesCase implements TestCase {
     let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
       SPANNER_DATABASE,
       clientMock,
+      () => 2000,
     );
 
     // Execute
@@ -184,10 +185,11 @@ TEST_RUNNER.run({
         let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
+          () => 2000,
         );
 
         // Execute
-        await handler.claimTask({
+        await handler.claimTask("", {
           accountId: "account1",
           capabilitiesVersion: 1,
         });
@@ -203,7 +205,7 @@ TEST_RUNNER.run({
             eqMessage(
               {
                 accountCapabilitiesUpdatingTaskRetryCount: 1,
-                accountCapabilitiesUpdatingTaskExecutionTimeMs: 301000,
+                accountCapabilitiesUpdatingTaskExecutionTimeMs: 302000,
               },
               GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
             ),
@@ -252,6 +254,7 @@ TEST_RUNNER.run({
         let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
+          () => 2000,
         );
 
         // Execute
@@ -316,6 +319,7 @@ TEST_RUNNER.run({
         let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
+          () => 2000,
         );
 
         // Execute
