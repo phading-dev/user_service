@@ -2,8 +2,9 @@ import getStream = require("get-stream");
 import { ENV_VARS } from "../env";
 import { STORAGE_CLIENT } from "./storage_client";
 import { S3Client } from "@aws-sdk/client-s3";
+import { Ref } from "@selfage/ref";
 
-export let S3_CLIENT: S3Client;
+export let S3_CLIENT = new Ref<S3Client>();
 
 export async function initS3Client(): Promise<void> {
   let [
@@ -27,7 +28,7 @@ export async function initS3Client(): Promise<void> {
         .createReadStream(),
     ),
   ]);
-  S3_CLIENT = new S3Client({
+  S3_CLIENT.val = new S3Client({
     region: "auto",
     endpoint: `https://${cloudflareAccountId}.r2.cloudflarestorage.com`,
     credentials: {

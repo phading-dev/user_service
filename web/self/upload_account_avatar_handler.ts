@@ -20,6 +20,7 @@ import { UploadAccountAvatarResponse } from "@phading/user_service_interface/web
 import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
+import { Ref } from "@selfage/ref";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "stream";
 
@@ -34,7 +35,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
 
   public constructor(
     private database: Database,
-    private s3Client: S3Client,
+    private s3Client: Ref<S3Client>,
     private serviceClient: NodeServiceClient,
   ) {
     super();
@@ -102,7 +103,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
   ): Promise<void> {
     let passThrough = new stream.PassThrough();
     let upload = new Upload({
-      client: this.s3Client,
+      client: this.s3Client.val,
       params: {
         Bucket: ENV_VARS.r2AvatarBucketName,
         Key: outputFile,

@@ -1,6 +1,9 @@
+import { ENV_VARS } from "./env";
+import {
+  K8S_SERVICE_NAME,
+  K8S_SERVICE_PORT,
+} from "@phading/user_service_interface/service_const";
 import { writeFileSync } from "fs";
-import {ENV_VARS} from "./env";
-import {K8S_SERVICE_NAME, K8S_SERVICE_PORT} from '@phading/user_service_interface/service_const';
 
 async function main() {
   let env = process.argv[2];
@@ -32,7 +35,6 @@ gcloud spanner databases create ${ENV_VARS.databaseId} --instance=${ENV_VARS.dat
 `;
   writeFileSync(`turnup_${env}.sh`, turnupTemplate);
 
-
   let cloudbuildTemplate = `steps:
 - name: 'node:20.12.1'
   entrypoint: 'npm'
@@ -62,7 +64,6 @@ options:
 `;
   writeFileSync(`cloudbuild_${env}.yaml`, cloudbuildTemplate);
 
-
   let dockerTemplate = `FROM node:20.12.1
 
 WORKDIR /app
@@ -75,7 +76,6 @@ EXPOSE ${ENV_VARS.port}
 CMD ["node", "main_bin"]
 `;
   writeFileSync(`Dockerfile_${env}`, dockerTemplate);
-
 
   let serviceTemplate = `apiVersion: apps/v1
 kind: Deployment

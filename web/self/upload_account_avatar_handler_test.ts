@@ -23,7 +23,7 @@ import { TEST_RUNNER } from "@selfage/test_runner";
 import { createReadStream } from "fs";
 
 async function cleanupFiles(files: Array<string>) {
-  await S3_CLIENT.send(
+  await S3_CLIENT.val.send(
     new DeleteObjectsCommand({
       Bucket: ENV_VARS.r2AvatarBucketName,
       Delete: {
@@ -102,7 +102,7 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await S3_CLIENT.send(
+        let response = await S3_CLIENT.val.send(
           new ListObjectsV2Command({
             Bucket: ENV_VARS.r2AvatarBucketName,
           }),
@@ -182,7 +182,7 @@ TEST_RUNNER.run({
           ]),
           "account",
         );
-        let response = await S3_CLIENT.send(
+        let response = await S3_CLIENT.val.send(
           new ListObjectsV2Command({
             Bucket: ENV_VARS.r2AvatarBucketName,
           }),
