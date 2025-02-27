@@ -166,63 +166,6 @@ TEST_RUNNER.run({
       },
     ),
     {
-      name: "ClaimTask",
-      execute: async () => {
-        // Prepare
-        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([
-            insertAccountCapabilitiesUpdatingTaskStatement(
-              "account1",
-              1,
-              0,
-              1000,
-              1000,
-            ),
-          ]);
-          await transaction.commit();
-        });
-        let clientMock = new NodeServiceClientMock();
-        let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
-          SPANNER_DATABASE,
-          clientMock,
-          () => 2000,
-        );
-
-        // Execute
-        await handler.claimTask("", {
-          accountId: "account1",
-          capabilitiesVersion: 1,
-        });
-
-        // Verify
-        assertThat(
-          await getAccountCapabilitiesUpdatingTaskMetadata(
-            SPANNER_DATABASE,
-            "account1",
-            1,
-          ),
-          isArray([
-            eqMessage(
-              {
-                accountCapabilitiesUpdatingTaskRetryCount: 1,
-                accountCapabilitiesUpdatingTaskExecutionTimeMs: 302000,
-              },
-              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
-            ),
-          ]),
-          "task",
-        );
-      },
-      tearDown: async () => {
-        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([
-            deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
-          ]);
-          await transaction.commit();
-        });
-      },
-    },
-    {
       name: "UpdateFailedAndRetrying",
       execute: async () => {
         // Prepare
@@ -342,6 +285,62 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.commit();
+        });
+      },
+    },
+    {
+      name: "ClaimTask",
+      execute: async () => {
+        // Prepare
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertAccountCapabilitiesUpdatingTaskStatement(
+              "account1",
+              1,
+              0,
+              1000,
+              1000,
+            ),
+          ]);
+          await transaction.commit();
+        });
+        let handler = new ProcessAccountCapabilitiesUpdatingTaskHandler(
+          SPANNER_DATABASE,
+          undefined,
+          () => 2000,
+        );
+
+        // Execute
+        await handler.claimTask("", {
+          accountId: "account1",
+          capabilitiesVersion: 1,
+        });
+
+        // Verify
+        assertThat(
+          await getAccountCapabilitiesUpdatingTaskMetadata(
+            SPANNER_DATABASE,
+            "account1",
+            1,
+          ),
+          isArray([
+            eqMessage(
+              {
+                accountCapabilitiesUpdatingTaskRetryCount: 1,
+                accountCapabilitiesUpdatingTaskExecutionTimeMs: 302000,
+              },
+              GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW,
+            ),
+          ]),
+          "task",
+        );
+      },
+      tearDown: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
+          ]);
           await transaction.commit();
         });
       },
