@@ -1,3 +1,4 @@
+import "../../local/env";
 import path from "path";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
@@ -11,7 +12,7 @@ import {
   getAccount,
   insertAccountStatement,
 } from "../../db/sql";
-import { ENV_VARS } from "../../env";
+import { ENV_VARS } from "../../env_vars";
 import { UploadAccountAvatarHandler } from "./upload_account_avatar_handler";
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { AccountType } from "@phading/user_service_interface/account_type";

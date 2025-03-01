@@ -1,7 +1,7 @@
 import http = require("http");
 import { initPasswordSigner } from "./common/password_signer";
 import { initS3Client } from "./common/s3_client";
-import { ENV_VARS } from "./env";
+import { ENV_VARS } from "./env_vars";
 import { GetAccountContactHandler } from "./node/get_account_contact_handler";
 import { GetAccountSummaryHandler } from "./node/get_account_summary_handler";
 import { ListAccountCapabilitiesUpdatingTasksHandler } from "./node/list_account_capabilities_updating_tasks_handler";

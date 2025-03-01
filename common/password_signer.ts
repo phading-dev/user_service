@@ -1,6 +1,6 @@
 import crypto = require("crypto");
 import getStream = require("get-stream");
-import { ENV_VARS } from "../env";
+import { ENV_VARS } from "../env_vars";
 import { STORAGE_CLIENT } from "./storage_client";
 
 export class PasswordSigner {

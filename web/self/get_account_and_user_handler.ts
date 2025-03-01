@@ -1,7 +1,7 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { getUserAndAccountAndMore } from "../../db/sql";
-import { ENV_VARS } from "../../env";
+import { ENV_VARS } from "../../env_vars";
 import { Database } from "@google-cloud/spanner";
 import { GetAccountAndUserHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {

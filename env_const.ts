@@ -1,4 +1,4 @@
-import { ENV_VARS } from "./env";
+import { ENV_VARS } from "./env_vars";
 
 ENV_VARS.spannerDatabaseId = "user-db";
 ENV_VARS.passwordSignerSecretFile = "password_signer_secret";

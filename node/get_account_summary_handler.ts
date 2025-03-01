@@ -1,6 +1,6 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import { getAccount } from "../db/sql";
-import { ENV_VARS } from "../env";
+import { ENV_VARS } from "../env_vars";
 import { Database } from "@google-cloud/spanner";
 import { GetAccountSummaryHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {

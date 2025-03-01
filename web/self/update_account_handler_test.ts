@@ -1,3 +1,4 @@
+import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   GET_ACCOUNT_AND_MORE_BY_ID_ROW,

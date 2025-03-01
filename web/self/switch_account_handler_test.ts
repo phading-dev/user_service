@@ -1,3 +1,4 @@
+import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
