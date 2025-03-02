@@ -137,4 +137,8 @@ spec:
   type: ClusterIP
 `;
   writeFileSync(`${env}/service.yaml`, serviceTemplate);
+  
 }
+
+import "./dev/env";
+generate("dev");
