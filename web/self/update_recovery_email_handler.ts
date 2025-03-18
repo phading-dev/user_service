@@ -1,7 +1,7 @@
 import { PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getUser, updateUserStatement } from "../../db/sql";
+import { getUser, updateUserRecoveryEmailStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { MAX_EMAIL_LENGTH } from "@phading/constants/account";
 import { UpdateRecoveryEmailHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -9,7 +9,7 @@ import {
   UpdateRecoveryEmailRequestBody,
   UpdateRecoveryEmailResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
+import { newFetchSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -45,23 +45,27 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
       throw newBadRequestError(`"newEmail" is too long.`);
     }
     let { userId } = await this.serviceClient.send(
-      newExchangeSessionAndCheckCapabilityRequest({
+      newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
       }),
     );
-    let rows = await getUser(this.database, userId);
+    let rows = await getUser(this.database, { userUserIdEq: userId });
     if (rows.length === 0) {
       throw newNotFoundError(`User ${userId} is not found.`);
     }
-    let { userData } = rows[0];
+    let user = rows[0];
     if (
-      this.passwordSigner.sign(body.currentPassword) !== userData.passwordHashV1
+      this.passwordSigner.sign(body.currentPassword) !== user.userPasswordHashV1
     ) {
       throw newBadRequestError(`Password is incorrect.`);
     }
-    userData.recoveryEmail = body.newEmail;
     await this.database.runTransactionAsync(async (transaction) => {
-      await transaction.batchUpdate([updateUserStatement(userData)]);
+      await transaction.batchUpdate([
+        updateUserRecoveryEmailStatement({
+          userUserIdEq: userId,
+          setRecoveryEmail: body.newEmail,
+        }),
+      ]);
       await transaction.commit();
     });
     return {};

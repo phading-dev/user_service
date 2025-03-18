@@ -12,7 +12,6 @@ import {
   listPendingAccountCapabilitiesUpdatingTasks,
 } from "../db/sql";
 import { SyncBillingAccountStateHandler } from "./sync_billing_account_state_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, isArray } from "@selfage/test_matcher";
@@ -21,9 +20,17 @@ import { TEST_RUNNER } from "@selfage/test_runner";
 async function cleanupAll() {
   await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
     await transaction.batchUpdate([
-      deleteAccountStatement("account1"),
-      deleteAccountCapabilitiesUpdatingTaskStatement("account1", 10),
-      deleteAccountCapabilitiesUpdatingTaskStatement("account1", 11),
+      deleteAccountStatement({
+        accountAccountIdEq: "account1",
+      }),
+      deleteAccountCapabilitiesUpdatingTaskStatement({
+        accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+        accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 10,
+      }),
+      deleteAccountCapabilitiesUpdatingTaskStatement({
+        accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+        accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 11,
+      }),
     ]);
     await transaction.commit();
   });
@@ -41,14 +48,9 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 10,
-              billingAccountStateInfo: {
-                version: 0,
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
+              billingAccountStateVersion: 0,
+              billingAccountState: BillingAccountState.HEALTHY,
             }),
           ]);
           await transaction.commit();
@@ -67,22 +69,17 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccount(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                accountData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  capabilitiesVersion: 11,
-                  billingAccountStateInfo: {
-                    version: 1,
-                    state: BillingAccountState.SUSPENDED,
-                  },
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountCapabilitiesVersion: 11,
+                accountBillingAccountStateVersion: 1,
+                accountBillingAccountState: BillingAccountState.SUSPENDED,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -90,11 +87,10 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await getAccountCapabilitiesUpdatingTaskMetadata(
-            SPANNER_DATABASE,
-            "account1",
-            11,
-          ),
+          await getAccountCapabilitiesUpdatingTaskMetadata(SPANNER_DATABASE, {
+            accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+            accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 11,
+          }),
           isArray([
             eqMessage(
               {
@@ -120,22 +116,16 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 10,
-              billingAccountStateInfo: {
-                version: 1,
-                state: BillingAccountState.SUSPENDED,
-              },
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
+              billingAccountStateVersion: 1,
+              billingAccountState: BillingAccountState.SUSPENDED,
             }),
-            insertAccountCapabilitiesUpdatingTaskStatement(
-              "account1",
-              10,
-              0,
-              1000,
-              1000,
-            ),
+            insertAccountCapabilitiesUpdatingTaskStatement({
+              accountId: "account1",
+              capabilitiesVersion: 10,
+              retryCount: 0,
+              executionTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -153,22 +143,17 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccount(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                accountData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  capabilitiesVersion: 11,
-                  billingAccountStateInfo: {
-                    version: 2,
-                    state: BillingAccountState.HEALTHY,
-                  },
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountCapabilitiesVersion: 11,
+                accountBillingAccountStateVersion: 2,
+                accountBillingAccountState: BillingAccountState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -176,11 +161,10 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await getAccountCapabilitiesUpdatingTaskMetadata(
-            SPANNER_DATABASE,
-            "account1",
-            11,
-          ),
+          await getAccountCapabilitiesUpdatingTaskMetadata(SPANNER_DATABASE, {
+            accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+            accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 11,
+          }),
           isArray([
             eqMessage(
               {
@@ -206,14 +190,9 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 10,
-              billingAccountStateInfo: {
-                version: 1,
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
+              billingAccountStateVersion: 1,
+              billingAccountState: BillingAccountState.HEALTHY,
             }),
           ]);
           await transaction.commit();
@@ -232,22 +211,17 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccount(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                accountData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  capabilitiesVersion: 10,
-                  billingAccountStateInfo: {
-                    version: 1,
-                    state: BillingAccountState.HEALTHY,
-                  },
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountCapabilitiesVersion: 10,
+                accountBillingAccountStateVersion: 1,
+                accountBillingAccountState: BillingAccountState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -255,10 +229,9 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await listPendingAccountCapabilitiesUpdatingTasks(
-            SPANNER_DATABASE,
-            1000000,
-          ),
+          await listPendingAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, {
+            accountCapabilitiesUpdatingTaskExecutionTimeMsLe: 1000000,
+          }),
           isArray([]),
           "tasks",
         );

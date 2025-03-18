@@ -3,8 +3,8 @@ import { SERVICE_CLIENT } from "../common/service_client";
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
   deleteAccountCapabilitiesUpdatingTaskStatement,
-  getAccount,
   getAccountCapabilitiesUpdatingTaskMetadata,
+  getAccountMain,
   updateAccountCapabilitiesUpdatingTaskMetadataStatement,
 } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -63,25 +63,27 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccountCapabilitiesUpdatingTaskMetadata(
-        transaction,
-        body.accountId,
-        body.capabilitiesVersion,
-      );
+      let rows = await getAccountCapabilitiesUpdatingTaskMetadata(transaction, {
+        accountCapabilitiesUpdatingTaskAccountIdEq: body.accountId,
+        accountCapabilitiesUpdatingTaskCapabilitiesVersionEq:
+          body.capabilitiesVersion,
+      });
       if (rows.length === 0) {
         throw newBadRequestError(`Task is not found.`);
       }
       let task = rows[0];
       await transaction.batchUpdate([
-        updateAccountCapabilitiesUpdatingTaskMetadataStatement(
-          body.accountId,
-          body.capabilitiesVersion,
-          task.accountCapabilitiesUpdatingTaskRetryCount + 1,
-          this.getNow() +
+        updateAccountCapabilitiesUpdatingTaskMetadataStatement({
+          accountCapabilitiesUpdatingTaskAccountIdEq: body.accountId,
+          accountCapabilitiesUpdatingTaskCapabilitiesVersionEq:
+            body.capabilitiesVersion,
+          setRetryCount: task.accountCapabilitiesUpdatingTaskRetryCount + 1,
+          setExecutionTimeMs:
+            this.getNow() +
             this.taskHandler.getBackoffTime(
               task.accountCapabilitiesUpdatingTaskRetryCount,
             ),
-        ),
+        }),
       ]);
       await transaction.commit();
     });
@@ -91,31 +93,37 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     loggingPrefix: string,
     body: ProcessAccountCapabilitiesUpdatingTaskRequestBody,
   ): Promise<void> {
-    let rows = await getAccount(this.database, body.accountId);
+    let rows = await getAccountMain(this.database, {
+      accountAccountIdEq: body.accountId,
+    });
     if (rows.length === 0) {
       throw newInternalServerErrorError(
         `Account ${body.accountId} is not found.`,
       );
     }
-    let { accountData } = rows[0];
-    if (body.capabilitiesVersion !== accountData.capabilitiesVersion) {
+    let row = rows[0];
+    if (body.capabilitiesVersion !== row.accountCapabilitiesVersion) {
       throw newBadRequestError(
-        `Account ${body.accountId} capability version is ${accountData.capabilitiesVersion} which doesn't match the task with version ${body.capabilitiesVersion}.`,
+        `Account ${body.accountId} capability version is ${row.accountCapabilitiesVersion} which doesn't match the task with version ${body.capabilitiesVersion}.`,
       );
     }
     await this.serviceClient.send(
       newUpdateAccountCapabilitiesRequest({
         accountId: body.accountId,
         capabilitiesVersion: body.capabilitiesVersion,
-        capabilities: toCapabilities(accountData),
+        capabilities: toCapabilities(
+          row.accountAccountType,
+          row.accountBillingAccountState,
+        ),
       }),
     );
     await this.database.runTransactionAsync(async (transaction) => {
       await transaction.batchUpdate([
-        deleteAccountCapabilitiesUpdatingTaskStatement(
-          body.accountId,
-          body.capabilitiesVersion,
-        ),
+        deleteAccountCapabilitiesUpdatingTaskStatement({
+          accountCapabilitiesUpdatingTaskAccountIdEq: body.accountId,
+          accountCapabilitiesUpdatingTaskCapabilitiesVersionEq:
+            body.capabilitiesVersion,
+        }),
       ]);
       await transaction.commit();
     });

@@ -1,89 +1,25 @@
-- kind: Message
-  name: User
-  fields:
-    - name: userId
-      type: string
-      index: 1
-    - name: username
-      type: string
-      index: 2
-    - name: passwordHashV1
-      type: string
-      index: 3
-    - name: recoveryEmail
-      type: string
-      index: 4
-    - name: totalAccounts
-      type: number
-      index: 5
-    - name: createdTimeMs
-      type: number
-      index: 6
-- kind: Message
-  name: BillingAccountStateInfo
-  fields:
-    - name: version
-      type: number
-      index: 1
-    - name: state
-      type: BillingAccountState
-      import: "@phading/user_service_interface/node/billing_account_state"
-      index: 2
-- kind: Message
-  name: Account
-  fields:
-    - name: userId
-      type: string
-      index: 1
-    - name: accountId
-      type: string
-      index: 2
-    - name: accountType
-      type: AccountType
-      import: "@phading/user_service_interface/account_type"
-      index: 3
-    - name: naturalName
-      type: string
-      index: 4
-    - name: contactEmail
-      type: string
-      index: 5
-    - name: avatarSmallFilename
-      type: string
-      index: 6
-    - name: avatarLargeFilename
-      type: string
-      index: 7
-    - name: lastAccessedTimeMs
-      type: number
-      index: 8
-    - name: createdTimeMs
-      type: number
-      index: 9
-    - name: billingAccountStateInfo
-      type: BillingAccountStateInfo
-      index: 10
-    - name: capabilitiesVersion
-      type: number
-      index: 11
-- kind: Message
-  name: AccountMore
-  fields:
-    - name: accountId
-      type: string
-      index: 1
-    - name: description
-      type: string
-      index: 2
 - kind: SpannerDatabase
   name: UserDatabase
   tables:
-    - kind: MessageTable
+    - kind: Table
       name: User
-      storedInColumn: data
       columns:
-        - userId
-        - username
+        - name: userId
+          type: string
+        - name: username
+          type: string
+        - name: passwordHashV1
+          type: string
+          nullable: true
+        - name: recoveryEmail
+          type: string
+          nullable: true
+        - name: totalAccounts
+          type: float64
+          nullable: true
+        - name: createdTimeMs
+          type: float64
+          nullable: true
       primaryKeys:
         - userId
       indexes:
@@ -94,16 +30,67 @@
       insert: InsertUser
       delete: DeleteUser
       get: GetUser
-      update: UpdateUser
-    - kind: MessageTable
+    - kind: Table
       name: Account
-      storedInColumn: data
       columns:
-        - accountId
-        - userId
-        - accountType
-        - lastAccessedTimeMs
-        - createdTimeMs
+        - name: userId
+          type: string
+        - name: accountId
+          type: string
+        - name: accountType
+          type: AccountType
+          import: "@phading/user_service_interface/account_type"
+          nullable: true
+        - name: naturalName
+          type: string
+          nullable: true
+        - name: description
+          type: string
+          nullable: true
+        - name: contactEmail
+          type: string
+          nullable: true
+        - name: avatarSmallFilename
+          type: string
+          nullable: true
+        - name: avatarLargeFilename
+          type: string
+          nullable: true
+        - name: lastAccessedTimeMs
+          type: float64
+          nullable: true
+        - name: createdTimeMs
+          type: float64
+          nullable: true
+        - name: billingAccountStateVersion
+          type: float64
+          nullable: true
+        - name: billingAccountState
+          type: BillingAccountState
+          import: "@phading/user_service_interface/node/billing_account_state"
+          nullable: true
+        - name: capabilitiesVersion
+          type: float64
+          nullable: true
+      columnGroups:
+        - name: main
+          columns:
+            - userId
+            - accountId
+            - accountType
+            - naturalName
+            - contactEmail
+            - avatarSmallFilename
+            - avatarLargeFilename
+            - lastAccessedTimeMs
+            - billingAccountStateVersion
+            - billingAccountState
+            - capabilitiesVersion
+      searchColumns:
+        - name: fullText
+          columnRefs:
+            - naturalName
+            - description
       primaryKeys:
         - accountId
       indexes:
@@ -117,20 +104,13 @@
             - accountType
             - name: createdTimeMs
               desc: true
+      searchIndexes:
+        - name: ByFullText
+          columns:
+            - fullText
       insert: InsertAccount
       delete: DeleteAccount
       get: GetAccount
-      update: UpdateAccount
-    - kind: MessageTable
-      name: AccountMore
-      storedInColumn: data
-      columns:
-        - accountId
-      primaryKeys:
-        - accountId
-      insert: InsertAccountMore
-      delete: DeleteAccountMore
-      update: UpdateAccountMore
     - kind: Table
       name: VideoPlayerSettings
       columns:
@@ -139,8 +119,13 @@
         - name: settings
           type: VideoPlayerSettings
           import: "@phading/user_service_interface/web/self/video_player_settings"
+          nullable: true
       primaryKeys:
         - accountId
+      insert: InsertVideoPlayerSettings
+      delete: DeleteVideoPlayerSettings
+      get: GetVideoPlayerSettings
+      update: UpdateVideoPlayerSettings
     - kind: TaskTable
       name: AccountCapabilitiesUpdatingTask
       columns:
@@ -161,124 +146,152 @@
       listPendingTasks: ListPendingAccountCapabilitiesUpdatingTasks
       getMetadata: GetAccountCapabilitiesUpdatingTaskMetadata
       updateMetadata: UpdateAccountCapabilitiesUpdatingTaskMetadata
-  inserts:
-    - name: InsertVideoPlayerSettings
-      table: VideoPlayerSettings
-      setColumns:
-        - accountId
-        - settings
-  deletes:
-    - name: DeleteVideoPlayerSettings
-      table: VideoPlayerSettings
-      where:
-        op: =
-        leftColumn: accountId
   updates:
-    - name: UpdateVideoPlayerSettings
-      table: VideoPlayerSettings
-      where:
-        op: =
-        leftColumn: accountId
-      setColumns:
-        - settings
-  selects:
-    - name: GetUserByUsername
+    - name: UpdateUserTotalAccounts
       table: User
       where:
         op: =
-        leftColumn: username
-      getColumns:
-        - data
-    - name: ListLastAccessedAccounts
+        lColumn: userId
+      set:
+        - totalAccounts
+    - name: UpdateUserPasswordHash
+      table: User
+      where:
+        op: =
+        lColumn: userId
+      set:
+        - passwordHashV1
+    - name: UpdateUserRecoveryEmail
+      table: User
+      where:
+        op: =
+        lColumn: userId
+      set:
+        - recoveryEmail
+    - name: UpdateAccountBillingAccountState
       table: Account
       where:
         op: =
-        leftColumn: userId
+        lColumn: accountId
+      set:
+        - billingAccountState
+        - billingAccountStateVersion
+        - capabilitiesVersion
+    - name: UpdateAccountLastAccessedTime
+      table: Account
+      where:
+        op: =
+        lColumn: accountId
+      set:
+        - lastAccessedTimeMs
+    - name: UpdateAccountContent
+      table: Account
+      where:
+        op: =
+        lColumn: accountId
+      set:
+        - naturalName
+        - description
+        - contactEmail
+    - name: UpdateAccountAvatar
+      table: Account
+      where:
+        op: =
+        lColumn: accountId
+      set:
+        - avatarSmallFilename
+        - avatarLargeFilename
+  selects:
+    - name: GetUserByUsername
+      from: User
+      where:
+        op: =
+        lColumn: username
+      get:
+        - all: true
+    - name: ListLastAccessedAccounts
+      from: Account
+      where:
+        op: =
+        lColumn: userId
       orderBy:
         - column: lastAccessedTimeMs
           desc: true
       withLimit: true
-      getColumns:
-        - data
-    - name: GetAccountAndMoreById
-      table:
-        name: Account
-        as: a
-      join:
-        - type: INNER
-          table:
-            name: AccountMore
-            as: am
-          on:
-            op: =
-            leftColumn:
-              name: accountId
-              table: a
-            rightColumn: accountId
+      get:
+        - columnGroup: main
+    - name: SearchAccounts
+      from: Account
       where:
-        op: =
-        leftColumn: accountId
-      getColumns:
-        - name: data
-          table: a
-        - name: data
-          table: am
-    - name: GetUserAndAccountAndMore
-      table:
-        name: User
-        as: u
-      join:
-        - type: INNER
-          table:
-            name: Account
-            as: a
-          on:
-            op: =
-            leftColumn:
-              name: userId
-              table: u
-            rightColumn: userId
-        - type: INNER
-          table:
-            name: AccountMore
-            as: am
-          on:
-            op: =
-            leftColumn:
-              name: accountId
-              table: a
-            rightColumn: accountId
+        op: SEARCH
+        lColumn: fullText
+      orderBy:
+        - func: SCORE
+          column: fullText
+          desc: true
+      withLimit: true
+      get:
+        - columnGroup: main
+        - func: SCORE
+          column: fullText
+    - name: ContinuedSearchAccounts
+      from: Account
       where:
         op: AND
-        exps:
+        exprs:
+          - op: SEARCH
+            lColumn: fullText
+          - op: <
+            func: SCORE
+            lColumn: fullText
+      orderBy:
+        - func: SCORE
+          column: fullText
+          desc: true
+      withLimit: true
+      get:
+        - columnGroup: main
+        - func: SCORE
+          column: fullText
+    - name: GetAccountMain
+      from: Account
+      where:
+        op: =
+        lColumn: accountId
+      get:
+        - columnGroup: main
+    - name: GetUserAndAccountAll
+      from: User
+      as: u
+      join:
+        - type: INNER
+          with: Account
+          as: a
+          on:
+            op: =
+            lColumn: userId
+            lTable: u
+            rColumn: userId
+      where:
+        op: AND
+        exprs:
           - op: =
-            leftColumn:
-              name: userId
-              table: u
+            lColumn: userId
+            lTable: u
           - op: =
-            leftColumn:
-              name: accountId
-              table: a
-      getColumns:
-        - name: data
+            lColumn: accountId
+            lTable: a
+      get:
+        - all: true
           table: u
-        - name: data
+        - all: true
           table: a
-        - name: data
-          table: am
-    - name: GetVideoPlayerSettings
-      table: VideoPlayerSettings
-      where:
-        op: =
-        leftColumn: accountId
-      getColumns:
-        - settings
     - name: CheckPresenceOfVideoPlayerSettings
-      table: VideoPlayerSettings
+      from: VideoPlayerSettings
       where:
         op: =
-        leftColumn: accountId
-      getColumns:
+        lColumn: accountId
+      get:
         - accountId
   outputDdl: ./db/ddl
   outputSql: ./db/sql

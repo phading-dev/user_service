@@ -2,11 +2,10 @@ import { toCapabilities } from "../../common/capabilities_converter";
 import { PASSWORD_SIGNER, PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { Account } from "../../db/schema";
 import {
   getUserByUsername,
   listLastAccessedAccounts,
-  updateAccountStatement,
+  updateAccountLastAccessedTimeStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { SignInHandlerInterface } from "@phading/user_service_interface/web/self/handler";
@@ -15,7 +14,11 @@ import {
   SignInResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { newCreateSessionRequest } from "@phading/user_session_service_interface/node/client";
-import { newBadRequestError, newUnauthorizedError } from "@selfage/http_error";
+import {
+  newBadRequestError,
+  newInternalServerErrorError,
+  newUnauthorizedError,
+} from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class SignInHandler extends SignInHandlerInterface {
@@ -48,33 +51,42 @@ export class SignInHandler extends SignInHandlerInterface {
       throw newBadRequestError(`"password" is required.`);
     }
 
-    let rows = await getUserByUsername(this.database, body.username);
+    let rows = await getUserByUsername(this.database, {
+      userUsernameEq: body.username,
+    });
     if (rows.length === 0) {
       console.log(`${loggingPrefix} username ${body.username} is not found.`);
       throw newUnauthorizedError("Failed to sign in.");
     }
-    let { userData } = rows[0];
+    let row = rows[0];
     let signedPassword = this.passwordSigner.sign(body.password);
-    if (signedPassword !== userData.passwordHashV1) {
+    if (signedPassword !== row.userPasswordHashV1) {
       console.log(
         `${loggingPrefix} password doesn't match for username ${body.username}.`,
       );
       throw newUnauthorizedError("Failed to sign in.");
     }
-    let [accountRow] = await listLastAccessedAccounts(
-      this.database,
-      userData.userId,
-      1,
-    );
-    let account = accountRow.accountData;
+    let accountRows = await listLastAccessedAccounts(this.database, {
+      accountUserIdEq: row.userUserId,
+      limit: 1,
+    });
+    if (accountRows.length === 0) {
+      throw newInternalServerErrorError(
+        `No account found for user ${row.userUserId}.`,
+      );
+    }
+    let account = accountRows[0];
     let [_, response] = await Promise.all([
-      this.updateLastAccessedTimestmap(account),
+      this.updateLastAccessedTimestmap(account.accountAccountId),
       this.serviceClient.send(
         newCreateSessionRequest({
-          userId: account.userId,
-          accountId: account.accountId,
-          capabilitiesVersion: account.capabilitiesVersion,
-          capabilities: toCapabilities(account),
+          userId: account.accountUserId,
+          accountId: account.accountAccountId,
+          capabilitiesVersion: account.accountCapabilitiesVersion,
+          capabilities: toCapabilities(
+            account.accountAccountType,
+            account.accountBillingAccountState,
+          ),
         }),
       ),
     ]);
@@ -83,12 +95,14 @@ export class SignInHandler extends SignInHandlerInterface {
     };
   }
 
-  private async updateLastAccessedTimestmap(
-    accountData: Account,
-  ): Promise<void> {
+  private async updateLastAccessedTimestmap(accountId: string): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
-      accountData.lastAccessedTimeMs = this.getNow();
-      await transaction.batchUpdate([updateAccountStatement(accountData)]);
+      await transaction.batchUpdate([
+        updateAccountLastAccessedTimeStatement({
+          accountAccountIdEq: accountId,
+          setLastAccessedTimeMs: this.getNow(),
+        }),
+      ]);
       await transaction.commit();
     });
   }

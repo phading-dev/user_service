@@ -35,8 +35,8 @@ class UpdateCapabilitiesCase implements TestCase {
     private accountType: AccountType,
     private billingAccountState: BillingAccountState,
     private expectedCapabilities: {
-      canConsumeShows: boolean;
-      canPublishShows: boolean;
+      canConsume: boolean;
+      canPublish: boolean;
       canBeBilled: boolean;
       canEarn: boolean;
     },
@@ -51,19 +51,14 @@ class UpdateCapabilitiesCase implements TestCase {
           accountId: "account1",
           accountType: this.accountType,
           capabilitiesVersion: 1,
-          billingAccountStateInfo: {
-            state: this.billingAccountState,
-          },
-          createdTimeMs: 1000,
-          lastAccessedTimeMs: 1000,
+          billingAccountState: this.billingAccountState,
         }),
-        insertAccountCapabilitiesUpdatingTaskStatement(
-          "account1",
-          1,
-          0,
-          1000,
-          1000,
-        ),
+        insertAccountCapabilitiesUpdatingTaskStatement({
+          accountId: "account1",
+          capabilitiesVersion: 1,
+          retryCount: 0,
+          executionTimeMs: 1000,
+        }),
       ]);
       await transaction.commit();
     });
@@ -99,10 +94,9 @@ class UpdateCapabilitiesCase implements TestCase {
       "body",
     );
     assertThat(
-      await listPendingAccountCapabilitiesUpdatingTasks(
-        SPANNER_DATABASE,
-        1000000,
-      ),
+      await listPendingAccountCapabilitiesUpdatingTasks(SPANNER_DATABASE, {
+        accountCapabilitiesUpdatingTaskExecutionTimeMsLe: 1000000,
+      }),
       isArray([]),
       "tasks",
     );
@@ -111,8 +105,13 @@ class UpdateCapabilitiesCase implements TestCase {
   public async tearDown(): Promise<void> {
     await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
       await transaction.batchUpdate([
-        deleteAccountStatement("account1"),
-        deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
+        deleteAccountStatement({
+          accountAccountIdEq: "account1",
+        }),
+        deleteAccountCapabilitiesUpdatingTaskStatement({
+          accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+          accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 1,
+        }),
       ]);
       await transaction.commit();
     });
@@ -127,8 +126,8 @@ TEST_RUNNER.run({
       AccountType.CONSUMER,
       BillingAccountState.HEALTHY,
       {
-        canConsumeShows: true,
-        canPublishShows: false,
+        canConsume: true,
+        canPublish: false,
         canBeBilled: true,
         canEarn: false,
       },
@@ -138,8 +137,8 @@ TEST_RUNNER.run({
       AccountType.PUBLISHER,
       BillingAccountState.HEALTHY,
       {
-        canConsumeShows: false,
-        canPublishShows: true,
+        canConsume: false,
+        canPublish: true,
         canBeBilled: true,
         canEarn: true,
       },
@@ -149,8 +148,8 @@ TEST_RUNNER.run({
       AccountType.CONSUMER,
       BillingAccountState.SUSPENDED,
       {
-        canConsumeShows: false,
-        canPublishShows: false,
+        canConsume: false,
+        canPublish: false,
         canBeBilled: true,
         canEarn: false,
       },
@@ -160,8 +159,8 @@ TEST_RUNNER.run({
       AccountType.PUBLISHER,
       BillingAccountState.SUSPENDED,
       {
-        canConsumeShows: false,
-        canPublishShows: false,
+        canConsume: false,
+        canPublish: false,
         canBeBilled: true,
         canEarn: true,
       },
@@ -177,19 +176,14 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 1,
-              billingAccountStateInfo: {
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
+              billingAccountState: BillingAccountState.HEALTHY,
             }),
-            insertAccountCapabilitiesUpdatingTaskStatement(
-              "account1",
-              1,
-              0,
-              1000,
-              1000,
-            ),
+            insertAccountCapabilitiesUpdatingTaskStatement({
+              accountId: "account1",
+              capabilitiesVersion: 1,
+              retryCount: 0,
+              executionTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -212,11 +206,10 @@ TEST_RUNNER.run({
         // Verify
         assertThat(error, eqError(new Error("Fake error")), "error");
         assertThat(
-          await getAccountCapabilitiesUpdatingTaskMetadata(
-            SPANNER_DATABASE,
-            "account1",
-            1,
-          ),
+          await getAccountCapabilitiesUpdatingTaskMetadata(SPANNER_DATABASE, {
+            accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+            accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 1,
+          }),
           isArray([
             eqMessage(
               {
@@ -232,8 +225,11 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteAccountStatement("account1"),
-            deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+            deleteAccountCapabilitiesUpdatingTaskStatement({
+              accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+              accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 1,
+            }),
           ]);
           await transaction.commit();
         });
@@ -250,11 +246,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 2,
-              billingAccountStateInfo: {
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
+              billingAccountState: BillingAccountState.HEALTHY,
             }),
           ]);
           await transaction.commit();
@@ -285,7 +277,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
           await transaction.commit();
         });
       },
@@ -296,13 +290,12 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertAccountCapabilitiesUpdatingTaskStatement(
-              "account1",
-              1,
-              0,
-              1000,
-              1000,
-            ),
+            insertAccountCapabilitiesUpdatingTaskStatement({
+              accountId: "account1",
+              capabilitiesVersion: 1,
+              retryCount: 0,
+              executionTimeMs: 1000,
+            }),
           ]);
           await transaction.commit();
         });
@@ -320,11 +313,10 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountCapabilitiesUpdatingTaskMetadata(
-            SPANNER_DATABASE,
-            "account1",
-            1,
-          ),
+          await getAccountCapabilitiesUpdatingTaskMetadata(SPANNER_DATABASE, {
+            accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+            accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 1,
+          }),
           isArray([
             eqMessage(
               {
@@ -340,7 +332,10 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteAccountCapabilitiesUpdatingTaskStatement("account1", 1),
+            deleteAccountCapabilitiesUpdatingTaskStatement({
+              accountCapabilitiesUpdatingTaskAccountIdEq: "account1",
+              accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: 1,
+            }),
           ]);
           await transaction.commit();
         });

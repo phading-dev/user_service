@@ -1,17 +1,14 @@
 import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  deleteAccountMoreStatement,
   deleteAccountStatement,
   deleteUserStatement,
-  insertAccountMoreStatement,
   insertAccountStatement,
   insertUserStatement,
 } from "../../db/sql";
 import { GetAccountAndUserHandler } from "./get_account_and_user_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { GET_ACCOUNT_AND_USER_RESPONSE } from "@phading/user_service_interface/web/self/interface";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
@@ -36,16 +33,10 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               naturalName: "name1",
               contactEmail: "contact1",
-              avatarLargeFilename: "avatarL",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
-            }),
-            insertAccountMoreStatement({
-              accountId: "account1",
               description: "something something",
+              avatarLargeFilename: "avatarL",
             }),
           ]);
           await transaction.commit();
@@ -54,7 +45,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           userId: "user1",
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -86,9 +77,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account1"),
-            deleteAccountMoreStatement("account1"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
           ]);
           await transaction.commit();
         });
@@ -102,7 +92,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           userId: "user1",
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -139,7 +129,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           userId: "user1",
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -158,7 +148,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteUserStatement("user1")]);
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+          ]);
           await transaction.commit();
         });
       },
@@ -177,16 +169,10 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account2",
-              accountType: AccountType.CONSUMER,
               naturalName: "name1",
               contactEmail: "contact1",
-              avatarLargeFilename: "avatarL",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
-            }),
-            insertAccountMoreStatement({
-              accountId: "account2",
               description: "something something",
+              avatarLargeFilename: "avatarL",
             }),
           ]);
           await transaction.commit();
@@ -195,7 +181,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           userId: "user1",
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -215,9 +201,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account2"),
-            deleteAccountMoreStatement("account2"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account2" }),
           ]);
           await transaction.commit();
         });
@@ -237,16 +222,10 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user2",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               naturalName: "name1",
               contactEmail: "contact1",
-              avatarLargeFilename: "avatarL",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
-            }),
-            insertAccountMoreStatement({
-              accountId: "account1",
               description: "something something",
+              avatarLargeFilename: "avatarL",
             }),
           ]);
           await transaction.commit();
@@ -255,7 +234,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           userId: "user1",
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -275,9 +254,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account1"),
-            deleteAccountMoreStatement("account1"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
           ]);
           await transaction.commit();
         });

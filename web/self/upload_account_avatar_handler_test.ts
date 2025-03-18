@@ -15,8 +15,7 @@ import {
 import { ENV_VARS } from "../../env_vars";
 import { UploadAccountAvatarHandler } from "./upload_account_avatar_handler";
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { AccountType } from "@phading/user_service_interface/account_type";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, eq, isArray } from "@selfage/test_matcher";
@@ -56,11 +55,8 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
               avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -68,7 +64,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
           S3_CLIENT,
@@ -84,19 +80,16 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccount(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                accountData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  avatarSmallFilename: "account1s.png",
-                  avatarLargeFilename: "account1l.png",
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountAvatarSmallFilename: "account1s.png",
+                accountAvatarLargeFilename: "account1l.png",
               },
               GET_ACCOUNT_ROW,
             ),
@@ -122,7 +115,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
           await transaction.commit();
         });
         await cleanupFiles(["account1l.png", "account1s.png"]);
@@ -136,11 +131,8 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               avatarSmallFilename: "account1s.png",
               avatarLargeFilename: "account1l.png",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -148,7 +140,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UploadAccountAvatarHandler(
           SPANNER_DATABASE,
           S3_CLIENT,
@@ -164,19 +156,16 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccount(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                accountData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  avatarSmallFilename: "account1s.png",
-                  avatarLargeFilename: "account1l.png",
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountAvatarSmallFilename: "account1s.png",
+                accountAvatarLargeFilename: "account1l.png",
               },
               GET_ACCOUNT_ROW,
             ),
@@ -202,7 +191,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
           await transaction.commit();
         });
         await cleanupFiles(["account1l.png", "account1s.png"]);

@@ -1,48 +1,51 @@
+import { Spanner, Database, Transaction } from '@google-cloud/spanner';
 import { Statement } from '@google-cloud/spanner/build/src/transaction';
-import { User, USER, Account, ACCOUNT, AccountMore, ACCOUNT_MORE } from './schema';
-import { serializeMessage, deserializeMessage } from '@selfage/message/serializer';
-import { Database, Transaction, Spanner } from '@google-cloud/spanner';
-import { MessageDescriptor, PrimitiveType } from '@selfage/message/descriptor';
-import { AccountType } from '@phading/user_service_interface/account_type';
+import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
+import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
+import { BillingAccountState, BILLING_ACCOUNT_STATE } from '@phading/user_service_interface/node/billing_account_state';
+import { toEnumFromNumber, serializeMessage, deserializeMessage } from '@selfage/message/serializer';
 import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
 
 export function insertUserStatement(
-  data: User,
-): Statement {
-  return insertUserInternalStatement(
-    data.userId,
-    data.username,
-    data
-  );
-}
-
-export function insertUserInternalStatement(
-  userId: string,
-  username: string,
-  data: User,
+  args: {
+    userId: string,
+    username: string,
+    passwordHashV1?: string,
+    recoveryEmail?: string,
+    totalAccounts?: number,
+    createdTimeMs?: number,
+  }
 ): Statement {
   return {
-    sql: "INSERT User (userId, username, data) VALUES (@userId, @username, @data)",
+    sql: "INSERT User (userId, username, passwordHashV1, recoveryEmail, totalAccounts, createdTimeMs) VALUES (@userId, @username, @passwordHashV1, @recoveryEmail, @totalAccounts, @createdTimeMs)",
     params: {
-      userId: userId,
-      username: username,
-      data: Buffer.from(serializeMessage(data, USER).buffer),
+      userId: args.userId,
+      username: args.username,
+      passwordHashV1: args.passwordHashV1 == null ? null : args.passwordHashV1,
+      recoveryEmail: args.recoveryEmail == null ? null : args.recoveryEmail,
+      totalAccounts: args.totalAccounts == null ? null : Spanner.float(args.totalAccounts),
+      createdTimeMs: args.createdTimeMs == null ? null : Spanner.float(args.createdTimeMs),
     },
     types: {
       userId: { type: "string" },
       username: { type: "string" },
-      data: { type: "bytes" },
+      passwordHashV1: { type: "string" },
+      recoveryEmail: { type: "string" },
+      totalAccounts: { type: "float64" },
+      createdTimeMs: { type: "float64" },
     }
   };
 }
 
 export function deleteUserStatement(
-  userUserIdEq: string,
+  args: {
+    userUserIdEq: string,
+  }
 ): Statement {
   return {
     sql: "DELETE User WHERE (User.userId = @userUserIdEq)",
     params: {
-      userUserIdEq: userUserIdEq,
+      userUserIdEq: args.userUserIdEq,
     },
     types: {
       userUserIdEq: { type: "string" },
@@ -51,26 +54,53 @@ export function deleteUserStatement(
 }
 
 export interface GetUserRow {
-  userData: User,
+  userUserId?: string,
+  userUsername?: string,
+  userPasswordHashV1?: string,
+  userRecoveryEmail?: string,
+  userTotalAccounts?: number,
+  userCreatedTimeMs?: number,
 }
 
 export let GET_USER_ROW: MessageDescriptor<GetUserRow> = {
   name: 'GetUserRow',
   fields: [{
-    name: 'userData',
+    name: 'userUserId',
     index: 1,
-    messageType: USER,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userUsername',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userPasswordHashV1',
+    index: 3,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userRecoveryEmail',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userTotalAccounts',
+    index: 5,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'userCreatedTimeMs',
+    index: 6,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
 export async function getUser(
   runner: Database | Transaction,
-  userUserIdEq: string,
+  args: {
+    userUserIdEq: string,
+  }
 ): Promise<Array<GetUserRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT User.data FROM User WHERE (User.userId = @userUserIdEq)",
+    sql: "SELECT User.userId, User.username, User.passwordHashV1, User.recoveryEmail, User.totalAccounts, User.createdTimeMs FROM User WHERE (User.userId = @userUserIdEq)",
     params: {
-      userUserIdEq: userUserIdEq,
+      userUserIdEq: args.userUserIdEq,
     },
     types: {
       userUserIdEq: { type: "string" },
@@ -79,91 +109,78 @@ export async function getUser(
   let resRows = new Array<GetUserRow>();
   for (let row of rows) {
     resRows.push({
-      userData: deserializeMessage(row.at(0).value, USER),
+      userUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      userUsername: row.at(1).value == null ? undefined : row.at(1).value,
+      userPasswordHashV1: row.at(2).value == null ? undefined : row.at(2).value,
+      userRecoveryEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      userTotalAccounts: row.at(4).value == null ? undefined : row.at(4).value.value,
+      userCreatedTimeMs: row.at(5).value == null ? undefined : row.at(5).value.value,
     });
   }
   return resRows;
 }
 
-export function updateUserStatement(
-  data: User,
-): Statement {
-  return updateUserInternalStatement(
-    data.userId,
-    data.username,
-    data
-  );
-}
-
-export function updateUserInternalStatement(
-  userUserIdEq: string,
-  setUsername: string,
-  setData: User,
-): Statement {
-  return {
-    sql: "UPDATE User SET username = @setUsername, data = @setData WHERE (User.userId = @userUserIdEq)",
-    params: {
-      userUserIdEq: userUserIdEq,
-      setUsername: setUsername,
-      setData: Buffer.from(serializeMessage(setData, USER).buffer),
-    },
-    types: {
-      userUserIdEq: { type: "string" },
-      setUsername: { type: "string" },
-      setData: { type: "bytes" },
-    }
-  };
-}
-
 export function insertAccountStatement(
-  data: Account,
-): Statement {
-  return insertAccountInternalStatement(
-    data.accountId,
-    data.userId,
-    data.accountType,
-    data.lastAccessedTimeMs,
-    data.createdTimeMs,
-    data
-  );
-}
-
-export function insertAccountInternalStatement(
-  accountId: string,
-  userId: string,
-  accountType: AccountType,
-  lastAccessedTimeMs: number,
-  createdTimeMs: number,
-  data: Account,
+  args: {
+    userId: string,
+    accountId: string,
+    accountType?: AccountType,
+    naturalName?: string,
+    description?: string,
+    contactEmail?: string,
+    avatarSmallFilename?: string,
+    avatarLargeFilename?: string,
+    lastAccessedTimeMs?: number,
+    createdTimeMs?: number,
+    billingAccountStateVersion?: number,
+    billingAccountState?: BillingAccountState,
+    capabilitiesVersion?: number,
+  }
 ): Statement {
   return {
-    sql: "INSERT Account (accountId, userId, accountType, lastAccessedTimeMs, createdTimeMs, data) VALUES (@accountId, @userId, @accountType, @lastAccessedTimeMs, @createdTimeMs, @data)",
+    sql: "INSERT Account (userId, accountId, accountType, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, lastAccessedTimeMs, createdTimeMs, billingAccountStateVersion, billingAccountState, capabilitiesVersion) VALUES (@userId, @accountId, @accountType, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @lastAccessedTimeMs, @createdTimeMs, @billingAccountStateVersion, @billingAccountState, @capabilitiesVersion)",
     params: {
-      accountId: accountId,
-      userId: userId,
-      accountType: Spanner.float(accountType),
-      lastAccessedTimeMs: Spanner.float(lastAccessedTimeMs),
-      createdTimeMs: Spanner.float(createdTimeMs),
-      data: Buffer.from(serializeMessage(data, ACCOUNT).buffer),
+      userId: args.userId,
+      accountId: args.accountId,
+      accountType: args.accountType == null ? null : Spanner.float(args.accountType),
+      naturalName: args.naturalName == null ? null : args.naturalName,
+      description: args.description == null ? null : args.description,
+      contactEmail: args.contactEmail == null ? null : args.contactEmail,
+      avatarSmallFilename: args.avatarSmallFilename == null ? null : args.avatarSmallFilename,
+      avatarLargeFilename: args.avatarLargeFilename == null ? null : args.avatarLargeFilename,
+      lastAccessedTimeMs: args.lastAccessedTimeMs == null ? null : Spanner.float(args.lastAccessedTimeMs),
+      createdTimeMs: args.createdTimeMs == null ? null : Spanner.float(args.createdTimeMs),
+      billingAccountStateVersion: args.billingAccountStateVersion == null ? null : Spanner.float(args.billingAccountStateVersion),
+      billingAccountState: args.billingAccountState == null ? null : Spanner.float(args.billingAccountState),
+      capabilitiesVersion: args.capabilitiesVersion == null ? null : Spanner.float(args.capabilitiesVersion),
     },
     types: {
-      accountId: { type: "string" },
       userId: { type: "string" },
+      accountId: { type: "string" },
       accountType: { type: "float64" },
+      naturalName: { type: "string" },
+      description: { type: "string" },
+      contactEmail: { type: "string" },
+      avatarSmallFilename: { type: "string" },
+      avatarLargeFilename: { type: "string" },
       lastAccessedTimeMs: { type: "float64" },
       createdTimeMs: { type: "float64" },
-      data: { type: "bytes" },
+      billingAccountStateVersion: { type: "float64" },
+      billingAccountState: { type: "float64" },
+      capabilitiesVersion: { type: "float64" },
     }
   };
 }
 
 export function deleteAccountStatement(
-  accountAccountIdEq: string,
+  args: {
+    accountAccountIdEq: string,
+  }
 ): Statement {
   return {
     sql: "DELETE Account WHERE (Account.accountId = @accountAccountIdEq)",
     params: {
-      accountAccountIdEq: accountAccountIdEq,
+      accountAccountIdEq: args.accountAccountIdEq,
     },
     types: {
       accountAccountIdEq: { type: "string" },
@@ -172,26 +189,88 @@ export function deleteAccountStatement(
 }
 
 export interface GetAccountRow {
-  accountData: Account,
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountDescription?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountCreatedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
 }
 
 export let GET_ACCOUNT_ROW: MessageDescriptor<GetAccountRow> = {
   name: 'GetAccountRow',
   fields: [{
-    name: 'accountData',
+    name: 'accountUserId',
     index: 1,
-    messageType: ACCOUNT,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 3,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountDescription',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 8,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCreatedTimeMs',
+    index: 10,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 12,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 13,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
 export async function getAccount(
   runner: Database | Transaction,
-  accountAccountIdEq: string,
+  args: {
+    accountAccountIdEq: string,
+  }
 ): Promise<Array<GetAccountRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.data FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
     params: {
-      accountAccountIdEq: accountAccountIdEq,
+      accountAccountIdEq: args.accountAccountIdEq,
     },
     types: {
       accountAccountIdEq: { type: "string" },
@@ -200,135 +279,138 @@ export async function getAccount(
   let resRows = new Array<GetAccountRow>();
   for (let row of rows) {
     resRows.push({
-      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountDescription: row.at(4).value == null ? undefined : row.at(4).value,
+      accountContactEmail: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarSmallFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountAvatarLargeFilename: row.at(7).value == null ? undefined : row.at(7).value,
+      accountLastAccessedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountCreatedTimeMs: row.at(9).value == null ? undefined : row.at(9).value.value,
+      accountBillingAccountStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountBillingAccountState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(12).value == null ? undefined : row.at(12).value.value,
     });
   }
   return resRows;
 }
 
-export function updateAccountStatement(
-  data: Account,
-): Statement {
-  return updateAccountInternalStatement(
-    data.accountId,
-    data.userId,
-    data.accountType,
-    data.lastAccessedTimeMs,
-    data.createdTimeMs,
-    data
-  );
-}
-
-export function updateAccountInternalStatement(
-  accountAccountIdEq: string,
-  setUserId: string,
-  setAccountType: AccountType,
-  setLastAccessedTimeMs: number,
-  setCreatedTimeMs: number,
-  setData: Account,
+export function insertVideoPlayerSettingsStatement(
+  args: {
+    accountId: string,
+    settings?: VideoPlayerSettings,
+  }
 ): Statement {
   return {
-    sql: "UPDATE Account SET userId = @setUserId, accountType = @setAccountType, lastAccessedTimeMs = @setLastAccessedTimeMs, createdTimeMs = @setCreatedTimeMs, data = @setData WHERE (Account.accountId = @accountAccountIdEq)",
+    sql: "INSERT VideoPlayerSettings (accountId, settings) VALUES (@accountId, @settings)",
     params: {
-      accountAccountIdEq: accountAccountIdEq,
-      setUserId: setUserId,
-      setAccountType: Spanner.float(setAccountType),
-      setLastAccessedTimeMs: Spanner.float(setLastAccessedTimeMs),
-      setCreatedTimeMs: Spanner.float(setCreatedTimeMs),
-      setData: Buffer.from(serializeMessage(setData, ACCOUNT).buffer),
-    },
-    types: {
-      accountAccountIdEq: { type: "string" },
-      setUserId: { type: "string" },
-      setAccountType: { type: "float64" },
-      setLastAccessedTimeMs: { type: "float64" },
-      setCreatedTimeMs: { type: "float64" },
-      setData: { type: "bytes" },
-    }
-  };
-}
-
-export function insertAccountMoreStatement(
-  data: AccountMore,
-): Statement {
-  return insertAccountMoreInternalStatement(
-    data.accountId,
-    data
-  );
-}
-
-export function insertAccountMoreInternalStatement(
-  accountId: string,
-  data: AccountMore,
-): Statement {
-  return {
-    sql: "INSERT AccountMore (accountId, data) VALUES (@accountId, @data)",
-    params: {
-      accountId: accountId,
-      data: Buffer.from(serializeMessage(data, ACCOUNT_MORE).buffer),
+      accountId: args.accountId,
+      settings: args.settings == null ? null : Buffer.from(serializeMessage(args.settings, VIDEO_PLAYER_SETTINGS).buffer),
     },
     types: {
       accountId: { type: "string" },
-      data: { type: "bytes" },
+      settings: { type: "bytes" },
     }
   };
 }
 
-export function deleteAccountMoreStatement(
-  accountMoreAccountIdEq: string,
+export function deleteVideoPlayerSettingsStatement(
+  args: {
+    videoPlayerSettingsAccountIdEq: string,
+  }
 ): Statement {
   return {
-    sql: "DELETE AccountMore WHERE (AccountMore.accountId = @accountMoreAccountIdEq)",
+    sql: "DELETE VideoPlayerSettings WHERE (VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq)",
     params: {
-      accountMoreAccountIdEq: accountMoreAccountIdEq,
+      videoPlayerSettingsAccountIdEq: args.videoPlayerSettingsAccountIdEq,
     },
     types: {
-      accountMoreAccountIdEq: { type: "string" },
+      videoPlayerSettingsAccountIdEq: { type: "string" },
     }
   };
 }
 
-export function updateAccountMoreStatement(
-  data: AccountMore,
-): Statement {
-  return updateAccountMoreInternalStatement(
-    data.accountId,
-    data
-  );
+export interface GetVideoPlayerSettingsRow {
+  videoPlayerSettingsAccountId?: string,
+  videoPlayerSettingsSettings?: VideoPlayerSettings,
 }
 
-export function updateAccountMoreInternalStatement(
-  accountMoreAccountIdEq: string,
-  setData: AccountMore,
-): Statement {
-  return {
-    sql: "UPDATE AccountMore SET data = @setData WHERE (AccountMore.accountId = @accountMoreAccountIdEq)",
+export let GET_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<GetVideoPlayerSettingsRow> = {
+  name: 'GetVideoPlayerSettingsRow',
+  fields: [{
+    name: 'videoPlayerSettingsAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'videoPlayerSettingsSettings',
+    index: 2,
+    messageType: VIDEO_PLAYER_SETTINGS,
+  }],
+};
+
+export async function getVideoPlayerSettings(
+  runner: Database | Transaction,
+  args: {
+    videoPlayerSettingsAccountIdEq: string,
+  }
+): Promise<Array<GetVideoPlayerSettingsRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT VideoPlayerSettings.accountId, VideoPlayerSettings.settings FROM VideoPlayerSettings WHERE (VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq)",
     params: {
-      accountMoreAccountIdEq: accountMoreAccountIdEq,
-      setData: Buffer.from(serializeMessage(setData, ACCOUNT_MORE).buffer),
+      videoPlayerSettingsAccountIdEq: args.videoPlayerSettingsAccountIdEq,
     },
     types: {
-      accountMoreAccountIdEq: { type: "string" },
-      setData: { type: "bytes" },
+      videoPlayerSettingsAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetVideoPlayerSettingsRow>();
+  for (let row of rows) {
+    resRows.push({
+      videoPlayerSettingsAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      videoPlayerSettingsSettings: row.at(1).value == null ? undefined : deserializeMessage(row.at(1).value, VIDEO_PLAYER_SETTINGS),
+    });
+  }
+  return resRows;
+}
+
+export function updateVideoPlayerSettingsStatement(
+  args: {
+    videoPlayerSettingsAccountIdEq: string,
+    setSettings?: VideoPlayerSettings,
+  }
+): Statement {
+  return {
+    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE (VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq)",
+    params: {
+      videoPlayerSettingsAccountIdEq: args.videoPlayerSettingsAccountIdEq,
+      setSettings: args.setSettings == null ? null : Buffer.from(serializeMessage(args.setSettings, VIDEO_PLAYER_SETTINGS).buffer),
+    },
+    types: {
+      videoPlayerSettingsAccountIdEq: { type: "string" },
+      setSettings: { type: "bytes" },
     }
   };
 }
 
 export function insertAccountCapabilitiesUpdatingTaskStatement(
-  accountId: string,
-  capabilitiesVersion: number,
-  retryCount: number,
-  executionTimeMs: number,
-  createdTimeMs: number,
+  args: {
+    accountId: string,
+    capabilitiesVersion: number,
+    retryCount?: number,
+    executionTimeMs?: number,
+    createdTimeMs?: number,
+  }
 ): Statement {
   return {
     sql: "INSERT AccountCapabilitiesUpdatingTask (accountId, capabilitiesVersion, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @capabilitiesVersion, @retryCount, @executionTimeMs, @createdTimeMs)",
     params: {
-      accountId: accountId,
-      capabilitiesVersion: Spanner.float(capabilitiesVersion),
-      retryCount: Spanner.float(retryCount),
-      executionTimeMs: new Date(executionTimeMs).toISOString(),
-      createdTimeMs: new Date(createdTimeMs).toISOString(),
+      accountId: args.accountId,
+      capabilitiesVersion: Spanner.float(args.capabilitiesVersion),
+      retryCount: args.retryCount == null ? null : Spanner.float(args.retryCount),
+      executionTimeMs: args.executionTimeMs == null ? null : new Date(args.executionTimeMs).toISOString(),
+      createdTimeMs: args.createdTimeMs == null ? null : new Date(args.createdTimeMs).toISOString(),
     },
     types: {
       accountId: { type: "string" },
@@ -341,14 +423,16 @@ export function insertAccountCapabilitiesUpdatingTaskStatement(
 }
 
 export function deleteAccountCapabilitiesUpdatingTaskStatement(
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  args: {
+    accountCapabilitiesUpdatingTaskAccountIdEq: string,
+    accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  }
 ): Statement {
   return {
     sql: "DELETE AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
     params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      accountCapabilitiesUpdatingTaskAccountIdEq: args.accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(args.accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
     },
     types: {
       accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
@@ -358,11 +442,11 @@ export function deleteAccountCapabilitiesUpdatingTaskStatement(
 }
 
 export interface GetAccountCapabilitiesUpdatingTaskRow {
-  accountCapabilitiesUpdatingTaskAccountId: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
-  accountCapabilitiesUpdatingTaskRetryCount: number,
-  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
-  accountCapabilitiesUpdatingTaskCreatedTimeMs: number,
+  accountCapabilitiesUpdatingTaskAccountId?: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersion?: number,
+  accountCapabilitiesUpdatingTaskRetryCount?: number,
+  accountCapabilitiesUpdatingTaskExecutionTimeMs?: number,
+  accountCapabilitiesUpdatingTaskCreatedTimeMs?: number,
 }
 
 export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_ROW: MessageDescriptor<GetAccountCapabilitiesUpdatingTaskRow> = {
@@ -392,14 +476,16 @@ export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_ROW: MessageDescriptor<GetAcco
 
 export async function getAccountCapabilitiesUpdatingTask(
   runner: Database | Transaction,
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  args: {
+    accountCapabilitiesUpdatingTaskAccountIdEq: string,
+    accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  }
 ): Promise<Array<GetAccountCapabilitiesUpdatingTaskRow>> {
   let [rows] = await runner.run({
     sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion, AccountCapabilitiesUpdatingTask.retryCount, AccountCapabilitiesUpdatingTask.executionTimeMs, AccountCapabilitiesUpdatingTask.createdTimeMs FROM AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
     params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      accountCapabilitiesUpdatingTaskAccountIdEq: args.accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(args.accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
     },
     types: {
       accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
@@ -409,19 +495,19 @@ export async function getAccountCapabilitiesUpdatingTask(
   let resRows = new Array<GetAccountCapabilitiesUpdatingTaskRow>();
   for (let row of rows) {
     resRows.push({
-      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
-      accountCapabilitiesUpdatingTaskRetryCount: row.at(2).value.value,
-      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(3).value.valueOf(),
-      accountCapabilitiesUpdatingTaskCreatedTimeMs: row.at(4).value.valueOf(),
+      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value == null ? undefined : row.at(1).value.value,
+      accountCapabilitiesUpdatingTaskRetryCount: row.at(2).value == null ? undefined : row.at(2).value.value,
+      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
+      accountCapabilitiesUpdatingTaskCreatedTimeMs: row.at(4).value == null ? undefined : row.at(4).value.valueOf(),
     });
   }
   return resRows;
 }
 
 export interface ListPendingAccountCapabilitiesUpdatingTasksRow {
-  accountCapabilitiesUpdatingTaskAccountId: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersion: number,
+  accountCapabilitiesUpdatingTaskAccountId?: string,
+  accountCapabilitiesUpdatingTaskCapabilitiesVersion?: number,
 }
 
 export let LIST_PENDING_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW: MessageDescriptor<ListPendingAccountCapabilitiesUpdatingTasksRow> = {
@@ -439,12 +525,14 @@ export let LIST_PENDING_ACCOUNT_CAPABILITIES_UPDATING_TASKS_ROW: MessageDescript
 
 export async function listPendingAccountCapabilitiesUpdatingTasks(
   runner: Database | Transaction,
-  accountCapabilitiesUpdatingTaskExecutionTimeMsLe: number,
+  args: {
+    accountCapabilitiesUpdatingTaskExecutionTimeMsLe?: number,
+  }
 ): Promise<Array<ListPendingAccountCapabilitiesUpdatingTasksRow>> {
   let [rows] = await runner.run({
     sql: "SELECT AccountCapabilitiesUpdatingTask.accountId, AccountCapabilitiesUpdatingTask.capabilitiesVersion FROM AccountCapabilitiesUpdatingTask WHERE AccountCapabilitiesUpdatingTask.executionTimeMs <= @accountCapabilitiesUpdatingTaskExecutionTimeMsLe",
     params: {
-      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: new Date(accountCapabilitiesUpdatingTaskExecutionTimeMsLe).toISOString(),
+      accountCapabilitiesUpdatingTaskExecutionTimeMsLe: args.accountCapabilitiesUpdatingTaskExecutionTimeMsLe == null ? null : new Date(args.accountCapabilitiesUpdatingTaskExecutionTimeMsLe).toISOString(),
     },
     types: {
       accountCapabilitiesUpdatingTaskExecutionTimeMsLe: { type: "timestamp" },
@@ -453,16 +541,16 @@ export async function listPendingAccountCapabilitiesUpdatingTasks(
   let resRows = new Array<ListPendingAccountCapabilitiesUpdatingTasksRow>();
   for (let row of rows) {
     resRows.push({
-      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value.value,
+      accountCapabilitiesUpdatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersion: row.at(1).value == null ? undefined : row.at(1).value.value,
     });
   }
   return resRows;
 }
 
 export interface GetAccountCapabilitiesUpdatingTaskMetadataRow {
-  accountCapabilitiesUpdatingTaskRetryCount: number,
-  accountCapabilitiesUpdatingTaskExecutionTimeMs: number,
+  accountCapabilitiesUpdatingTaskRetryCount?: number,
+  accountCapabilitiesUpdatingTaskExecutionTimeMs?: number,
 }
 
 export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW: MessageDescriptor<GetAccountCapabilitiesUpdatingTaskMetadataRow> = {
@@ -480,14 +568,16 @@ export let GET_ACCOUNT_CAPABILITIES_UPDATING_TASK_METADATA_ROW: MessageDescripto
 
 export async function getAccountCapabilitiesUpdatingTaskMetadata(
   runner: Database | Transaction,
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  args: {
+    accountCapabilitiesUpdatingTaskAccountIdEq: string,
+    accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+  }
 ): Promise<Array<GetAccountCapabilitiesUpdatingTaskMetadataRow>> {
   let [rows] = await runner.run({
     sql: "SELECT AccountCapabilitiesUpdatingTask.retryCount, AccountCapabilitiesUpdatingTask.executionTimeMs FROM AccountCapabilitiesUpdatingTask WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
     params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      accountCapabilitiesUpdatingTaskAccountIdEq: args.accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(args.accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
     },
     types: {
       accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
@@ -497,26 +587,28 @@ export async function getAccountCapabilitiesUpdatingTaskMetadata(
   let resRows = new Array<GetAccountCapabilitiesUpdatingTaskMetadataRow>();
   for (let row of rows) {
     resRows.push({
-      accountCapabilitiesUpdatingTaskRetryCount: row.at(0).value.value,
-      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(1).value.valueOf(),
+      accountCapabilitiesUpdatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
+      accountCapabilitiesUpdatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
     });
   }
   return resRows;
 }
 
 export function updateAccountCapabilitiesUpdatingTaskMetadataStatement(
-  accountCapabilitiesUpdatingTaskAccountIdEq: string,
-  accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
-  setRetryCount: number,
-  setExecutionTimeMs: number,
+  args: {
+    accountCapabilitiesUpdatingTaskAccountIdEq: string,
+    accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: number,
+    setRetryCount?: number,
+    setExecutionTimeMs?: number,
+  }
 ): Statement {
   return {
     sql: "UPDATE AccountCapabilitiesUpdatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (AccountCapabilitiesUpdatingTask.accountId = @accountCapabilitiesUpdatingTaskAccountIdEq AND AccountCapabilitiesUpdatingTask.capabilitiesVersion = @accountCapabilitiesUpdatingTaskCapabilitiesVersionEq)",
     params: {
-      accountCapabilitiesUpdatingTaskAccountIdEq: accountCapabilitiesUpdatingTaskAccountIdEq,
-      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
-      setRetryCount: Spanner.float(setRetryCount),
-      setExecutionTimeMs: new Date(setExecutionTimeMs).toISOString(),
+      accountCapabilitiesUpdatingTaskAccountIdEq: args.accountCapabilitiesUpdatingTaskAccountIdEq,
+      accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: Spanner.float(args.accountCapabilitiesUpdatingTaskCapabilitiesVersionEq),
+      setRetryCount: args.setRetryCount == null ? null : Spanner.float(args.setRetryCount),
+      setExecutionTimeMs: args.setExecutionTimeMs == null ? null : new Date(args.setExecutionTimeMs).toISOString(),
     },
     types: {
       accountCapabilitiesUpdatingTaskAccountIdEq: { type: "string" },
@@ -527,75 +619,202 @@ export function updateAccountCapabilitiesUpdatingTaskMetadataStatement(
   };
 }
 
-export function insertVideoPlayerSettingsStatement(
-  accountId: string,
-  settings: VideoPlayerSettings,
+export function updateUserTotalAccountsStatement(
+  args: {
+    userUserIdEq: string,
+    setTotalAccounts?: number,
+  }
 ): Statement {
   return {
-    sql: "INSERT VideoPlayerSettings (accountId, settings) VALUES (@accountId, @settings)",
+    sql: "UPDATE User SET totalAccounts = @setTotalAccounts WHERE User.userId = @userUserIdEq",
     params: {
-      accountId: accountId,
-      settings: Buffer.from(serializeMessage(settings, VIDEO_PLAYER_SETTINGS).buffer),
+      userUserIdEq: args.userUserIdEq,
+      setTotalAccounts: args.setTotalAccounts == null ? null : Spanner.float(args.setTotalAccounts),
     },
     types: {
-      accountId: { type: "string" },
-      settings: { type: "bytes" },
+      userUserIdEq: { type: "string" },
+      setTotalAccounts: { type: "float64" },
     }
   };
 }
 
-export function updateVideoPlayerSettingsStatement(
-  videoPlayerSettingsAccountIdEq: string,
-  setSettings: VideoPlayerSettings,
+export function updateUserPasswordHashStatement(
+  args: {
+    userUserIdEq: string,
+    setPasswordHashV1?: string,
+  }
 ): Statement {
   return {
-    sql: "UPDATE VideoPlayerSettings SET settings = @setSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
+    sql: "UPDATE User SET passwordHashV1 = @setPasswordHashV1 WHERE User.userId = @userUserIdEq",
     params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
-      setSettings: Buffer.from(serializeMessage(setSettings, VIDEO_PLAYER_SETTINGS).buffer),
+      userUserIdEq: args.userUserIdEq,
+      setPasswordHashV1: args.setPasswordHashV1 == null ? null : args.setPasswordHashV1,
     },
     types: {
-      videoPlayerSettingsAccountIdEq: { type: "string" },
-      setSettings: { type: "bytes" },
+      userUserIdEq: { type: "string" },
+      setPasswordHashV1: { type: "string" },
     }
   };
 }
 
-export function deleteVideoPlayerSettingsStatement(
-  videoPlayerSettingsAccountIdEq: string,
+export function updateUserRecoveryEmailStatement(
+  args: {
+    userUserIdEq: string,
+    setRecoveryEmail?: string,
+  }
 ): Statement {
   return {
-    sql: "DELETE VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
+    sql: "UPDATE User SET recoveryEmail = @setRecoveryEmail WHERE User.userId = @userUserIdEq",
     params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+      userUserIdEq: args.userUserIdEq,
+      setRecoveryEmail: args.setRecoveryEmail == null ? null : args.setRecoveryEmail,
     },
     types: {
-      videoPlayerSettingsAccountIdEq: { type: "string" },
+      userUserIdEq: { type: "string" },
+      setRecoveryEmail: { type: "string" },
+    }
+  };
+}
+
+export function updateAccountBillingAccountStateStatement(
+  args: {
+    accountAccountIdEq: string,
+    setBillingAccountState?: BillingAccountState,
+    setBillingAccountStateVersion?: number,
+    setCapabilitiesVersion?: number,
+  }
+): Statement {
+  return {
+    sql: "UPDATE Account SET billingAccountState = @setBillingAccountState, billingAccountStateVersion = @setBillingAccountStateVersion, capabilitiesVersion = @setCapabilitiesVersion WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: args.accountAccountIdEq,
+      setBillingAccountState: args.setBillingAccountState == null ? null : Spanner.float(args.setBillingAccountState),
+      setBillingAccountStateVersion: args.setBillingAccountStateVersion == null ? null : Spanner.float(args.setBillingAccountStateVersion),
+      setCapabilitiesVersion: args.setCapabilitiesVersion == null ? null : Spanner.float(args.setCapabilitiesVersion),
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setBillingAccountState: { type: "float64" },
+      setBillingAccountStateVersion: { type: "float64" },
+      setCapabilitiesVersion: { type: "float64" },
+    }
+  };
+}
+
+export function updateAccountLastAccessedTimeStatement(
+  args: {
+    accountAccountIdEq: string,
+    setLastAccessedTimeMs?: number,
+  }
+): Statement {
+  return {
+    sql: "UPDATE Account SET lastAccessedTimeMs = @setLastAccessedTimeMs WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: args.accountAccountIdEq,
+      setLastAccessedTimeMs: args.setLastAccessedTimeMs == null ? null : Spanner.float(args.setLastAccessedTimeMs),
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setLastAccessedTimeMs: { type: "float64" },
+    }
+  };
+}
+
+export function updateAccountContentStatement(
+  args: {
+    accountAccountIdEq: string,
+    setNaturalName?: string,
+    setDescription?: string,
+    setContactEmail?: string,
+  }
+): Statement {
+  return {
+    sql: "UPDATE Account SET naturalName = @setNaturalName, description = @setDescription, contactEmail = @setContactEmail WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: args.accountAccountIdEq,
+      setNaturalName: args.setNaturalName == null ? null : args.setNaturalName,
+      setDescription: args.setDescription == null ? null : args.setDescription,
+      setContactEmail: args.setContactEmail == null ? null : args.setContactEmail,
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setNaturalName: { type: "string" },
+      setDescription: { type: "string" },
+      setContactEmail: { type: "string" },
+    }
+  };
+}
+
+export function updateAccountAvatarStatement(
+  args: {
+    accountAccountIdEq: string,
+    setAvatarSmallFilename?: string,
+    setAvatarLargeFilename?: string,
+  }
+): Statement {
+  return {
+    sql: "UPDATE Account SET avatarSmallFilename = @setAvatarSmallFilename, avatarLargeFilename = @setAvatarLargeFilename WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: args.accountAccountIdEq,
+      setAvatarSmallFilename: args.setAvatarSmallFilename == null ? null : args.setAvatarSmallFilename,
+      setAvatarLargeFilename: args.setAvatarLargeFilename == null ? null : args.setAvatarLargeFilename,
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+      setAvatarSmallFilename: { type: "string" },
+      setAvatarLargeFilename: { type: "string" },
     }
   };
 }
 
 export interface GetUserByUsernameRow {
-  userData: User,
+  userUserId?: string,
+  userUsername?: string,
+  userPasswordHashV1?: string,
+  userRecoveryEmail?: string,
+  userTotalAccounts?: number,
+  userCreatedTimeMs?: number,
 }
 
 export let GET_USER_BY_USERNAME_ROW: MessageDescriptor<GetUserByUsernameRow> = {
   name: 'GetUserByUsernameRow',
   fields: [{
-    name: 'userData',
+    name: 'userUserId',
     index: 1,
-    messageType: USER,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userUsername',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userPasswordHashV1',
+    index: 3,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userRecoveryEmail',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userTotalAccounts',
+    index: 5,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'userCreatedTimeMs',
+    index: 6,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
 export async function getUserByUsername(
   runner: Database | Transaction,
-  userUsernameEq: string,
+  args: {
+    userUsernameEq: string,
+  }
 ): Promise<Array<GetUserByUsernameRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT User.data FROM User WHERE User.username = @userUsernameEq",
+    sql: "SELECT User.userId, User.username, User.passwordHashV1, User.recoveryEmail, User.totalAccounts, User.createdTimeMs FROM User WHERE User.username = @userUsernameEq",
     params: {
-      userUsernameEq: userUsernameEq,
+      userUsernameEq: args.userUsernameEq,
     },
     types: {
       userUsernameEq: { type: "string" },
@@ -604,35 +823,92 @@ export async function getUserByUsername(
   let resRows = new Array<GetUserByUsernameRow>();
   for (let row of rows) {
     resRows.push({
-      userData: deserializeMessage(row.at(0).value, USER),
+      userUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      userUsername: row.at(1).value == null ? undefined : row.at(1).value,
+      userPasswordHashV1: row.at(2).value == null ? undefined : row.at(2).value,
+      userRecoveryEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      userTotalAccounts: row.at(4).value == null ? undefined : row.at(4).value.value,
+      userCreatedTimeMs: row.at(5).value == null ? undefined : row.at(5).value.value,
     });
   }
   return resRows;
 }
 
 export interface ListLastAccessedAccountsRow {
-  accountData: Account,
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
 }
 
 export let LIST_LAST_ACCESSED_ACCOUNTS_ROW: MessageDescriptor<ListLastAccessedAccountsRow> = {
   name: 'ListLastAccessedAccountsRow',
   fields: [{
-    name: 'accountData',
+    name: 'accountUserId',
     index: 1,
-    messageType: ACCOUNT,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 3,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 8,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 10,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
 export async function listLastAccessedAccounts(
   runner: Database | Transaction,
-  accountUserIdEq: string,
-  limit: number,
+  args: {
+    accountUserIdEq: string,
+    limit: number,
+  }
 ): Promise<Array<ListLastAccessedAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.data FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
     params: {
-      accountUserIdEq: accountUserIdEq,
-      limit: limit.toString(),
+      accountUserIdEq: args.accountUserIdEq,
+      limit: args.limit.toString(),
     },
     types: {
       accountUserIdEq: { type: "string" },
@@ -642,140 +918,499 @@ export async function listLastAccessedAccounts(
   let resRows = new Array<ListLastAccessedAccountsRow>();
   for (let row of rows) {
     resRows.push({
-      accountData: deserializeMessage(row.at(0).value, ACCOUNT),
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
     });
   }
   return resRows;
 }
 
-export interface GetAccountAndMoreByIdRow {
-  aData: Account,
-  amData: AccountMore,
+export interface SearchAccountsRow {
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
+  accountFullTextScore?: number,
 }
 
-export let GET_ACCOUNT_AND_MORE_BY_ID_ROW: MessageDescriptor<GetAccountAndMoreByIdRow> = {
-  name: 'GetAccountAndMoreByIdRow',
+export let SEARCH_ACCOUNTS_ROW: MessageDescriptor<SearchAccountsRow> = {
+  name: 'SearchAccountsRow',
   fields: [{
-    name: 'aData',
+    name: 'accountUserId',
     index: 1,
-    messageType: ACCOUNT,
+    primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'amData',
+    name: 'accountAccountId',
     index: 2,
-    messageType: ACCOUNT_MORE,
-  }],
-};
-
-export async function getAccountAndMoreById(
-  runner: Database | Transaction,
-  aAccountIdEq: string,
-): Promise<Array<GetAccountAndMoreByIdRow>> {
-  let [rows] = await runner.run({
-    sql: "SELECT a.data, am.data FROM Account AS a INNER JOIN AccountMore AS am ON a.accountId = am.accountId WHERE a.accountId = @aAccountIdEq",
-    params: {
-      aAccountIdEq: aAccountIdEq,
-    },
-    types: {
-      aAccountIdEq: { type: "string" },
-    }
-  });
-  let resRows = new Array<GetAccountAndMoreByIdRow>();
-  for (let row of rows) {
-    resRows.push({
-      aData: deserializeMessage(row.at(0).value, ACCOUNT),
-      amData: deserializeMessage(row.at(1).value, ACCOUNT_MORE),
-    });
-  }
-  return resRows;
-}
-
-export interface GetUserAndAccountAndMoreRow {
-  uData: User,
-  aData: Account,
-  amData: AccountMore,
-}
-
-export let GET_USER_AND_ACCOUNT_AND_MORE_ROW: MessageDescriptor<GetUserAndAccountAndMoreRow> = {
-  name: 'GetUserAndAccountAndMoreRow',
-  fields: [{
-    name: 'uData',
-    index: 1,
-    messageType: USER,
+    primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'aData',
-    index: 2,
-    messageType: ACCOUNT,
-  }, {
-    name: 'amData',
+    name: 'accountAccountType',
     index: 3,
-    messageType: ACCOUNT_MORE,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 8,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 10,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountFullTextScore',
+    index: 12,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getUserAndAccountAndMore(
+export async function searchAccounts(
   runner: Database | Transaction,
-  uUserIdEq: string,
-  aAccountIdEq: string,
-): Promise<Array<GetUserAndAccountAndMoreRow>> {
+  args: {
+    accountFullTextSearch: string,
+    accountFullTextScoreOrderBy: string,
+    limit: number,
+    accountFullTextScoreSelect: string,
+  }
+): Promise<Array<SearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT u.data, a.data, am.data FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId INNER JOIN AccountMore AS am ON a.accountId = am.accountId WHERE (u.userId = @uUserIdEq AND a.accountId = @aAccountIdEq)",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE SEARCH(Account.fullText, @accountFullTextSearch) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
-      uUserIdEq: uUserIdEq,
-      aAccountIdEq: aAccountIdEq,
+      accountFullTextSearch: args.accountFullTextSearch,
+      accountFullTextScoreOrderBy: args.accountFullTextScoreOrderBy,
+      limit: args.limit.toString(),
+      accountFullTextScoreSelect: args.accountFullTextScoreSelect,
     },
     types: {
-      uUserIdEq: { type: "string" },
-      aAccountIdEq: { type: "string" },
+      accountFullTextSearch: { type: "string" },
+      accountFullTextScoreOrderBy: { type: "string" },
+      limit: { type: "int64" },
+      accountFullTextScoreSelect: { type: "string" },
     }
   });
-  let resRows = new Array<GetUserAndAccountAndMoreRow>();
+  let resRows = new Array<SearchAccountsRow>();
   for (let row of rows) {
     resRows.push({
-      uData: deserializeMessage(row.at(0).value, USER),
-      aData: deserializeMessage(row.at(1).value, ACCOUNT),
-      amData: deserializeMessage(row.at(2).value, ACCOUNT_MORE),
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
     });
   }
   return resRows;
 }
 
-export interface GetVideoPlayerSettingsRow {
-  videoPlayerSettingsSettings: VideoPlayerSettings,
+export interface ContinuedSearchAccountsRow {
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
+  accountFullTextScore?: number,
 }
 
-export let GET_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<GetVideoPlayerSettingsRow> = {
-  name: 'GetVideoPlayerSettingsRow',
+export let CONTINUED_SEARCH_ACCOUNTS_ROW: MessageDescriptor<ContinuedSearchAccountsRow> = {
+  name: 'ContinuedSearchAccountsRow',
   fields: [{
-    name: 'videoPlayerSettingsSettings',
+    name: 'accountUserId',
     index: 1,
-    messageType: VIDEO_PLAYER_SETTINGS,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 3,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 8,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 10,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountFullTextScore',
+    index: 12,
+    primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getVideoPlayerSettings(
+export async function continuedSearchAccounts(
   runner: Database | Transaction,
-  videoPlayerSettingsAccountIdEq: string,
-): Promise<Array<GetVideoPlayerSettingsRow>> {
+  args: {
+    accountFullTextSearch: string,
+    accountFullTextScoreWhere: string,
+    accountFullTextScoreLt: number,
+    accountFullTextScoreOrderBy: string,
+    limit: number,
+    accountFullTextScoreSelect: string,
+  }
+): Promise<Array<ContinuedSearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT VideoPlayerSettings.settings FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (SEARCH(Account.fullText, @accountFullTextSearch) AND SCORE(Account.fullText, @accountFullTextScoreWhere) < @accountFullTextScoreLt) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+      accountFullTextSearch: args.accountFullTextSearch,
+      accountFullTextScoreWhere: args.accountFullTextScoreWhere,
+      accountFullTextScoreLt: Spanner.float(args.accountFullTextScoreLt),
+      accountFullTextScoreOrderBy: args.accountFullTextScoreOrderBy,
+      limit: args.limit.toString(),
+      accountFullTextScoreSelect: args.accountFullTextScoreSelect,
     },
     types: {
-      videoPlayerSettingsAccountIdEq: { type: "string" },
+      accountFullTextSearch: { type: "string" },
+      accountFullTextScoreWhere: { type: "string" },
+      accountFullTextScoreLt: { type: "float64" },
+      accountFullTextScoreOrderBy: { type: "string" },
+      limit: { type: "int64" },
+      accountFullTextScoreSelect: { type: "string" },
     }
   });
-  let resRows = new Array<GetVideoPlayerSettingsRow>();
+  let resRows = new Array<ContinuedSearchAccountsRow>();
   for (let row of rows) {
     resRows.push({
-      videoPlayerSettingsSettings: deserializeMessage(row.at(0).value, VIDEO_PLAYER_SETTINGS),
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
+    });
+  }
+  return resRows;
+}
+
+export interface GetAccountMainRow {
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
+}
+
+export let GET_ACCOUNT_MAIN_ROW: MessageDescriptor<GetAccountMainRow> = {
+  name: 'GetAccountMainRow',
+  fields: [{
+    name: 'accountUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 3,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 8,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 10,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getAccountMain(
+  runner: Database | Transaction,
+  args: {
+    accountAccountIdEq: string,
+  }
+): Promise<Array<GetAccountMainRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    params: {
+      accountAccountIdEq: args.accountAccountIdEq,
+    },
+    types: {
+      accountAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetAccountMainRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+    });
+  }
+  return resRows;
+}
+
+export interface GetUserAndAccountAllRow {
+  userUserId?: string,
+  userUsername?: string,
+  userPasswordHashV1?: string,
+  userRecoveryEmail?: string,
+  userTotalAccounts?: number,
+  userCreatedTimeMs?: number,
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountDescription?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountCreatedTimeMs?: number,
+  accountBillingAccountStateVersion?: number,
+  accountBillingAccountState?: BillingAccountState,
+  accountCapabilitiesVersion?: number,
+}
+
+export let GET_USER_AND_ACCOUNT_ALL_ROW: MessageDescriptor<GetUserAndAccountAllRow> = {
+  name: 'GetUserAndAccountAllRow',
+  fields: [{
+    name: 'userUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userUsername',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userPasswordHashV1',
+    index: 3,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userRecoveryEmail',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'userTotalAccounts',
+    index: 5,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'userCreatedTimeMs',
+    index: 6,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountUserId',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 8,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 9,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 10,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountDescription',
+    index: 11,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 12,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 13,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 14,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 15,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountCreatedTimeMs',
+    index: 16,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountStateVersion',
+    index: 17,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountBillingAccountState',
+    index: 18,
+    enumType: BILLING_ACCOUNT_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 19,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getUserAndAccountAll(
+  runner: Database | Transaction,
+  args: {
+    userUserIdEq: string,
+    accountAccountIdEq: string,
+  }
+): Promise<Array<GetUserAndAccountAllRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT u.userId, u.username, u.passwordHashV1, u.recoveryEmail, u.totalAccounts, u.createdTimeMs, a.userId, a.accountId, a.accountType, a.naturalName, a.description, a.contactEmail, a.avatarSmallFilename, a.avatarLargeFilename, a.lastAccessedTimeMs, a.createdTimeMs, a.billingAccountStateVersion, a.billingAccountState, a.capabilitiesVersion FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @userUserIdEq AND a.accountId = @accountAccountIdEq)",
+    params: {
+      userUserIdEq: args.userUserIdEq,
+      accountAccountIdEq: args.accountAccountIdEq,
+    },
+    types: {
+      userUserIdEq: { type: "string" },
+      accountAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetUserAndAccountAllRow>();
+  for (let row of rows) {
+    resRows.push({
+      userUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      userUsername: row.at(1).value == null ? undefined : row.at(1).value,
+      userPasswordHashV1: row.at(2).value == null ? undefined : row.at(2).value,
+      userRecoveryEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      userTotalAccounts: row.at(4).value == null ? undefined : row.at(4).value.value,
+      userCreatedTimeMs: row.at(5).value == null ? undefined : row.at(5).value.value,
+      accountUserId: row.at(6).value == null ? undefined : row.at(6).value,
+      accountAccountId: row.at(7).value == null ? undefined : row.at(7).value,
+      accountAccountType: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(9).value == null ? undefined : row.at(9).value,
+      accountDescription: row.at(10).value == null ? undefined : row.at(10).value,
+      accountContactEmail: row.at(11).value == null ? undefined : row.at(11).value,
+      accountAvatarSmallFilename: row.at(12).value == null ? undefined : row.at(12).value,
+      accountAvatarLargeFilename: row.at(13).value == null ? undefined : row.at(13).value,
+      accountLastAccessedTimeMs: row.at(14).value == null ? undefined : row.at(14).value.value,
+      accountCreatedTimeMs: row.at(15).value == null ? undefined : row.at(15).value.value,
+      accountBillingAccountStateVersion: row.at(16).value == null ? undefined : row.at(16).value.value,
+      accountBillingAccountState: row.at(17).value == null ? undefined : toEnumFromNumber(row.at(17).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(18).value == null ? undefined : row.at(18).value.value,
     });
   }
   return resRows;
 }
 
 export interface CheckPresenceOfVideoPlayerSettingsRow {
-  videoPlayerSettingsAccountId: string,
+  videoPlayerSettingsAccountId?: string,
 }
 
 export let CHECK_PRESENCE_OF_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<CheckPresenceOfVideoPlayerSettingsRow> = {
@@ -789,12 +1424,14 @@ export let CHECK_PRESENCE_OF_VIDEO_PLAYER_SETTINGS_ROW: MessageDescriptor<CheckP
 
 export async function checkPresenceOfVideoPlayerSettings(
   runner: Database | Transaction,
-  videoPlayerSettingsAccountIdEq: string,
+  args: {
+    videoPlayerSettingsAccountIdEq: string,
+  }
 ): Promise<Array<CheckPresenceOfVideoPlayerSettingsRow>> {
   let [rows] = await runner.run({
     sql: "SELECT VideoPlayerSettings.accountId FROM VideoPlayerSettings WHERE VideoPlayerSettings.accountId = @videoPlayerSettingsAccountIdEq",
     params: {
-      videoPlayerSettingsAccountIdEq: videoPlayerSettingsAccountIdEq,
+      videoPlayerSettingsAccountIdEq: args.videoPlayerSettingsAccountIdEq,
     },
     types: {
       videoPlayerSettingsAccountIdEq: { type: "string" },
@@ -803,7 +1440,7 @@ export async function checkPresenceOfVideoPlayerSettings(
   let resRows = new Array<CheckPresenceOfVideoPlayerSettingsRow>();
   for (let row of rows) {
     resRows.push({
-      videoPlayerSettingsAccountId: row.at(0).value,
+      videoPlayerSettingsAccountId: row.at(0).value == null ? undefined : row.at(0).value,
     });
   }
   return resRows;

@@ -42,10 +42,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingAccountStateInfo: {
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 100,
+              billingAccountState: BillingAccountState.HEALTHY,
               lastAccessedTimeMs: 100,
             }),
             insertAccountStatement({
@@ -53,10 +50,7 @@ TEST_RUNNER.run({
               accountId: "account2",
               accountType: AccountType.PUBLISHER,
               capabilitiesVersion: 0,
-              billingAccountStateInfo: {
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 100,
+              billingAccountState: BillingAccountState.HEALTHY,
               lastAccessedTimeMs: 200,
             }),
           ]);
@@ -102,8 +96,8 @@ TEST_RUNNER.run({
               accountId: "account2",
               capabilitiesVersion: 0,
               capabilities: {
-                canConsumeShows: false,
-                canPublishShows: true,
+                canConsume: false,
+                canPublish: true,
                 canBeBilled: true,
                 canEarn: true,
               },
@@ -116,9 +110,9 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account1"),
-            deleteAccountStatement("account2"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account2" }),
           ]);
           await transaction.commit();
         });
@@ -164,8 +158,6 @@ TEST_RUNNER.run({
               userId: "user1",
               username: "username1",
               passwordHashV1: "signed_password",
-              recoveryEmail: "email",
-              createdTimeMs: 100,
             }),
           ]);
           await transaction.commit();
@@ -197,7 +189,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteUserStatement("user1")]);
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+          ]);
           await transaction.commit();
         });
       },

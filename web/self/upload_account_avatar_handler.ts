@@ -5,7 +5,7 @@ import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
 import { S3_CLIENT } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccount, updateAccountStatement } from "../../db/sql";
+import { getAccountMain, updateAccountAvatarStatement } from "../../db/sql";
 import { ENV_VARS } from "../../env_vars";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -17,7 +17,7 @@ import {
 } from "@phading/constants/account";
 import { UploadAccountAvatarHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import { UploadAccountAvatarResponse } from "@phading/user_service_interface/web/self/interface";
-import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
+import { newFetchSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newInternalServerErrorError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 import { Ref } from "@selfage/ref";
@@ -47,32 +47,38 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
     authStr: string,
   ): Promise<UploadAccountAvatarResponse> {
     let { accountId } = await this.serviceClient.send(
-      newExchangeSessionAndCheckCapabilityRequest({
+      newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
       }),
     );
     let avatarSmallFilename: string;
     let avatarLargeFilename: string;
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccount(transaction, accountId);
+      let rows = await getAccountMain(transaction, {
+        accountAccountIdEq: accountId,
+      });
       if (rows.length === 0) {
         throw newInternalServerErrorError(`Account ${accountId} is not found.`);
       }
-      let { accountData } = rows[0];
+      let account = rows[0];
       if (
-        accountData.avatarSmallFilename !==
+        account.accountAvatarSmallFilename !==
         DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME
       ) {
-        avatarSmallFilename = accountData.avatarSmallFilename;
-        avatarLargeFilename = accountData.avatarLargeFilename;
-        return;
+        avatarSmallFilename = account.accountAvatarSmallFilename;
+        avatarLargeFilename = account.accountAvatarLargeFilename;
+      } else {
+        avatarSmallFilename = `${accountId}s.png`;
+        avatarLargeFilename = `${accountId}l.png`;
+        await transaction.batchUpdate([
+          updateAccountAvatarStatement({
+            accountAccountIdEq: accountId,
+            setAvatarSmallFilename: avatarSmallFilename,
+            setAvatarLargeFilename: avatarLargeFilename,
+          }),
+        ]);
+        await transaction.commit();
       }
-      avatarSmallFilename = `${accountId}s.png`;
-      avatarLargeFilename = `${accountId}l.png`;
-      accountData.avatarSmallFilename = avatarSmallFilename;
-      accountData.avatarLargeFilename = avatarLargeFilename;
-      await transaction.batchUpdate([updateAccountStatement(accountData)]);
-      await transaction.commit();
     });
 
     let imageBuffer = await getStream.buffer(body, {

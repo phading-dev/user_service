@@ -1,13 +1,11 @@
 import crypto = require("crypto");
 import { toCapabilities } from "../../common/capabilities_converter";
-import { initAccount, initAccountMore } from "../../common/init_account";
+import { initAccount } from "../../common/init_account";
 import { PASSWORD_SIGNER, PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { Account } from "../../db/schema";
 import {
   getUserByUsername,
-  insertAccountMoreStatement,
   insertAccountStatement,
   insertUserStatement,
 } from "../../db/sql";
@@ -24,6 +22,7 @@ import {
   SignUpResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { newCreateSessionRequest } from "@phading/user_session_service_interface/node/client";
+import { CreateSessionRequestBody } from "@phading/user_session_service_interface/node/interface";
 import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
@@ -87,17 +86,19 @@ export class SignUpHandler extends SignUpHandlerInterface {
     }
 
     let userId = this.generateUuid();
-    let account: Account;
     let usernameIsAvailable = true;
+    let request: CreateSessionRequestBody;
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getUserByUsername(transaction, body.username);
+      let rows = await getUserByUsername(transaction, {
+        userUsernameEq: body.username,
+      });
       if (rows.length > 0) {
         usernameIsAvailable = false;
         return;
       }
       let now = this.getNow();
       let passwordHash = this.passwordSigner.sign(body.password);
-      account = initAccount(
+      let account = initAccount(
         userId,
         this.generateUuid(),
         body.accountType,
@@ -105,6 +106,15 @@ export class SignUpHandler extends SignUpHandlerInterface {
         body.contactEmail,
         now,
       );
+      request = {
+        userId,
+        accountId: account.accountId,
+        capabilitiesVersion: account.capabilitiesVersion,
+        capabilities: toCapabilities(
+          account.accountType,
+          account.billingAccountState,
+        ),
+      };
       await transaction.batchUpdate([
         insertUserStatement({
           userId,
@@ -115,7 +125,6 @@ export class SignUpHandler extends SignUpHandlerInterface {
           createdTimeMs: now,
         }),
         insertAccountStatement(account),
-        insertAccountMoreStatement(initAccountMore(account.accountId)),
       ]);
       await transaction.commit();
     });
@@ -126,12 +135,7 @@ export class SignUpHandler extends SignUpHandlerInterface {
     }
 
     let response = await this.serviceClient.send(
-      newCreateSessionRequest({
-        userId,
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account),
-      }),
+      newCreateSessionRequest(request),
     );
     return {
       signedSession: response.signedSession,

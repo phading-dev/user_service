@@ -1,4 +1,3 @@
-import { Account, AccountMore } from "../db/schema";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
@@ -13,28 +12,20 @@ export function initAccount(
   naturalName: string,
   contactEmail: string,
   now: number,
-): Account {
+) {
   return {
     userId,
     accountId,
     accountType,
     naturalName,
+    description: "",
     contactEmail,
     avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
     avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
     createdTimeMs: now,
     lastAccessedTimeMs: now,
-    billingAccountStateInfo: {
-      version: 0,
-      state: BillingAccountState.HEALTHY,
-    },
+    billingAccountStateVersion: 0,
+    billingAccountState: BillingAccountState.HEALTHY,
     capabilitiesVersion: 0,
-  };
-}
-
-export function initAccountMore(accountId: string): AccountMore {
-  return {
-    accountId,
-    description: "",
   };
 }

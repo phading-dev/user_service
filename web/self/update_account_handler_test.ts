@@ -1,16 +1,13 @@
 import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_ACCOUNT_AND_MORE_BY_ID_ROW,
-  deleteAccountMoreStatement,
+  GET_ACCOUNT_ROW,
   deleteAccountStatement,
-  getAccountAndMoreById,
-  insertAccountMoreStatement,
+  getAccount,
   insertAccountStatement,
 } from "../../db/sql";
 import { UpdateAccountHandler } from "./update_account_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, isArray } from "@selfage/test_matcher";
@@ -28,14 +25,8 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               naturalName: "name1",
               contactEmail: "email",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
-            }),
-            insertAccountMoreStatement({
-              accountId: "account1",
               description: "something something",
             }),
           ]);
@@ -44,7 +35,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UpdateAccountHandler(SPANNER_DATABASE, clientMock);
 
         // Execute
@@ -59,25 +50,19 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountAndMoreById(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                aData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  naturalName: "name2",
-                  contactEmail: "contact2@example.com",
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
-                amData: {
-                  accountId: "account1",
-                  description: "",
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountNaturalName: "name2",
+                accountContactEmail: "contact2@example.com",
+                accountDescription: "",
               },
-              GET_ACCOUNT_AND_MORE_BY_ID_ROW,
+              GET_ACCOUNT_ROW,
             ),
           ]),
           "account",
@@ -86,8 +71,7 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteAccountStatement("account1"),
-            deleteAccountMoreStatement("account1"),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
           ]);
           await transaction.commit();
         });
@@ -102,14 +86,8 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               naturalName: "name1",
               contactEmail: "email",
-              createdTimeMs: 1000,
-              lastAccessedTimeMs: 1000,
-            }),
-            insertAccountMoreStatement({
-              accountId: "account1",
               description: "",
             }),
           ]);
@@ -118,7 +96,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UpdateAccountHandler(SPANNER_DATABASE, clientMock);
 
         // Execute
@@ -134,25 +112,19 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getAccountAndMoreById(SPANNER_DATABASE, "account1"),
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
-                aData: {
-                  userId: "user1",
-                  accountId: "account1",
-                  accountType: AccountType.CONSUMER,
-                  naturalName: "name2",
-                  contactEmail: "contact2@example.com",
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                },
-                amData: {
-                  accountId: "account1",
-                  description: "something something",
-                },
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountNaturalName: "name2",
+                accountContactEmail: "contact2@example.com",
+                accountDescription: "something something",
               },
-              GET_ACCOUNT_AND_MORE_BY_ID_ROW,
+              GET_ACCOUNT_ROW,
             ),
           ]),
           "account",
@@ -161,8 +133,7 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteAccountStatement("account1"),
-            deleteAccountMoreStatement("account1"),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
           ]);
           await transaction.commit();
         });

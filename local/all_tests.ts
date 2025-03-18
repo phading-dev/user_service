@@ -1,6 +1,4 @@
 import "../node/get_account_contact_handler_test";
-import "../node/get_account_summary_handler_test";
-import "../node/list_account_capabilities_updating_tasks_handler_test";
 import "../node/process_account_capabilities_updating_task_handler_test";
 import "../node/sync_billing_account_state_handler_test";
 import "../web/self/create_account_handler_test";
@@ -15,3 +13,5 @@ import "../web/self/update_account_handler_test";
 import "../web/self/update_password_handler_test";
 import "../web/self/update_recovery_email_handler_test";
 import "../web/self/upload_account_avatar_handler_test";
+import "../web/third_person/get_account_summary_handler_test";
+import "../web/third_person/search_accounts_handler_test";

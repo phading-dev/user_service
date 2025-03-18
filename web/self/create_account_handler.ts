@@ -1,14 +1,12 @@
 import crypto = require("crypto");
 import { toCapabilities } from "../../common/capabilities_converter";
-import { initAccount, initAccountMore } from "../../common/init_account";
+import { initAccount } from "../../common/init_account";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { Account } from "../../db/schema";
 import {
   getUser,
-  insertAccountMoreStatement,
   insertAccountStatement,
-  updateUserStatement,
+  updateUserTotalAccountsStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
@@ -23,8 +21,9 @@ import {
 } from "@phading/user_service_interface/web/self/interface";
 import {
   newCreateSessionRequest,
-  newExchangeSessionAndCheckCapabilityRequest,
+  newFetchSessionAndCheckCapabilityRequest,
 } from "@phading/user_session_service_interface/node/client";
+import { CreateSessionRequestBody } from "@phading/user_session_service_interface/node/interface";
 import {
   newBadRequestError,
   newInternalServerErrorError,
@@ -72,25 +71,26 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     }
 
     let { userId } = await this.serviceClient.send(
-      newExchangeSessionAndCheckCapabilityRequest({
+      newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
       }),
     );
-    let account: Account;
+    let request: CreateSessionRequestBody;
     await this.database.runTransactionAsync(async (transaction) => {
-      let userRows = await getUser(transaction, userId);
-      if (userRows.length === 0) {
+      let rows = await getUser(transaction, {
+        userUserIdEq: userId,
+      });
+      if (rows.length === 0) {
         throw newInternalServerErrorError(`User ${userId} is not found.`);
       }
-      let { userData } = userRows[0];
-      if (userData.totalAccounts >= MAX_ACCOUNTS_PER_USER) {
+      let row = rows[0];
+      if (row.userTotalAccounts >= MAX_ACCOUNTS_PER_USER) {
         throw newBadRequestError(
           `User ${userId} has reached the maximum number of accounts.`,
         );
       }
-      userData.totalAccounts++;
       let now = this.getNow();
-      account = initAccount(
+      let account = initAccount(
         userId,
         this.generateUuid(),
         body.accountType,
@@ -98,20 +98,26 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
         body.contactEmail,
         now,
       );
+      request = {
+        userId,
+        accountId: account.accountId,
+        capabilitiesVersion: account.capabilitiesVersion,
+        capabilities: toCapabilities(
+          account.accountType,
+          account.billingAccountState,
+        ),
+      };
       await transaction.batchUpdate([
-        updateUserStatement(userData),
+        updateUserTotalAccountsStatement({
+          userUserIdEq: userId,
+          setTotalAccounts: row.userTotalAccounts + 1,
+        }),
         insertAccountStatement(account),
-        insertAccountMoreStatement(initAccountMore(account.accountId)),
       ]);
       await transaction.commit();
     });
     let response = await this.serviceClient.send(
-      newCreateSessionRequest({
-        userId,
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account),
-      }),
+      newCreateSessionRequest(request),
     );
     return {
       signedSession: response.signedSession,

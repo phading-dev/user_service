@@ -4,7 +4,7 @@ import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
 import { ListAccountsHandler } from "./list_accounts_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { LIST_ACCOUNTS_RESPONSE } from "@phading/user_service_interface/web/self/interface";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat } from "@selfage/test_matcher";
@@ -25,7 +25,6 @@ TEST_RUNNER.run({
               accountType: AccountType.CONSUMER,
               naturalName: "name1",
               avatarSmallFilename: "avatar1",
-              createdTimeMs: 1000,
               lastAccessedTimeMs: 1000,
             }),
             insertAccountStatement({
@@ -34,7 +33,6 @@ TEST_RUNNER.run({
               accountType: AccountType.PUBLISHER,
               naturalName: "name2",
               avatarSmallFilename: "avatar2",
-              createdTimeMs: 1000,
               lastAccessedTimeMs: 3000,
             }),
             insertAccountStatement({
@@ -43,7 +41,6 @@ TEST_RUNNER.run({
               accountType: AccountType.PUBLISHER,
               naturalName: "name3",
               avatarSmallFilename: "avatar3",
-              createdTimeMs: 1000,
               lastAccessedTimeMs: 2000,
             }),
           ]);
@@ -52,7 +49,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           userId: "user1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new ListAccountsHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -96,9 +93,9 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteAccountStatement("account1"),
-            deleteAccountStatement("account2"),
-            deleteAccountStatement("account3"),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account2" }),
+            deleteAccountStatement({ accountAccountIdEq: "account3" }),
           ]);
           await transaction.commit();
         });

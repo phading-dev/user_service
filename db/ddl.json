@@ -8,10 +8,19 @@
       "name": "username",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN username STRING(MAX) NOT NULL"
     }, {
-      "name": "data",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN data BYTES(MAX) NOT NULL"
+      "name": "passwordHashV1",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN passwordHashV1 STRING(MAX)"
+    }, {
+      "name": "recoveryEmail",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN recoveryEmail STRING(MAX)"
+    }, {
+      "name": "totalAccounts",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN totalAccounts FLOAT64"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN createdTimeMs FLOAT64"
     }],
-    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (userId ASC)",
+    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, passwordHashV1 STRING(MAX), recoveryEmail STRING(MAX), totalAccounts FLOAT64, createdTimeMs FLOAT64) PRIMARY KEY (userId ASC)",
     "indexes": [{
       "name": "UniqueUsername",
       "createIndexDdl": "CREATE UNIQUE INDEX UniqueUsername ON User(username)"
@@ -19,43 +28,59 @@
   }, {
     "name": "Account",
     "columns": [{
-      "name": "accountId",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountId STRING(MAX) NOT NULL"
-    }, {
       "name": "userId",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN userId STRING(MAX) NOT NULL"
     }, {
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
       "name": "accountType",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64 NOT NULL"
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64"
+    }, {
+      "name": "naturalName",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN naturalName STRING(MAX)"
+    }, {
+      "name": "description",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN description STRING(MAX)"
+    }, {
+      "name": "contactEmail",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN contactEmail STRING(MAX)"
+    }, {
+      "name": "avatarSmallFilename",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarSmallFilename STRING(MAX)"
+    }, {
+      "name": "avatarLargeFilename",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN avatarLargeFilename STRING(MAX)"
     }, {
       "name": "lastAccessedTimeMs",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimeMs FLOAT64 NOT NULL"
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimeMs FLOAT64"
     }, {
       "name": "createdTimeMs",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs FLOAT64 NOT NULL"
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs FLOAT64"
     }, {
-      "name": "data",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN data BYTES(MAX) NOT NULL"
+      "name": "billingAccountStateVersion",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN billingAccountStateVersion FLOAT64"
+    }, {
+      "name": "billingAccountState",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN billingAccountState FLOAT64"
+    }, {
+      "name": "capabilitiesVersion",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN capabilitiesVersion FLOAT64"
+    }, {
+      "name": "fullText",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN"
     }],
-    "createTableDdl": "CREATE TABLE Account (accountId STRING(MAX) NOT NULL, userId STRING(MAX) NOT NULL, accountType FLOAT64 NOT NULL, lastAccessedTimeMs FLOAT64 NOT NULL, createdTimeMs FLOAT64 NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, billingAccountStateVersion FLOAT64, billingAccountState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimeMs",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
     }, {
       "name": "ByTypeAndCreatedTimeMs",
       "createIndexDdl": "CREATE INDEX ByTypeAndCreatedTimeMs ON Account(accountType, createdTimeMs DESC)"
-    }]
-  }, {
-    "name": "AccountMore",
-    "columns": [{
-      "name": "accountId",
-      "addColumnDdl": "ALTER TABLE AccountMore ADD COLUMN accountId STRING(MAX) NOT NULL"
     }, {
-      "name": "data",
-      "addColumnDdl": "ALTER TABLE AccountMore ADD COLUMN data BYTES(MAX) NOT NULL"
-    }],
-    "createTableDdl": "CREATE TABLE AccountMore (accountId STRING(MAX) NOT NULL, data BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
-    "indexes": []
+      "name": "ByFullText",
+      "createIndexDdl": "CREATE SEARCH INDEX ByFullText ON Account(fullText)"
+    }]
   }, {
     "name": "VideoPlayerSettings",
     "columns": [{
@@ -63,9 +88,9 @@
       "addColumnDdl": "ALTER TABLE VideoPlayerSettings ADD COLUMN accountId STRING(MAX) NOT NULL"
     }, {
       "name": "settings",
-      "addColumnDdl": "ALTER TABLE VideoPlayerSettings ADD COLUMN settings BYTES(MAX) NOT NULL"
+      "addColumnDdl": "ALTER TABLE VideoPlayerSettings ADD COLUMN settings BYTES(MAX)"
     }],
-    "createTableDdl": "CREATE TABLE VideoPlayerSettings (accountId STRING(MAX) NOT NULL, settings BYTES(MAX) NOT NULL) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE VideoPlayerSettings (accountId STRING(MAX) NOT NULL, settings BYTES(MAX)) PRIMARY KEY (accountId ASC)",
     "indexes": []
   }, {
     "name": "AccountCapabilitiesUpdatingTask",
@@ -77,15 +102,15 @@
       "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN capabilitiesVersion FLOAT64 NOT NULL"
     }, {
       "name": "retryCount",
-      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN retryCount FLOAT64 NOT NULL"
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN retryCount FLOAT64"
     }, {
       "name": "executionTimeMs",
-      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN executionTimeMs TIMESTAMP NOT NULL"
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN executionTimeMs TIMESTAMP"
     }, {
       "name": "createdTimeMs",
-      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN createdTimeMs TIMESTAMP NOT NULL"
+      "addColumnDdl": "ALTER TABLE AccountCapabilitiesUpdatingTask ADD COLUMN createdTimeMs TIMESTAMP"
     }],
-    "createTableDdl": "CREATE TABLE AccountCapabilitiesUpdatingTask (accountId STRING(MAX) NOT NULL, capabilitiesVersion FLOAT64 NOT NULL, retryCount FLOAT64 NOT NULL, executionTimeMs TIMESTAMP NOT NULL, createdTimeMs TIMESTAMP NOT NULL) PRIMARY KEY (accountId ASC, capabilitiesVersion ASC)",
+    "createTableDdl": "CREATE TABLE AccountCapabilitiesUpdatingTask (accountId STRING(MAX) NOT NULL, capabilitiesVersion FLOAT64 NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC, capabilitiesVersion ASC)",
     "indexes": [{
       "name": "AccountCapabilitiesUpdatingTaskByExecutionTimeMs",
       "createIndexDdl": "CREATE INDEX AccountCapabilitiesUpdatingTaskByExecutionTimeMs ON AccountCapabilitiesUpdatingTask(executionTimeMs)"

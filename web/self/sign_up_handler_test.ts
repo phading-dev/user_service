@@ -6,12 +6,12 @@ import {
 import { PasswordSignerMock } from "../../common/password_signer_mock";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_USER_AND_ACCOUNT_AND_MORE_ROW,
-  deleteAccountMoreStatement,
+  GET_ACCOUNT_ROW,
+  GET_USER_ROW,
   deleteAccountStatement,
   deleteUserStatement,
+  getAccount,
   getUser,
-  getUserAndAccountAndMore,
   insertUserStatement,
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
@@ -63,43 +63,47 @@ TEST_RUNNER.run({
         // Verify
         assertThat(signerMock.password, eq("pass1"), "raw password");
         assertThat(
-          await getUserAndAccountAndMore(SPANNER_DATABASE, "id1", "id2"),
+          await getUser(SPANNER_DATABASE, { userUserIdEq: "id1" }),
           isArray([
             eqMessage(
               {
-                uData: {
-                  userId: "id1",
-                  username: "username1",
-                  passwordHashV1: "signed_password",
-                  recoveryEmail: "recovery@example.com",
-                  totalAccounts: 1,
-                  createdTimeMs: 1000,
-                },
-                aData: {
-                  userId: "id1",
-                  accountId: "id2",
-                  accountType: AccountType.CONSUMER,
-                  naturalName: "first second",
-                  contactEmail: "contact@example.com",
-                  avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-                  avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                  capabilitiesVersion: 0,
-                  billingAccountStateInfo: {
-                    version: 0,
-                    state: BillingAccountState.HEALTHY,
-                  },
-                },
-                amData: {
-                  accountId: "id2",
-                  description: "",
-                },
+                userUserId: "id1",
+                userUsername: "username1",
+                userPasswordHashV1: "signed_password",
+                userRecoveryEmail: "recovery@example.com",
+                userTotalAccounts: 1,
+                userCreatedTimeMs: 1000,
               },
-              GET_USER_AND_ACCOUNT_AND_MORE_ROW,
+              GET_USER_ROW,
             ),
           ]),
-          "user and account created",
+          "user created",
+        );
+        assertThat(
+          await getAccount(SPANNER_DATABASE, { accountAccountIdEq: "id2" }),
+          isArray([
+            eqMessage(
+              {
+                accountUserId: "id1",
+                accountAccountId: "id2",
+                accountAccountType: AccountType.CONSUMER,
+                accountNaturalName: "first second",
+                accountDescription: "",
+                accountContactEmail: "contact@example.com",
+                accountAvatarSmallFilename:
+                  DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+                accountAvatarLargeFilename:
+                  DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+                accountCreatedTimeMs: 1000,
+                accountLastAccessedTimeMs: 1000,
+                accountCapabilitiesVersion: 0,
+                accountBillingAccountStateVersion: 0,
+                accountBillingAccountState: BillingAccountState.HEALTHY,
+              },
+              GET_ACCOUNT_ROW,
+            ),
+          ]),
+          "account created",
         );
         assertThat(
           response,
@@ -121,8 +125,8 @@ TEST_RUNNER.run({
               accountId: "id2",
               capabilitiesVersion: 0,
               capabilities: {
-                canConsumeShows: true,
-                canPublishShows: false,
+                canConsume: true,
+                canPublish: false,
                 canBeBilled: true,
                 canEarn: false,
               },
@@ -135,9 +139,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("id1"),
-            deleteAccountStatement("id2"),
-            deleteAccountMoreStatement("id2"),
+            deleteUserStatement({ userUserIdEq: "id1" }),
+            deleteAccountStatement({ accountAccountIdEq: "id2" }),
           ]);
           await transaction.commit();
         });
@@ -193,14 +196,16 @@ TEST_RUNNER.run({
           "response",
         );
         assertThat(
-          (await getUser(SPANNER_DATABASE, "id1")).length,
+          (await getUser(SPANNER_DATABASE, { userUserIdEq: "id1" })).length,
           eq(0),
           "user not created",
         );
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteUserStatement("user1")]);
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+          ]);
           await transaction.commit();
         });
       },

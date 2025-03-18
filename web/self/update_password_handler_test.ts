@@ -8,7 +8,7 @@ import {
   insertUserStatement,
 } from "../../db/sql";
 import { UpdatePasswordHandler } from "./update_password_handler";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
@@ -47,7 +47,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           userId: "user1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,
           signerMock,
@@ -66,15 +66,13 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getUser(SPANNER_DATABASE, "user1"),
+          await getUser(SPANNER_DATABASE, { userUserIdEq: "user1" }),
           isArray([
             eqMessage(
               {
-                userData: {
-                  userId: "user1",
-                  username: "username1",
-                  passwordHashV1: "signed_new_pass",
-                },
+                userUserId: "user1",
+                userUsername: "username1",
+                userPasswordHashV1: "signed_new_pass",
               },
               GET_USER_ROW,
             ),
@@ -84,7 +82,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteUserStatement("user1")]);
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+          ]);
           await transaction.commit();
         });
       },
@@ -97,7 +97,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           userId: "user1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,
           signerMock,
@@ -147,7 +147,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           userId: "user1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new UpdatePasswordHandler(
           SPANNER_DATABASE,
           signerMock,
@@ -175,7 +175,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteUserStatement("user1")]);
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+          ]);
           await transaction.commit();
         });
       },

@@ -6,7 +6,7 @@ import {
   getVideoPlayerSettings,
 } from "../../db/sql";
 import { SaveVideoPlayerSettingsHandler } from "./save_video_player_settings_handler";
-import { ExchangeSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
+import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, isArray } from "@selfage/test_matcher";
@@ -22,7 +22,7 @@ TEST_RUNNER.run({
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {
           accountId: "account1",
-        } as ExchangeSessionAndCheckCapabilityResponse;
+        } as FetchSessionAndCheckCapabilityResponse;
         let handler = new SaveVideoPlayerSettingsHandler(
           SPANNER_DATABASE,
           clientMock,
@@ -43,10 +43,13 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getVideoPlayerSettings(SPANNER_DATABASE, "account1"),
+          await getVideoPlayerSettings(SPANNER_DATABASE, {
+            videoPlayerSettingsAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
+                videoPlayerSettingsAccountId: "account1",
                 videoPlayerSettingsSettings: {
                   videoSettings: {
                     playbackSpeed: 1,
@@ -74,10 +77,13 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getVideoPlayerSettings(SPANNER_DATABASE, "account1"),
+          await getVideoPlayerSettings(SPANNER_DATABASE, {
+            videoPlayerSettingsAccountIdEq: "account1",
+          }),
           isArray([
             eqMessage(
               {
+                videoPlayerSettingsAccountId: "account1",
                 videoPlayerSettingsSettings: {
                   videoSettings: {
                     playbackSpeed: 10,
@@ -93,7 +99,9 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteVideoPlayerSettingsStatement("account1"),
+            deleteVideoPlayerSettingsStatement({
+              videoPlayerSettingsAccountIdEq: "account1",
+            }),
           ]);
           await transaction.commit();
         });

@@ -1,6 +1,11 @@
 import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
+import {
+  GET_ACCOUNT_ROW,
+  deleteAccountStatement,
+  getAccount,
+  insertAccountStatement,
+} from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
@@ -9,14 +14,14 @@ import {
   CREATE_SESSION,
   CREATE_SESSION_REQUEST_BODY,
   CreateSessionResponse,
-  EXCHANGE_SESSION_AND_CHECK_CAPABILITY,
-  ExchangeSessionAndCheckCapabilityResponse,
+  FETCH_SESSION_AND_CHECK_CAPABILITY,
+  FetchSessionAndCheckCapabilityResponse,
 } from "@phading/user_session_service_interface/node/interface";
 import { newForbiddenError, newNotFoundError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertReject, assertThat } from "@selfage/test_matcher";
+import { assertReject, assertThat, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
@@ -33,10 +38,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingAccountStateInfo: {
-                state: BillingAccountState.HEALTHY,
-              },
-              createdTimeMs: 1000,
+              billingAccountState: BillingAccountState.HEALTHY,
               lastAccessedTimeMs: 1000,
             }),
           ]);
@@ -44,10 +46,10 @@ TEST_RUNNER.run({
         });
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
-            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+            if (request.descriptor === FETCH_SESSION_AND_CHECK_CAPABILITY) {
               return {
                 userId: "user1",
-              } as ExchangeSessionAndCheckCapabilityResponse;
+              } as FetchSessionAndCheckCapabilityResponse;
             } else if (request.descriptor === CREATE_SESSION) {
               this.request = request;
               return {
@@ -58,7 +60,11 @@ TEST_RUNNER.run({
             }
           }
         })();
-        let handler = new SwitchAccountHandler(SPANNER_DATABASE, clientMock);
+        let handler = new SwitchAccountHandler(
+          SPANNER_DATABASE,
+          clientMock,
+          () => 2000,
+        );
 
         // Execute
         let response = await handler.handle(
@@ -71,24 +77,6 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          clientMock.request.body,
-          eqMessage(
-            {
-              userId: "user1",
-              accountId: "account1",
-              capabilitiesVersion: 0,
-              capabilities: {
-                canConsumeShows: true,
-                canPublishShows: false,
-                canBeBilled: true,
-                canEarn: false,
-              },
-            },
-            CREATE_SESSION_REQUEST_BODY,
-          ),
-          "create session request",
-        );
-        assertThat(
           response,
           eqMessage(
             {
@@ -98,10 +86,49 @@ TEST_RUNNER.run({
           ),
           "response",
         );
+        assertThat(
+          clientMock.request.body,
+          eqMessage(
+            {
+              userId: "user1",
+              accountId: "account1",
+              capabilitiesVersion: 0,
+              capabilities: {
+                canConsume: true,
+                canPublish: false,
+                canBeBilled: true,
+                canEarn: false,
+              },
+            },
+            CREATE_SESSION_REQUEST_BODY,
+          ),
+          "create session request",
+        );
+        assertThat(
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account1",
+          }),
+          isArray([
+            eqMessage(
+              {
+                accountUserId: "user1",
+                accountAccountId: "account1",
+                accountAccountType: AccountType.CONSUMER,
+                accountCapabilitiesVersion: 0,
+                accountBillingAccountState: BillingAccountState.HEALTHY,
+                accountLastAccessedTimeMs: 2000,
+              },
+              GET_ACCOUNT_ROW,
+            ),
+          ]),
+          "account",
+        );
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
           await transaction.commit();
         });
       },
@@ -112,16 +139,20 @@ TEST_RUNNER.run({
         // Prepare
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
-            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+            if (request.descriptor === FETCH_SESSION_AND_CHECK_CAPABILITY) {
               return {
                 userId: "user1",
-              } as ExchangeSessionAndCheckCapabilityResponse;
+              } as FetchSessionAndCheckCapabilityResponse;
             } else {
               throw new Error("Not handled");
             }
           }
         })();
-        let handler = new SwitchAccountHandler(SPANNER_DATABASE, clientMock);
+        let handler = new SwitchAccountHandler(
+          SPANNER_DATABASE,
+          clientMock,
+          () => 2000,
+        );
 
         // Execute
         let error = await assertReject(
@@ -153,7 +184,6 @@ TEST_RUNNER.run({
               userId: "user2",
               accountId: "account1",
               accountType: AccountType.CONSUMER,
-              createdTimeMs: 1000,
               lastAccessedTimeMs: 1000,
             }),
           ]);
@@ -161,16 +191,20 @@ TEST_RUNNER.run({
         });
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
-            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+            if (request.descriptor === FETCH_SESSION_AND_CHECK_CAPABILITY) {
               return {
                 userId: "user1",
-              } as ExchangeSessionAndCheckCapabilityResponse;
+              } as FetchSessionAndCheckCapabilityResponse;
             } else {
               throw new Error("Not handled");
             }
           }
         })();
-        let handler = new SwitchAccountHandler(SPANNER_DATABASE, clientMock);
+        let handler = new SwitchAccountHandler(
+          SPANNER_DATABASE,
+          clientMock,
+          () => 2000,
+        );
 
         // Execute
         let error = await assertReject(
@@ -192,7 +226,9 @@ TEST_RUNNER.run({
       },
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
-          await transaction.batchUpdate([deleteAccountStatement("account1")]);
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
           await transaction.commit();
         });
       },

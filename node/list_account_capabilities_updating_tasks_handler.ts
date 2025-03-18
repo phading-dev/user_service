@@ -29,7 +29,7 @@ export class ListAccountCapabilitiesUpdatingTasksHandler extends ListAccountCapa
   ): Promise<ListAccountCapabilitiesUpdatingTasksResponse> {
     let rows = await listPendingAccountCapabilitiesUpdatingTasks(
       this.database,
-      this.getNow(),
+      { accountCapabilitiesUpdatingTaskExecutionTimeMsLe: this.getNow() },
     );
     return {
       tasks: rows.map(

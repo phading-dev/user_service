@@ -3,7 +3,6 @@ import { initPasswordSigner } from "./common/password_signer";
 import { initS3Client } from "./common/s3_client";
 import { ENV_VARS } from "./env_vars";
 import { GetAccountContactHandler } from "./node/get_account_contact_handler";
-import { GetAccountSummaryHandler } from "./node/get_account_summary_handler";
 import { ListAccountCapabilitiesUpdatingTasksHandler } from "./node/list_account_capabilities_updating_tasks_handler";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./node/process_account_capabilities_updating_task_handler";
 import { SyncBillingAccountStateHandler } from "./node/sync_billing_account_state_handler";
@@ -18,6 +17,8 @@ import { SwitchAccountHandler } from "./web/self/switch_account_handler";
 import { UpdateAccountHandler } from "./web/self/update_account_handler";
 import { UpdatePasswordHandler } from "./web/self/update_password_handler";
 import { UploadAccountAvatarHandler } from "./web/self/upload_account_avatar_handler";
+import { GetAccountSummaryHandler } from "./web/third_person/get_account_summary_handler";
+import { SearchAccountsHandler } from "./web/third_person/search_accounts_handler";
 import {
   USER_NODE_SERVICE,
   USER_WEB_SERVICE,
@@ -33,7 +34,6 @@ async function main() {
   service
     .addHandlerRegister(USER_NODE_SERVICE)
     .add(GetAccountContactHandler.create())
-    .add(GetAccountSummaryHandler.create())
     .add(ListAccountCapabilitiesUpdatingTasksHandler.create())
     .add(ProcessAccountCapabilitiesUpdatingTaskHandler.create())
     .add(SyncBillingAccountStateHandler.create());
@@ -49,7 +49,9 @@ async function main() {
     .add(SwitchAccountHandler.create())
     .add(UpdateAccountHandler.create())
     .add(UpdatePasswordHandler.create())
-    .add(UploadAccountAvatarHandler.create());
+    .add(UploadAccountAvatarHandler.create())
+    .add(GetAccountSummaryHandler.create())
+    .add(SearchAccountsHandler.create());
   await service.start(ENV_VARS.port);
 }
 

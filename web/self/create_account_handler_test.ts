@@ -5,11 +5,12 @@ import {
 } from "../../common/params";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  GET_USER_AND_ACCOUNT_AND_MORE_ROW,
-  deleteAccountMoreStatement,
+  GET_ACCOUNT_ROW,
+  GET_USER_ROW,
   deleteAccountStatement,
   deleteUserStatement,
-  getUserAndAccountAndMore,
+  getAccount,
+  getUser,
   insertUserStatement,
 } from "../../db/sql";
 import { CreateAccountHandler } from "./create_account_handler";
@@ -21,8 +22,8 @@ import {
   CREATE_SESSION,
   CREATE_SESSION_REQUEST_BODY,
   CreateSessionResponse,
-  EXCHANGE_SESSION_AND_CHECK_CAPABILITY,
-  ExchangeSessionAndCheckCapabilityResponse,
+  FETCH_SESSION_AND_CHECK_CAPABILITY,
+  FetchSessionAndCheckCapabilityResponse,
 } from "@phading/user_session_service_interface/node/interface";
 import { newBadRequestError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
@@ -50,10 +51,10 @@ TEST_RUNNER.run({
         });
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
-            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+            if (request.descriptor === FETCH_SESSION_AND_CHECK_CAPABILITY) {
               return {
                 userId: "user1",
-              } as ExchangeSessionAndCheckCapabilityResponse;
+              } as FetchSessionAndCheckCapabilityResponse;
             } else if (request.descriptor === CREATE_SESSION) {
               this.request = request;
               return {
@@ -84,37 +85,45 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getUserAndAccountAndMore(SPANNER_DATABASE, "user1", "account2"),
+          await getUser(SPANNER_DATABASE, {
+            userUserIdEq: "user1",
+          }),
           isArray([
             eqMessage(
               {
-                uData: {
-                  userId: "user1",
-                  username: "username1",
-                  totalAccounts: 2,
-                },
-                aData: {
-                  userId: "user1",
-                  accountId: "account2",
-                  accountType: AccountType.CONSUMER,
-                  naturalName: "name2",
-                  contactEmail: "contact@example.com",
-                  avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-                  avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
-                  createdTimeMs: 1000,
-                  lastAccessedTimeMs: 1000,
-                  capabilitiesVersion: 0,
-                  billingAccountStateInfo: {
-                    version: 0,
-                    state: BillingAccountState.HEALTHY,
-                  },
-                },
-                amData: {
-                  accountId: "account2",
-                  description: "",
-                },
+                userUserId: "user1",
+                userUsername: "username1",
+                userTotalAccounts: 2,
               },
-              GET_USER_AND_ACCOUNT_AND_MORE_ROW,
+              GET_USER_ROW,
+            ),
+          ]),
+          "user",
+        );
+        assertThat(
+          await getAccount(SPANNER_DATABASE, {
+            accountAccountIdEq: "account2",
+          }),
+          isArray([
+            eqMessage(
+              {
+                accountUserId: "user1",
+                accountAccountId: "account2",
+                accountAccountType: AccountType.CONSUMER,
+                accountNaturalName: "name2",
+                accountDescription: "",
+                accountContactEmail: "contact@example.com",
+                accountAvatarSmallFilename:
+                  DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+                accountAvatarLargeFilename:
+                  DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+                accountCreatedTimeMs: 1000,
+                accountLastAccessedTimeMs: 1000,
+                accountCapabilitiesVersion: 0,
+                accountBillingAccountStateVersion: 0,
+                accountBillingAccountState: BillingAccountState.HEALTHY,
+              },
+              GET_ACCOUNT_ROW,
             ),
           ]),
           "account",
@@ -127,8 +136,8 @@ TEST_RUNNER.run({
               accountId: "account2",
               capabilitiesVersion: 0,
               capabilities: {
-                canConsumeShows: true,
-                canPublishShows: false,
+                canConsume: true,
+                canPublish: false,
                 canBeBilled: true,
                 canEarn: false,
               },
@@ -151,9 +160,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account2"),
-            deleteAccountMoreStatement("account2"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account2" }),
           ]);
           await transaction.commit();
         });
@@ -175,10 +183,10 @@ TEST_RUNNER.run({
         });
         let clientMock = new (class extends NodeServiceClientMock {
           public async send(request: any): Promise<any> {
-            if (request.descriptor === EXCHANGE_SESSION_AND_CHECK_CAPABILITY) {
+            if (request.descriptor === FETCH_SESSION_AND_CHECK_CAPABILITY) {
               return {
                 userId: "user1",
-              } as ExchangeSessionAndCheckCapabilityResponse;
+              } as FetchSessionAndCheckCapabilityResponse;
             } else {
               throw new Error("Not unhandled.");
             }
@@ -218,9 +226,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteUserStatement("user1"),
-            deleteAccountStatement("account2"),
-            deleteAccountMoreStatement("account2"),
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account2" }),
           ]);
           await transaction.commit();
         });

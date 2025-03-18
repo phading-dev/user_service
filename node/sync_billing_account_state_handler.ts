@@ -1,9 +1,9 @@
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
   deleteAccountCapabilitiesUpdatingTaskStatement,
-  getAccount,
+  getAccountMain,
   insertAccountCapabilitiesUpdatingTaskStatement,
-  updateAccountStatement,
+  updateAccountBillingAccountStateStatement,
 } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
 import { SyncBillingAccountStateHandlerInterface } from "@phading/user_service_interface/node/handler";
@@ -32,35 +32,39 @@ export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandl
     body: SyncBillingAccountStateRequestBody,
   ): Promise<SyncBillingAccountStateResponse> {
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getAccount(transaction, body.accountId);
+      let rows = await getAccountMain(transaction, {
+        accountAccountIdEq: body.accountId,
+      });
       if (rows.length === 0) {
         throw newBadRequestError(`Account ${body.accountId} is not found.`);
       }
-      let { accountData } = rows[0];
+      let row = rows[0];
       if (
-        body.billingAccountStateVersion <=
-        accountData.billingAccountStateInfo.version
+        body.billingAccountStateVersion <= row.accountBillingAccountStateVersion
       ) {
         return;
       }
-      accountData.billingAccountStateInfo.version =
-        body.billingAccountStateVersion;
-      accountData.billingAccountStateInfo.state = body.billingAccountState;
-      let oldVersion = accountData.capabilitiesVersion++;
+      let oldVersion = row.accountCapabilitiesVersion;
+      let newVersion = oldVersion + 1;
       let now = this.getNow();
       await transaction.batchUpdate([
-        updateAccountStatement(accountData),
-        insertAccountCapabilitiesUpdatingTaskStatement(
-          accountData.accountId,
-          accountData.capabilitiesVersion,
-          0,
-          now,
-          now,
-        ),
-        deleteAccountCapabilitiesUpdatingTaskStatement(
-          accountData.accountId,
-          oldVersion,
-        ),
+        updateAccountBillingAccountStateStatement({
+          accountAccountIdEq: row.accountAccountId,
+          setBillingAccountState: body.billingAccountState,
+          setBillingAccountStateVersion: body.billingAccountStateVersion,
+          setCapabilitiesVersion: newVersion,
+        }),
+        insertAccountCapabilitiesUpdatingTaskStatement({
+          accountId: row.accountAccountId,
+          capabilitiesVersion: newVersion,
+          retryCount: 0,
+          executionTimeMs: now,
+          createdTimeMs: now,
+        }),
+        deleteAccountCapabilitiesUpdatingTaskStatement({
+          accountCapabilitiesUpdatingTaskAccountIdEq: row.accountAccountId,
+          accountCapabilitiesUpdatingTaskCapabilitiesVersionEq: oldVersion,
+        }),
       ]);
       await transaction.commit();
     });

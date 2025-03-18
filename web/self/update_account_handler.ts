@@ -1,10 +1,6 @@
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  getAccountAndMoreById,
-  updateAccountMoreStatement,
-  updateAccountStatement,
-} from "../../db/sql";
+import { updateAccountContentStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -16,8 +12,8 @@ import {
   UpdateAccountRequestBody,
   UpdateAccountResponse,
 } from "@phading/user_service_interface/web/self/interface";
-import { newExchangeSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
-import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
+import { newFetchSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
+import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
@@ -54,22 +50,18 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
       throw newBadRequestError(`"descrition" is too long.`);
     }
     let { accountId } = await this.serviceClient.send(
-      newExchangeSessionAndCheckCapabilityRequest({
+      newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
       }),
     );
     await this.database.runTransactionAsync(async (transaction) => {
-      let accountRows = await getAccountAndMoreById(transaction, accountId);
-      if (accountRows.length === 0) {
-        throw newNotFoundError(`Account ${accountId} is not found.`);
-      }
-      let { aData, amData } = accountRows[0];
-      aData.naturalName = body.naturalName;
-      aData.contactEmail = body.contactEmail;
-      amData.description = body.description;
       await transaction.batchUpdate([
-        updateAccountStatement(aData),
-        updateAccountMoreStatement(amData),
+        updateAccountContentStatement({
+          accountAccountIdEq: accountId,
+          setContactEmail: body.contactEmail,
+          setNaturalName: body.naturalName,
+          setDescription: body.description,
+        }),
       ]);
       await transaction.commit();
     });
