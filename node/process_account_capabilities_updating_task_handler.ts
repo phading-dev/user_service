@@ -30,7 +30,11 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     );
   }
 
-  private taskHandler: ProcessTaskHandlerWrapper;
+  private taskHandler = ProcessTaskHandlerWrapper.create(
+    this.descriptor,
+    5 * 60 * 1000,
+    24 * 60 * 60 * 1000,
+  );
 
   public constructor(
     private database: Database,
@@ -38,11 +42,6 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
     private getNow: () => number,
   ) {
     super();
-    this.taskHandler = ProcessTaskHandlerWrapper.create(
-      this.descriptor,
-      5 * 60 * 1000,
-      24 * 60 * 60 * 1000,
-    );
   }
 
   public async handle(
@@ -111,10 +110,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
       newUpdateAccountCapabilitiesRequest({
         accountId: body.accountId,
         capabilitiesVersion: body.capabilitiesVersion,
-        capabilities: toCapabilities(
-          row.accountAccountType,
-          row.accountBillingAccountState,
-        ),
+        capabilities: toCapabilities(row.accountBillingAccountState),
       }),
     );
     await this.database.runTransactionAsync(async (transaction) => {

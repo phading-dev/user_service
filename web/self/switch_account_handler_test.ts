@@ -7,7 +7,6 @@ import {
   insertAccountStatement,
 } from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { SWITCH_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
@@ -36,7 +35,6 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
               billingAccountState: BillingAccountState.HEALTHY,
               lastAccessedTimeMs: 1000,
@@ -95,9 +93,9 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               capabilities: {
                 canConsume: true,
-                canPublish: false,
+                canPublish: true,
                 canBeBilled: true,
-                canEarn: false,
+                canEarn: true,
               },
             },
             CREATE_SESSION_REQUEST_BODY,
@@ -113,7 +111,6 @@ TEST_RUNNER.run({
               {
                 accountUserId: "user1",
                 accountAccountId: "account1",
-                accountAccountType: AccountType.CONSUMER,
                 accountCapabilitiesVersion: 0,
                 accountBillingAccountState: BillingAccountState.HEALTHY,
                 accountLastAccessedTimeMs: 2000,
@@ -183,7 +180,6 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user2",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               lastAccessedTimeMs: 1000,
             }),
           ]);

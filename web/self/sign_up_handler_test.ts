@@ -15,7 +15,6 @@ import {
   insertUserStatement,
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { SIGN_UP_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
@@ -56,7 +55,6 @@ TEST_RUNNER.run({
           password: "pass1",
           recoveryEmail: "recovery@example.com",
           naturalName: "first second",
-          accountType: AccountType.CONSUMER,
           contactEmail: "contact@example.com",
         });
 
@@ -86,7 +84,6 @@ TEST_RUNNER.run({
               {
                 accountUserId: "id1",
                 accountAccountId: "id2",
-                accountAccountType: AccountType.CONSUMER,
                 accountNaturalName: "first second",
                 accountDescription: "",
                 accountContactEmail: "contact@example.com",
@@ -126,9 +123,9 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               capabilities: {
                 canConsume: true,
-                canPublish: false,
+                canPublish: true,
                 canBeBilled: true,
-                canEarn: false,
+                canEarn: true,
               },
             },
             CREATE_SESSION_REQUEST_BODY,
@@ -180,7 +177,6 @@ TEST_RUNNER.run({
           password: "pass1",
           recoveryEmail: "recovery@example.com",
           naturalName: "first second",
-          accountType: AccountType.CONSUMER,
           contactEmail: "contact@example.com",
         });
 

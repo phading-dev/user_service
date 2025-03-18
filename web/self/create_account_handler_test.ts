@@ -15,7 +15,6 @@ import {
 } from "../../db/sql";
 import { CreateAccountHandler } from "./create_account_handler";
 import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import { CREATE_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
@@ -76,7 +75,6 @@ TEST_RUNNER.run({
         let response = await handler.handle(
           "",
           {
-            accountType: AccountType.CONSUMER,
             contactEmail: "contact@example.com",
             naturalName: "name2",
           },
@@ -109,7 +107,6 @@ TEST_RUNNER.run({
               {
                 accountUserId: "user1",
                 accountAccountId: "account2",
-                accountAccountType: AccountType.CONSUMER,
                 accountNaturalName: "name2",
                 accountDescription: "",
                 accountContactEmail: "contact@example.com",
@@ -137,9 +134,9 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               capabilities: {
                 canConsume: true,
-                canPublish: false,
+                canPublish: true,
                 canBeBilled: true,
-                canEarn: false,
+                canEarn: true,
               },
             },
             CREATE_SESSION_REQUEST_BODY,
@@ -204,7 +201,6 @@ TEST_RUNNER.run({
           handler.handle(
             "",
             {
-              accountType: AccountType.CONSUMER,
               contactEmail: "contact@example.com",
               naturalName: "name2",
             },

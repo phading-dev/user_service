@@ -37,10 +37,6 @@
           type: string
         - name: accountId
           type: string
-        - name: accountType
-          type: AccountType
-          import: "@phading/user_service_interface/account_type"
-          nullable: true
         - name: naturalName
           type: string
           nullable: true
@@ -77,7 +73,6 @@
           columns:
             - userId
             - accountId
-            - accountType
             - naturalName
             - contactEmail
             - avatarSmallFilename
@@ -98,11 +93,6 @@
           columns:
             - userId
             - name: lastAccessedTimeMs
-              desc: true
-        - name: ByTypeAndCreatedTimeMs
-          columns:
-            - accountType
-            - name: createdTimeMs
               desc: true
       searchIndexes:
         - name: ByFullText
@@ -146,6 +136,23 @@
       listPendingTasks: ListPendingAccountCapabilitiesUpdatingTasks
       getMetadata: GetAccountCapabilitiesUpdatingTaskMetadata
       updateMetadata: UpdateAccountCapabilitiesUpdatingTaskMetadata
+    - kind: TaskTable
+      name: BillingAccountCreatingTask
+      columns:
+        - name: accountId
+          type: string
+      retryCountColumn: retryCount
+      executionTimeColumn: executionTimeMs
+      createdTimeColumn: createdTimeMs
+      primaryKeys:
+        - accountId
+      executionTimeIndex: BillingAccountCreatingTaskByExecutionTimeMs
+      insert: InsertBillingAccountCreatingTask
+      delete: DeleteBillingAccountCreatingTask
+      get: GetBillingAccountCreatingTask
+      listPendingTasks: ListPendingBillingAccountCreatingTasks
+      getMetadata: GetBillingAccountCreatingTaskMetadata
+      updateMetadata: UpdateBillingAccountCreatingTaskMetadata
   updates:
     - name: UpdateUserTotalAccounts
       table: User

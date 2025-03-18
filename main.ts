@@ -5,6 +5,7 @@ import { ENV_VARS } from "./env_vars";
 import { GetAccountContactHandler } from "./node/get_account_contact_handler";
 import { ListAccountCapabilitiesUpdatingTasksHandler } from "./node/list_account_capabilities_updating_tasks_handler";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./node/process_account_capabilities_updating_task_handler";
+import { ProcessBillingAccountCreatingTaskHandler } from "./node/process_billing_account_creating_task_handler";
 import { SyncBillingAccountStateHandler } from "./node/sync_billing_account_state_handler";
 import { CreateAccountHandler } from "./web/self/create_account_handler";
 import { GetAccountAndUserHandler } from "./web/self/get_account_and_user_handler";
@@ -36,6 +37,7 @@ async function main() {
     .add(GetAccountContactHandler.create())
     .add(ListAccountCapabilitiesUpdatingTasksHandler.create())
     .add(ProcessAccountCapabilitiesUpdatingTaskHandler.create())
+    .add(ProcessBillingAccountCreatingTaskHandler.create())
     .add(SyncBillingAccountStateHandler.create());
   service
     .addHandlerRegister(USER_WEB_SERVICE)

@@ -66,10 +66,6 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
-    if (!body.accountType) {
-      throw newBadRequestError(`"accountType" is required.`);
-    }
-
     let { userId } = await this.serviceClient.send(
       newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
@@ -93,7 +89,6 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
       let account = initAccount(
         userId,
         this.generateUuid(),
-        body.accountType,
         body.naturalName,
         body.contactEmail,
         now,
@@ -102,10 +97,7 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
         userId,
         accountId: account.accountId,
         capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(
-          account.accountType,
-          account.billingAccountState,
-        ),
+        capabilities: toCapabilities(account.billingAccountState),
       };
       await transaction.batchUpdate([
         updateUserTotalAccountsStatement({

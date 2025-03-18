@@ -10,7 +10,6 @@ import {
   listPendingAccountCapabilitiesUpdatingTasks,
 } from "../db/sql";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./process_account_capabilities_updating_task_handler";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 import {
   UPDATE_ACCOUNT_CAPABILITIES,
@@ -32,7 +31,6 @@ import { TEST_RUNNER, TestCase } from "@selfage/test_runner";
 class UpdateCapabilitiesCase implements TestCase {
   public constructor(
     public name: string,
-    private accountType: AccountType,
     private billingAccountState: BillingAccountState,
     private expectedCapabilities: {
       canConsume: boolean;
@@ -49,7 +47,6 @@ class UpdateCapabilitiesCase implements TestCase {
         insertAccountStatement({
           userId: "user1",
           accountId: "account1",
-          accountType: this.accountType,
           capabilitiesVersion: 1,
           billingAccountState: this.billingAccountState,
         }),
@@ -121,42 +118,14 @@ class UpdateCapabilitiesCase implements TestCase {
 TEST_RUNNER.run({
   name: "ProcessAccountCapabilitiesUpdatingTaskHandlerTest",
   cases: [
+    new UpdateCapabilitiesCase("BILLING_HEALTHY", BillingAccountState.HEALTHY, {
+      canConsume: true,
+      canPublish: true,
+      canBeBilled: true,
+      canEarn: true,
+    }),
     new UpdateCapabilitiesCase(
-      "CONSUMER_HEALTHY",
-      AccountType.CONSUMER,
-      BillingAccountState.HEALTHY,
-      {
-        canConsume: true,
-        canPublish: false,
-        canBeBilled: true,
-        canEarn: false,
-      },
-    ),
-    new UpdateCapabilitiesCase(
-      "PUBLISHER_HEALTHY",
-      AccountType.PUBLISHER,
-      BillingAccountState.HEALTHY,
-      {
-        canConsume: false,
-        canPublish: true,
-        canBeBilled: true,
-        canEarn: true,
-      },
-    ),
-    new UpdateCapabilitiesCase(
-      "CONSUMER_SUSPENDED",
-      AccountType.CONSUMER,
-      BillingAccountState.SUSPENDED,
-      {
-        canConsume: false,
-        canPublish: false,
-        canBeBilled: true,
-        canEarn: false,
-      },
-    ),
-    new UpdateCapabilitiesCase(
-      "PUBLISHER_SUSPENDED",
-      AccountType.PUBLISHER,
+      "BILLING_SUSPENDED",
       BillingAccountState.SUSPENDED,
       {
         canConsume: false,
@@ -174,7 +143,6 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 1,
               billingAccountState: BillingAccountState.HEALTHY,
             }),
@@ -244,7 +212,6 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 2,
               billingAccountState: BillingAccountState.HEALTHY,
             }),

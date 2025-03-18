@@ -2,13 +2,11 @@ import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
 } from "./params";
-import { AccountType } from "@phading/user_service_interface/account_type";
 import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
 
 export function initAccount(
   userId: string,
   accountId: string,
-  accountType: AccountType,
   naturalName: string,
   contactEmail: string,
   now: number,
@@ -16,7 +14,6 @@ export function initAccount(
   return {
     userId,
     accountId,
-    accountType,
     naturalName,
     description: "",
     contactEmail,

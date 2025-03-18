@@ -34,9 +34,6 @@
       "name": "accountId",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountId STRING(MAX) NOT NULL"
     }, {
-      "name": "accountType",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64"
-    }, {
       "name": "naturalName",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN naturalName STRING(MAX)"
     }, {
@@ -70,13 +67,10 @@
       "name": "fullText",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, billingAccountStateVersion FLOAT64, billingAccountState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, billingAccountStateVersion FLOAT64, billingAccountState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimeMs",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
-    }, {
-      "name": "ByTypeAndCreatedTimeMs",
-      "createIndexDdl": "CREATE INDEX ByTypeAndCreatedTimeMs ON Account(accountType, createdTimeMs DESC)"
     }, {
       "name": "ByFullText",
       "createIndexDdl": "CREATE SEARCH INDEX ByFullText ON Account(fullText)"
@@ -114,6 +108,26 @@
     "indexes": [{
       "name": "AccountCapabilitiesUpdatingTaskByExecutionTimeMs",
       "createIndexDdl": "CREATE INDEX AccountCapabilitiesUpdatingTaskByExecutionTimeMs ON AccountCapabilitiesUpdatingTask(executionTimeMs)"
+    }]
+  }, {
+    "name": "BillingAccountCreatingTask",
+    "columns": [{
+      "name": "accountId",
+      "addColumnDdl": "ALTER TABLE BillingAccountCreatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
+    }, {
+      "name": "retryCount",
+      "addColumnDdl": "ALTER TABLE BillingAccountCreatingTask ADD COLUMN retryCount FLOAT64"
+    }, {
+      "name": "executionTimeMs",
+      "addColumnDdl": "ALTER TABLE BillingAccountCreatingTask ADD COLUMN executionTimeMs TIMESTAMP"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE BillingAccountCreatingTask ADD COLUMN createdTimeMs TIMESTAMP"
+    }],
+    "createTableDdl": "CREATE TABLE BillingAccountCreatingTask (accountId STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC)",
+    "indexes": [{
+      "name": "BillingAccountCreatingTaskByExecutionTimeMs",
+      "createIndexDdl": "CREATE INDEX BillingAccountCreatingTaskByExecutionTimeMs ON BillingAccountCreatingTask(executionTimeMs)"
     }]
   }]
 }

@@ -1,7 +1,6 @@
 import { Spanner, Database, Transaction } from '@google-cloud/spanner';
 import { Statement } from '@google-cloud/spanner/build/src/transaction';
 import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
-import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
 import { BillingAccountState, BILLING_ACCOUNT_STATE } from '@phading/user_service_interface/node/billing_account_state';
 import { toEnumFromNumber, serializeMessage, deserializeMessage } from '@selfage/message/serializer';
 import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
@@ -124,7 +123,6 @@ export function insertAccountStatement(
   args: {
     userId: string,
     accountId: string,
-    accountType?: AccountType,
     naturalName?: string,
     description?: string,
     contactEmail?: string,
@@ -138,11 +136,10 @@ export function insertAccountStatement(
   }
 ): Statement {
   return {
-    sql: "INSERT Account (userId, accountId, accountType, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, lastAccessedTimeMs, createdTimeMs, billingAccountStateVersion, billingAccountState, capabilitiesVersion) VALUES (@userId, @accountId, @accountType, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @lastAccessedTimeMs, @createdTimeMs, @billingAccountStateVersion, @billingAccountState, @capabilitiesVersion)",
+    sql: "INSERT Account (userId, accountId, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, lastAccessedTimeMs, createdTimeMs, billingAccountStateVersion, billingAccountState, capabilitiesVersion) VALUES (@userId, @accountId, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @lastAccessedTimeMs, @createdTimeMs, @billingAccountStateVersion, @billingAccountState, @capabilitiesVersion)",
     params: {
       userId: args.userId,
       accountId: args.accountId,
-      accountType: args.accountType == null ? null : Spanner.float(args.accountType),
       naturalName: args.naturalName == null ? null : args.naturalName,
       description: args.description == null ? null : args.description,
       contactEmail: args.contactEmail == null ? null : args.contactEmail,
@@ -157,7 +154,6 @@ export function insertAccountStatement(
     types: {
       userId: { type: "string" },
       accountId: { type: "string" },
-      accountType: { type: "float64" },
       naturalName: { type: "string" },
       description: { type: "string" },
       contactEmail: { type: "string" },
@@ -191,7 +187,6 @@ export function deleteAccountStatement(
 export interface GetAccountRow {
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountDescription?: string,
   accountContactEmail?: string,
@@ -215,48 +210,44 @@ export let GET_ACCOUNT_ROW: MessageDescriptor<GetAccountRow> = {
     index: 2,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 3,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 4,
+    index: 3,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountDescription',
-    index: 5,
+    index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 6,
+    index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 7,
+    index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 8,
+    index: 7,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 9,
+    index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountCreatedTimeMs',
-    index: 10,
+    index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 12,
+    index: 11,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 13,
+    index: 12,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -268,7 +259,7 @@ export async function getAccount(
   }
 ): Promise<Array<GetAccountRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
+    sql: "SELECT Account.userId, Account.accountId, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
     params: {
       accountAccountIdEq: args.accountAccountIdEq,
     },
@@ -281,17 +272,16 @@ export async function getAccount(
     resRows.push({
       accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountDescription: row.at(4).value == null ? undefined : row.at(4).value,
-      accountContactEmail: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarSmallFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountAvatarLargeFilename: row.at(7).value == null ? undefined : row.at(7).value,
-      accountLastAccessedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountCreatedTimeMs: row.at(9).value == null ? undefined : row.at(9).value.value,
-      accountBillingAccountStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountBillingAccountState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(12).value == null ? undefined : row.at(12).value.value,
+      accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
+      accountDescription: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountCreatedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountBillingAccountStateVersion: row.at(9).value == null ? undefined : row.at(9).value.value,
+      accountBillingAccountState: row.at(10).value == null ? undefined : toEnumFromNumber(row.at(10).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(11).value == null ? undefined : row.at(11).value.value,
     });
   }
   return resRows;
@@ -619,6 +609,204 @@ export function updateAccountCapabilitiesUpdatingTaskMetadataStatement(
   };
 }
 
+export function insertBillingAccountCreatingTaskStatement(
+  args: {
+    accountId: string,
+    retryCount?: number,
+    executionTimeMs?: number,
+    createdTimeMs?: number,
+  }
+): Statement {
+  return {
+    sql: "INSERT BillingAccountCreatingTask (accountId, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @retryCount, @executionTimeMs, @createdTimeMs)",
+    params: {
+      accountId: args.accountId,
+      retryCount: args.retryCount == null ? null : Spanner.float(args.retryCount),
+      executionTimeMs: args.executionTimeMs == null ? null : new Date(args.executionTimeMs).toISOString(),
+      createdTimeMs: args.createdTimeMs == null ? null : new Date(args.createdTimeMs).toISOString(),
+    },
+    types: {
+      accountId: { type: "string" },
+      retryCount: { type: "float64" },
+      executionTimeMs: { type: "timestamp" },
+      createdTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
+export function deleteBillingAccountCreatingTaskStatement(
+  args: {
+    billingAccountCreatingTaskAccountIdEq: string,
+  }
+): Statement {
+  return {
+    sql: "DELETE BillingAccountCreatingTask WHERE (BillingAccountCreatingTask.accountId = @billingAccountCreatingTaskAccountIdEq)",
+    params: {
+      billingAccountCreatingTaskAccountIdEq: args.billingAccountCreatingTaskAccountIdEq,
+    },
+    types: {
+      billingAccountCreatingTaskAccountIdEq: { type: "string" },
+    }
+  };
+}
+
+export interface GetBillingAccountCreatingTaskRow {
+  billingAccountCreatingTaskAccountId?: string,
+  billingAccountCreatingTaskRetryCount?: number,
+  billingAccountCreatingTaskExecutionTimeMs?: number,
+  billingAccountCreatingTaskCreatedTimeMs?: number,
+}
+
+export let GET_BILLING_ACCOUNT_CREATING_TASK_ROW: MessageDescriptor<GetBillingAccountCreatingTaskRow> = {
+  name: 'GetBillingAccountCreatingTaskRow',
+  fields: [{
+    name: 'billingAccountCreatingTaskAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'billingAccountCreatingTaskRetryCount',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'billingAccountCreatingTaskExecutionTimeMs',
+    index: 3,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'billingAccountCreatingTaskCreatedTimeMs',
+    index: 4,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getBillingAccountCreatingTask(
+  runner: Database | Transaction,
+  args: {
+    billingAccountCreatingTaskAccountIdEq: string,
+  }
+): Promise<Array<GetBillingAccountCreatingTaskRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT BillingAccountCreatingTask.accountId, BillingAccountCreatingTask.retryCount, BillingAccountCreatingTask.executionTimeMs, BillingAccountCreatingTask.createdTimeMs FROM BillingAccountCreatingTask WHERE (BillingAccountCreatingTask.accountId = @billingAccountCreatingTaskAccountIdEq)",
+    params: {
+      billingAccountCreatingTaskAccountIdEq: args.billingAccountCreatingTaskAccountIdEq,
+    },
+    types: {
+      billingAccountCreatingTaskAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetBillingAccountCreatingTaskRow>();
+  for (let row of rows) {
+    resRows.push({
+      billingAccountCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      billingAccountCreatingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
+      billingAccountCreatingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
+      billingAccountCreatingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export interface ListPendingBillingAccountCreatingTasksRow {
+  billingAccountCreatingTaskAccountId?: string,
+}
+
+export let LIST_PENDING_BILLING_ACCOUNT_CREATING_TASKS_ROW: MessageDescriptor<ListPendingBillingAccountCreatingTasksRow> = {
+  name: 'ListPendingBillingAccountCreatingTasksRow',
+  fields: [{
+    name: 'billingAccountCreatingTaskAccountId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
+
+export async function listPendingBillingAccountCreatingTasks(
+  runner: Database | Transaction,
+  args: {
+    billingAccountCreatingTaskExecutionTimeMsLe?: number,
+  }
+): Promise<Array<ListPendingBillingAccountCreatingTasksRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT BillingAccountCreatingTask.accountId FROM BillingAccountCreatingTask WHERE BillingAccountCreatingTask.executionTimeMs <= @billingAccountCreatingTaskExecutionTimeMsLe",
+    params: {
+      billingAccountCreatingTaskExecutionTimeMsLe: args.billingAccountCreatingTaskExecutionTimeMsLe == null ? null : new Date(args.billingAccountCreatingTaskExecutionTimeMsLe).toISOString(),
+    },
+    types: {
+      billingAccountCreatingTaskExecutionTimeMsLe: { type: "timestamp" },
+    }
+  });
+  let resRows = new Array<ListPendingBillingAccountCreatingTasksRow>();
+  for (let row of rows) {
+    resRows.push({
+      billingAccountCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+    });
+  }
+  return resRows;
+}
+
+export interface GetBillingAccountCreatingTaskMetadataRow {
+  billingAccountCreatingTaskRetryCount?: number,
+  billingAccountCreatingTaskExecutionTimeMs?: number,
+}
+
+export let GET_BILLING_ACCOUNT_CREATING_TASK_METADATA_ROW: MessageDescriptor<GetBillingAccountCreatingTaskMetadataRow> = {
+  name: 'GetBillingAccountCreatingTaskMetadataRow',
+  fields: [{
+    name: 'billingAccountCreatingTaskRetryCount',
+    index: 1,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'billingAccountCreatingTaskExecutionTimeMs',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getBillingAccountCreatingTaskMetadata(
+  runner: Database | Transaction,
+  args: {
+    billingAccountCreatingTaskAccountIdEq: string,
+  }
+): Promise<Array<GetBillingAccountCreatingTaskMetadataRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT BillingAccountCreatingTask.retryCount, BillingAccountCreatingTask.executionTimeMs FROM BillingAccountCreatingTask WHERE (BillingAccountCreatingTask.accountId = @billingAccountCreatingTaskAccountIdEq)",
+    params: {
+      billingAccountCreatingTaskAccountIdEq: args.billingAccountCreatingTaskAccountIdEq,
+    },
+    types: {
+      billingAccountCreatingTaskAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetBillingAccountCreatingTaskMetadataRow>();
+  for (let row of rows) {
+    resRows.push({
+      billingAccountCreatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
+      billingAccountCreatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export function updateBillingAccountCreatingTaskMetadataStatement(
+  args: {
+    billingAccountCreatingTaskAccountIdEq: string,
+    setRetryCount?: number,
+    setExecutionTimeMs?: number,
+  }
+): Statement {
+  return {
+    sql: "UPDATE BillingAccountCreatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (BillingAccountCreatingTask.accountId = @billingAccountCreatingTaskAccountIdEq)",
+    params: {
+      billingAccountCreatingTaskAccountIdEq: args.billingAccountCreatingTaskAccountIdEq,
+      setRetryCount: args.setRetryCount == null ? null : Spanner.float(args.setRetryCount),
+      setExecutionTimeMs: args.setExecutionTimeMs == null ? null : new Date(args.setExecutionTimeMs).toISOString(),
+    },
+    types: {
+      billingAccountCreatingTaskAccountIdEq: { type: "string" },
+      setRetryCount: { type: "float64" },
+      setExecutionTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
 export function updateUserTotalAccountsStatement(
   args: {
     userUserIdEq: string,
@@ -837,7 +1025,6 @@ export async function getUserByUsername(
 export interface ListLastAccessedAccountsRow {
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
@@ -859,40 +1046,36 @@ export let LIST_LAST_ACCESSED_ACCOUNTS_ROW: MessageDescriptor<ListLastAccessedAc
     index: 2,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 3,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 4,
+    index: 3,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 5,
+    index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 6,
+    index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 7,
+    index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 8,
+    index: 7,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 9,
+    index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 10,
+    index: 9,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -905,7 +1088,7 @@ export async function listLastAccessedAccounts(
   }
 ): Promise<Array<ListLastAccessedAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
     params: {
       accountUserIdEq: args.accountUserIdEq,
       limit: args.limit.toString(),
@@ -920,15 +1103,14 @@ export async function listLastAccessedAccounts(
     resRows.push({
       accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
+      accountContactEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      accountAvatarSmallFilename: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarLargeFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountLastAccessedTimeMs: row.at(6).value == null ? undefined : row.at(6).value.value,
+      accountBillingAccountStateVersion: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountState: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(9).value == null ? undefined : row.at(9).value.value,
     });
   }
   return resRows;
@@ -937,7 +1119,6 @@ export async function listLastAccessedAccounts(
 export interface SearchAccountsRow {
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
@@ -960,44 +1141,40 @@ export let SEARCH_ACCOUNTS_ROW: MessageDescriptor<SearchAccountsRow> = {
     index: 2,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 3,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 4,
+    index: 3,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 5,
+    index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 6,
+    index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 7,
+    index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 8,
+    index: 7,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 9,
+    index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 10,
+    index: 9,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountFullTextScore',
-    index: 12,
+    index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1012,7 +1189,7 @@ export async function searchAccounts(
   }
 ): Promise<Array<SearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE SEARCH(Account.fullText, @accountFullTextSearch) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE SEARCH(Account.fullText, @accountFullTextSearch) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
       accountFullTextSearch: args.accountFullTextSearch,
       accountFullTextScoreOrderBy: args.accountFullTextScoreOrderBy,
@@ -1031,16 +1208,15 @@ export async function searchAccounts(
     resRows.push({
       accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
+      accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
+      accountContactEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      accountAvatarSmallFilename: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarLargeFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountLastAccessedTimeMs: row.at(6).value == null ? undefined : row.at(6).value.value,
+      accountBillingAccountStateVersion: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountState: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(9).value == null ? undefined : row.at(9).value.value,
+      accountFullTextScore: row.at(10).value == null ? undefined : row.at(10).value.value,
     });
   }
   return resRows;
@@ -1049,7 +1225,6 @@ export async function searchAccounts(
 export interface ContinuedSearchAccountsRow {
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
@@ -1072,44 +1247,40 @@ export let CONTINUED_SEARCH_ACCOUNTS_ROW: MessageDescriptor<ContinuedSearchAccou
     index: 2,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 3,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 4,
+    index: 3,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 5,
+    index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 6,
+    index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 7,
+    index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 8,
+    index: 7,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 9,
+    index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 10,
+    index: 9,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountFullTextScore',
-    index: 12,
+    index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1126,7 +1297,7 @@ export async function continuedSearchAccounts(
   }
 ): Promise<Array<ContinuedSearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (SEARCH(Account.fullText, @accountFullTextSearch) AND SCORE(Account.fullText, @accountFullTextScoreWhere) < @accountFullTextScoreLt) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (SEARCH(Account.fullText, @accountFullTextSearch) AND SCORE(Account.fullText, @accountFullTextScoreWhere) < @accountFullTextScoreLt) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
       accountFullTextSearch: args.accountFullTextSearch,
       accountFullTextScoreWhere: args.accountFullTextScoreWhere,
@@ -1149,16 +1320,15 @@ export async function continuedSearchAccounts(
     resRows.push({
       accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
+      accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
+      accountContactEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      accountAvatarSmallFilename: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarLargeFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountLastAccessedTimeMs: row.at(6).value == null ? undefined : row.at(6).value.value,
+      accountBillingAccountStateVersion: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountState: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(9).value == null ? undefined : row.at(9).value.value,
+      accountFullTextScore: row.at(10).value == null ? undefined : row.at(10).value.value,
     });
   }
   return resRows;
@@ -1167,7 +1337,6 @@ export async function continuedSearchAccounts(
 export interface GetAccountMainRow {
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
@@ -1189,40 +1358,36 @@ export let GET_ACCOUNT_MAIN_ROW: MessageDescriptor<GetAccountMainRow> = {
     index: 2,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 3,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 4,
+    index: 3,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 5,
+    index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 6,
+    index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 7,
+    index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 8,
+    index: 7,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 9,
+    index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 10,
+    index: 9,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1234,7 +1399,7 @@ export async function getAccountMain(
   }
 ): Promise<Array<GetAccountMainRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    sql: "SELECT Account.userId, Account.accountId, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingAccountStateVersion, Account.billingAccountState, Account.capabilitiesVersion FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: args.accountAccountIdEq,
     },
@@ -1247,15 +1412,14 @@ export async function getAccountMain(
     resRows.push({
       accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
-      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingAccountStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingAccountState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountNaturalName: row.at(2).value == null ? undefined : row.at(2).value,
+      accountContactEmail: row.at(3).value == null ? undefined : row.at(3).value,
+      accountAvatarSmallFilename: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarLargeFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountLastAccessedTimeMs: row.at(6).value == null ? undefined : row.at(6).value.value,
+      accountBillingAccountStateVersion: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountBillingAccountState: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(9).value == null ? undefined : row.at(9).value.value,
     });
   }
   return resRows;
@@ -1270,7 +1434,6 @@ export interface GetUserAndAccountAllRow {
   userCreatedTimeMs?: number,
   accountUserId?: string,
   accountAccountId?: string,
-  accountAccountType?: AccountType,
   accountNaturalName?: string,
   accountDescription?: string,
   accountContactEmail?: string,
@@ -1318,48 +1481,44 @@ export let GET_USER_AND_ACCOUNT_ALL_ROW: MessageDescriptor<GetUserAndAccountAllR
     index: 8,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAccountType',
-    index: 9,
-    enumType: ACCOUNT_TYPE,
-  }, {
     name: 'accountNaturalName',
-    index: 10,
+    index: 9,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountDescription',
-    index: 11,
+    index: 10,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountContactEmail',
-    index: 12,
+    index: 11,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarSmallFilename',
-    index: 13,
+    index: 12,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountAvatarLargeFilename',
-    index: 14,
+    index: 13,
     primitiveType: PrimitiveType.STRING,
   }, {
     name: 'accountLastAccessedTimeMs',
-    index: 15,
+    index: 14,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountCreatedTimeMs',
-    index: 16,
+    index: 15,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountStateVersion',
-    index: 17,
+    index: 16,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountBillingAccountState',
-    index: 18,
+    index: 17,
     enumType: BILLING_ACCOUNT_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
-    index: 19,
+    index: 18,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1372,7 +1531,7 @@ export async function getUserAndAccountAll(
   }
 ): Promise<Array<GetUserAndAccountAllRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT u.userId, u.username, u.passwordHashV1, u.recoveryEmail, u.totalAccounts, u.createdTimeMs, a.userId, a.accountId, a.accountType, a.naturalName, a.description, a.contactEmail, a.avatarSmallFilename, a.avatarLargeFilename, a.lastAccessedTimeMs, a.createdTimeMs, a.billingAccountStateVersion, a.billingAccountState, a.capabilitiesVersion FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @userUserIdEq AND a.accountId = @accountAccountIdEq)",
+    sql: "SELECT u.userId, u.username, u.passwordHashV1, u.recoveryEmail, u.totalAccounts, u.createdTimeMs, a.userId, a.accountId, a.naturalName, a.description, a.contactEmail, a.avatarSmallFilename, a.avatarLargeFilename, a.lastAccessedTimeMs, a.createdTimeMs, a.billingAccountStateVersion, a.billingAccountState, a.capabilitiesVersion FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @userUserIdEq AND a.accountId = @accountAccountIdEq)",
     params: {
       userUserIdEq: args.userUserIdEq,
       accountAccountIdEq: args.accountAccountIdEq,
@@ -1393,17 +1552,16 @@ export async function getUserAndAccountAll(
       userCreatedTimeMs: row.at(5).value == null ? undefined : row.at(5).value.value,
       accountUserId: row.at(6).value == null ? undefined : row.at(6).value,
       accountAccountId: row.at(7).value == null ? undefined : row.at(7).value,
-      accountAccountType: row.at(8).value == null ? undefined : toEnumFromNumber(row.at(8).value.value, ACCOUNT_TYPE),
-      accountNaturalName: row.at(9).value == null ? undefined : row.at(9).value,
-      accountDescription: row.at(10).value == null ? undefined : row.at(10).value,
-      accountContactEmail: row.at(11).value == null ? undefined : row.at(11).value,
-      accountAvatarSmallFilename: row.at(12).value == null ? undefined : row.at(12).value,
-      accountAvatarLargeFilename: row.at(13).value == null ? undefined : row.at(13).value,
-      accountLastAccessedTimeMs: row.at(14).value == null ? undefined : row.at(14).value.value,
-      accountCreatedTimeMs: row.at(15).value == null ? undefined : row.at(15).value.value,
-      accountBillingAccountStateVersion: row.at(16).value == null ? undefined : row.at(16).value.value,
-      accountBillingAccountState: row.at(17).value == null ? undefined : toEnumFromNumber(row.at(17).value.value, BILLING_ACCOUNT_STATE),
-      accountCapabilitiesVersion: row.at(18).value == null ? undefined : row.at(18).value.value,
+      accountNaturalName: row.at(8).value == null ? undefined : row.at(8).value,
+      accountDescription: row.at(9).value == null ? undefined : row.at(9).value,
+      accountContactEmail: row.at(10).value == null ? undefined : row.at(10).value,
+      accountAvatarSmallFilename: row.at(11).value == null ? undefined : row.at(11).value,
+      accountAvatarLargeFilename: row.at(12).value == null ? undefined : row.at(12).value,
+      accountLastAccessedTimeMs: row.at(13).value == null ? undefined : row.at(13).value.value,
+      accountCreatedTimeMs: row.at(14).value == null ? undefined : row.at(14).value.value,
+      accountBillingAccountStateVersion: row.at(15).value == null ? undefined : row.at(15).value.value,
+      accountBillingAccountState: row.at(16).value == null ? undefined : toEnumFromNumber(row.at(16).value.value, BILLING_ACCOUNT_STATE),
+      accountCapabilitiesVersion: row.at(17).value == null ? undefined : row.at(17).value.value,
     });
   }
   return resRows;
