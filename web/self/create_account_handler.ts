@@ -1,14 +1,10 @@
 import crypto = require("crypto");
-import { toCapabilities } from "../../common/capabilities_converter";
-import { initAccount } from "../../common/init_account";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  getUser,
-  insertAccountStatement,
-  updateUserTotalAccountsStatement,
-} from "../../db/sql";
+import { getUser, updateUserTotalAccountsStatement } from "../../db/sql";
+import { createAccount } from "./common/create_account";
 import { Database } from "@google-cloud/spanner";
+import { Statement } from "@google-cloud/spanner/build/src/transaction";
 import {
   MAX_ACCOUNTS_PER_USER,
   MAX_EMAIL_LENGTH,
@@ -66,6 +62,9 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
+    if (!body.accountType) {
+      throw newBadRequestError(`"accountType" is required.`);
+    }
     let { userId } = await this.serviceClient.send(
       newFetchSessionAndCheckCapabilityRequest({
         signedSession: authStr,
@@ -85,27 +84,24 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
           `User ${userId} has reached the maximum number of accounts.`,
         );
       }
-      let now = this.getNow();
-      let account = initAccount(
-        userId,
-        this.generateUuid(),
-        body.naturalName,
-        body.contactEmail,
-        now,
-      );
-      request = {
-        userId,
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account.billingAccountState),
-      };
-      await transaction.batchUpdate([
+      let statements = new Array<Statement>();
+      statements.push(
         updateUserTotalAccountsStatement({
           userUserIdEq: userId,
           setTotalAccounts: row.userTotalAccounts + 1,
         }),
-        insertAccountStatement(account),
-      ]);
+      );
+      let now = this.getNow();
+      request = createAccount(
+        userId,
+        this.generateUuid(),
+        body.accountType,
+        body.naturalName,
+        body.contactEmail,
+        now,
+        statements,
+      );
+      await transaction.batchUpdate(statements);
       await transaction.commit();
     });
     let response = await this.serviceClient.send(

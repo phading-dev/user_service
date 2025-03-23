@@ -7,7 +7,8 @@ import {
   insertAccountStatement,
 } from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
-import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
+import { AccountType } from "@phading/user_service_interface/account_type";
+import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
 import { SWITCH_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -35,8 +36,9 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
+              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingAccountState: BillingAccountState.HEALTHY,
+              billingProfileState: BillingProfileState.HEALTHY,
               lastAccessedTimeMs: 1000,
             }),
           ]);
@@ -93,9 +95,9 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               capabilities: {
                 canConsume: true,
-                canPublish: true,
+                canPublish: false,
                 canBeBilled: true,
-                canEarn: true,
+                canEarn: false,
               },
             },
             CREATE_SESSION_REQUEST_BODY,
@@ -111,8 +113,9 @@ TEST_RUNNER.run({
               {
                 accountUserId: "user1",
                 accountAccountId: "account1",
+                accountAccountType: AccountType.CONSUMER,
                 accountCapabilitiesVersion: 0,
-                accountBillingAccountState: BillingAccountState.HEALTHY,
+                accountBillingProfileState: BillingProfileState.HEALTHY,
                 accountLastAccessedTimeMs: 2000,
               },
               GET_ACCOUNT_ROW,
@@ -180,6 +183,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user2",
               accountId: "account1",
+              accountType: AccountType.CONSUMER,
               lastAccessedTimeMs: 1000,
             }),
           ]);

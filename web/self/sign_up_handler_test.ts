@@ -2,7 +2,7 @@ import "../../local/env";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-} from "../../common/params";
+} from "../../common/constants";
 import { PasswordSignerMock } from "../../common/password_signer_mock";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
@@ -15,7 +15,8 @@ import {
   insertUserStatement,
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
-import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
+import { AccountType } from "@phading/user_service_interface/account_type";
+import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
 import { SIGN_UP_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -55,6 +56,7 @@ TEST_RUNNER.run({
           password: "pass1",
           recoveryEmail: "recovery@example.com",
           naturalName: "first second",
+          accountType: AccountType.CONSUMER,
           contactEmail: "contact@example.com",
         });
 
@@ -84,6 +86,7 @@ TEST_RUNNER.run({
               {
                 accountUserId: "id1",
                 accountAccountId: "id2",
+                accountAccountType: AccountType.CONSUMER,
                 accountNaturalName: "first second",
                 accountDescription: "",
                 accountContactEmail: "contact@example.com",
@@ -94,8 +97,8 @@ TEST_RUNNER.run({
                 accountCreatedTimeMs: 1000,
                 accountLastAccessedTimeMs: 1000,
                 accountCapabilitiesVersion: 0,
-                accountBillingAccountStateVersion: 0,
-                accountBillingAccountState: BillingAccountState.HEALTHY,
+                accountBillingProfileStateVersion: 0,
+                accountBillingProfileState: BillingProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -123,9 +126,9 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               capabilities: {
                 canConsume: true,
-                canPublish: true,
+                canPublish: false,
                 canBeBilled: true,
-                canEarn: true,
+                canEarn: false,
               },
             },
             CREATE_SESSION_REQUEST_BODY,
@@ -177,6 +180,7 @@ TEST_RUNNER.run({
           password: "pass1",
           recoveryEmail: "recovery@example.com",
           naturalName: "first second",
+          accountType: AccountType.CONSUMER,
           contactEmail: "contact@example.com",
         });
 

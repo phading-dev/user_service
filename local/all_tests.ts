@@ -1,7 +1,8 @@
 import "../node/get_account_contact_handler_test";
 import "../node/process_account_capabilities_updating_task_handler_test";
-import "../node/process_billing_account_creating_task_handler_test";
-import "../node/sync_billing_account_state_handler_test";
+import "../node/process_billing_profile_creating_task_handler_test";
+import "../node/process_earnings_profile_creating_tasks_handler_test";
+import "../node/sync_billing_profile_state_handler_test";
 import "../web/self/create_account_handler_test";
 import "../web/self/get_account_and_user_handler_test";
 import "../web/self/get_video_player_settings_handler_test";

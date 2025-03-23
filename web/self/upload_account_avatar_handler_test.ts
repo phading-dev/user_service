@@ -3,7 +3,7 @@ import path from "path";
 import {
   DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
-} from "../../common/params";
+} from "../../common/constants";
 import { S3_CLIENT, initS3Client } from "../../common/s3_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {

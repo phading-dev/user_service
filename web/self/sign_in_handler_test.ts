@@ -8,7 +8,8 @@ import {
   insertUserStatement,
 } from "../../db/sql";
 import { SignInHandler } from "./sign_in_handler";
-import { BillingAccountState } from "@phading/user_service_interface/node/billing_account_state";
+import { AccountType } from "@phading/user_service_interface/account_type";
+import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
 import { SIGN_IN_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -39,15 +40,17 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
+              accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingAccountState: BillingAccountState.HEALTHY,
+              billingProfileState: BillingProfileState.HEALTHY,
               lastAccessedTimeMs: 100,
             }),
             insertAccountStatement({
               userId: "user1",
               accountId: "account2",
+              accountType: AccountType.PUBLISHER,
               capabilitiesVersion: 0,
-              billingAccountState: BillingAccountState.HEALTHY,
+              billingProfileState: BillingProfileState.HEALTHY,
               lastAccessedTimeMs: 200,
             }),
           ]);
@@ -93,7 +96,7 @@ TEST_RUNNER.run({
               accountId: "account2",
               capabilitiesVersion: 0,
               capabilities: {
-                canConsume: true,
+                canConsume: false,
                 canPublish: true,
                 canBeBilled: true,
                 canEarn: true,

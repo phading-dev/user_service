@@ -1,15 +1,11 @@
 import crypto = require("crypto");
-import { toCapabilities } from "../../common/capabilities_converter";
-import { initAccount } from "../../common/init_account";
 import { PASSWORD_SIGNER, PasswordSigner } from "../../common/password_signer";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import {
-  getUserByUsername,
-  insertAccountStatement,
-  insertUserStatement,
-} from "../../db/sql";
+import { getUserByUsername, insertUserStatement } from "../../db/sql";
+import { createAccount } from "./common/create_account";
 import { Database } from "@google-cloud/spanner";
+import { Statement } from "@google-cloud/spanner/build/src/transaction";
 import {
   MAX_EMAIL_LENGTH,
   MAX_NATURAL_NAME_LENGTH,
@@ -81,6 +77,9 @@ export class SignUpHandler extends SignUpHandlerInterface {
     if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);
     }
+    if (!body.accountType) {
+      throw newBadRequestError(`"accountType" is required.`);
+    }
     let userId = this.generateUuid();
     let usernameIsAvailable = true;
     let request: CreateSessionRequestBody;
@@ -92,22 +91,10 @@ export class SignUpHandler extends SignUpHandlerInterface {
         usernameIsAvailable = false;
         return;
       }
-      let now = this.getNow();
       let passwordHash = this.passwordSigner.sign(body.password);
-      let account = initAccount(
-        userId,
-        this.generateUuid(),
-        body.naturalName,
-        body.contactEmail,
-        now,
-      );
-      request = {
-        userId,
-        accountId: account.accountId,
-        capabilitiesVersion: account.capabilitiesVersion,
-        capabilities: toCapabilities(account.billingAccountState),
-      };
-      await transaction.batchUpdate([
+      let statements = new Array<Statement>();
+      let now = this.getNow();
+      statements.push(
         insertUserStatement({
           userId,
           username: body.username,
@@ -116,8 +103,17 @@ export class SignUpHandler extends SignUpHandlerInterface {
           totalAccounts: 1,
           createdTimeMs: now,
         }),
-        insertAccountStatement(account),
-      ]);
+      );
+      request = createAccount(
+        userId,
+        this.generateUuid(),
+        body.accountType,
+        body.naturalName,
+        body.contactEmail,
+        now,
+        statements,
+      );
+      await transaction.batchUpdate(statements);
       await transaction.commit();
     });
     if (!usernameIsAvailable) {

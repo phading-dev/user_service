@@ -48,6 +48,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
       accounts: rows.map((row): AccountSummary => {
         return {
           accountId: row.accountAccountId,
+          accountType: row.accountAccountType,
           naturalName: row.accountNaturalName,
           avatarSmallUrl: `${this.publicAccessDomain}${row.accountAvatarSmallFilename}`,
         };

@@ -37,6 +37,10 @@
           type: string
         - name: accountId
           type: string
+        - name: accountType
+          type: AccountType
+          import: "@phading/user_service_interface/account_type"
+          nullable: true
         - name: naturalName
           type: string
           nullable: true
@@ -58,12 +62,12 @@
         - name: createdTimeMs
           type: float64
           nullable: true
-        - name: billingAccountStateVersion
+        - name: billingProfileStateVersion
           type: float64
           nullable: true
-        - name: billingAccountState
-          type: BillingAccountState
-          import: "@phading/user_service_interface/node/billing_account_state"
+        - name: billingProfileState
+          type: BillingProfileState
+          import: "@phading/user_service_interface/node/billing_profile_state"
           nullable: true
         - name: capabilitiesVersion
           type: float64
@@ -73,13 +77,14 @@
           columns:
             - userId
             - accountId
+            - accountType
             - naturalName
             - contactEmail
             - avatarSmallFilename
             - avatarLargeFilename
             - lastAccessedTimeMs
-            - billingAccountStateVersion
-            - billingAccountState
+            - billingProfileStateVersion
+            - billingProfileState
             - capabilitiesVersion
       searchColumns:
         - name: fullText
@@ -137,7 +142,7 @@
       getMetadata: GetAccountCapabilitiesUpdatingTaskMetadata
       updateMetadata: UpdateAccountCapabilitiesUpdatingTaskMetadata
     - kind: TaskTable
-      name: BillingAccountCreatingTask
+      name: BillingProfileCreatingTask
       columns:
         - name: accountId
           type: string
@@ -146,13 +151,30 @@
       createdTimeColumn: createdTimeMs
       primaryKeys:
         - accountId
-      executionTimeIndex: BillingAccountCreatingTaskByExecutionTimeMs
-      insert: InsertBillingAccountCreatingTask
-      delete: DeleteBillingAccountCreatingTask
-      get: GetBillingAccountCreatingTask
-      listPendingTasks: ListPendingBillingAccountCreatingTasks
-      getMetadata: GetBillingAccountCreatingTaskMetadata
-      updateMetadata: UpdateBillingAccountCreatingTaskMetadata
+      executionTimeIndex: BillingProfileCreatingTaskByExecutionTimeMs
+      insert: InsertBillingProfileCreatingTask
+      delete: DeleteBillingProfileCreatingTask
+      get: GetBillingProfileCreatingTask
+      listPendingTasks: ListPendingBillingProfileCreatingTasks
+      getMetadata: GetBillingProfileCreatingTaskMetadata
+      updateMetadata: UpdateBillingProfileCreatingTaskMetadata
+    - kind: TaskTable
+      name: EarningsProfileCreatingTask
+      columns:
+        - name: accountId
+          type: string
+      retryCountColumn: retryCount
+      executionTimeColumn: executionTimeMs
+      createdTimeColumn: createdTimeMs
+      primaryKeys:
+        - accountId
+      executionTimeIndex: EarningsProfileCreatingTaskByExecutionTimeMs
+      insert: InsertEarningsProfileCreatingTask
+      delete: DeleteEarningsProfileCreatingTask
+      get: GetEarningsProfileCreatingTask
+      listPendingTasks: ListPendingEarningsProfileCreatingTasks
+      getMetadata: GetEarningsProfileCreatingTaskMetadata
+      updateMetadata: UpdateEarningsProfileCreatingTaskMetadata
   updates:
     - name: UpdateUserTotalAccounts
       table: User
@@ -175,14 +197,14 @@
         lColumn: userId
       set:
         - recoveryEmail
-    - name: UpdateAccountBillingAccountState
+    - name: UpdateAccountBillingProfileState
       table: Account
       where:
         op: =
         lColumn: accountId
       set:
-        - billingAccountState
-        - billingAccountStateVersion
+        - billingProfileState
+        - billingProfileStateVersion
         - capabilitiesVersion
     - name: UpdateAccountLastAccessedTime
       table: Account

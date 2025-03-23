@@ -1,7 +1,7 @@
 import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
-import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/params";
+import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/constants";
 import { S3_CLIENT } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";

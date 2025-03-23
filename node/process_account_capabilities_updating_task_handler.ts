@@ -110,7 +110,10 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
       newUpdateAccountCapabilitiesRequest({
         accountId: body.accountId,
         capabilitiesVersion: body.capabilitiesVersion,
-        capabilities: toCapabilities(row.accountBillingAccountState),
+        capabilities: toCapabilities(
+          row.accountAccountType,
+          row.accountBillingProfileState,
+        ),
       }),
     );
     await this.database.runTransactionAsync(async (transaction) => {

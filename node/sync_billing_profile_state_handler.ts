@@ -3,19 +3,19 @@ import {
   deleteAccountCapabilitiesUpdatingTaskStatement,
   getAccountMain,
   insertAccountCapabilitiesUpdatingTaskStatement,
-  updateAccountBillingAccountStateStatement,
+  updateAccountBillingProfileStateStatement,
 } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { SyncBillingAccountStateHandlerInterface } from "@phading/user_service_interface/node/handler";
+import { SyncBillingProfileStateHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {
-  SyncBillingAccountStateRequestBody,
-  SyncBillingAccountStateResponse,
+  SyncBillingProfileStateRequestBody,
+  SyncBillingProfileStateResponse,
 } from "@phading/user_service_interface/node/interface";
 import { newBadRequestError } from "@selfage/http_error";
 
-export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandlerInterface {
-  public static create(): SyncBillingAccountStateHandler {
-    return new SyncBillingAccountStateHandler(SPANNER_DATABASE, () =>
+export class SyncBillingProfileStateHandler extends SyncBillingProfileStateHandlerInterface {
+  public static create(): SyncBillingProfileStateHandler {
+    return new SyncBillingProfileStateHandler(SPANNER_DATABASE, () =>
       Date.now(),
     );
   }
@@ -29,8 +29,8 @@ export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandl
 
   public async handle(
     loggingPrefix: string,
-    body: SyncBillingAccountStateRequestBody,
-  ): Promise<SyncBillingAccountStateResponse> {
+    body: SyncBillingProfileStateRequestBody,
+  ): Promise<SyncBillingProfileStateResponse> {
     await this.database.runTransactionAsync(async (transaction) => {
       let rows = await getAccountMain(transaction, {
         accountAccountIdEq: body.accountId,
@@ -40,7 +40,7 @@ export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandl
       }
       let row = rows[0];
       if (
-        body.billingAccountStateVersion <= row.accountBillingAccountStateVersion
+        body.billingProfileStateVersion <= row.accountBillingProfileStateVersion
       ) {
         return;
       }
@@ -48,10 +48,10 @@ export class SyncBillingAccountStateHandler extends SyncBillingAccountStateHandl
       let newVersion = oldVersion + 1;
       let now = this.getNow();
       await transaction.batchUpdate([
-        updateAccountBillingAccountStateStatement({
+        updateAccountBillingProfileStateStatement({
           accountAccountIdEq: row.accountAccountId,
-          setBillingAccountState: body.billingAccountState,
-          setBillingAccountStateVersion: body.billingAccountStateVersion,
+          setBillingProfileState: body.billingProfileState,
+          setBillingProfileStateVersion: body.billingProfileStateVersion,
           setCapabilitiesVersion: newVersion,
         }),
         insertAccountCapabilitiesUpdatingTaskStatement({
