@@ -32,9 +32,13 @@ import { ServiceHandler } from "@selfage/service_handler/service_handler";
 
 async function main() {
   await Promise.all([initPasswordSigner(), initS3Client()]);
-  let service = ServiceHandler.create(http.createServer())
+  let service = ServiceHandler.create(
+    http.createServer(),
+    ENV_VARS.externalOrigin,
+  )
     .addCorsAllowedPreflightHandler()
     .addHealthCheckHandler()
+    .addReadinessHandler()
     .addMetricsHandler();
   service
     .addHandlerRegister(USER_NODE_SERVICE)
