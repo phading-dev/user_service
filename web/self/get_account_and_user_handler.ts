@@ -56,7 +56,7 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
         naturalName: row.accountNaturalName,
         contactEmail: row.accountContactEmail,
         description: row.accountDescription,
-        avatarLargeUrl: `${this.publicAccessDomain}${row.accountAvatarLargeFilename}`,
+        avatarLargeUrl: `${this.publicAccessDomain}/${row.accountAvatarLargeFilename}`,
       },
     };
   }

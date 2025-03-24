@@ -75,7 +75,7 @@ export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
         (row): AccountSummary => ({
           accountId: row.accountAccountId,
           naturalName: row.accountNaturalName,
-          avatarSmallUrl: `${this.publicAccessDomain}${row.accountAvatarSmallFilename}`,
+          avatarSmallUrl: `${this.publicAccessDomain}/${row.accountAvatarSmallFilename}`,
         }),
       ),
       scoreCusor:

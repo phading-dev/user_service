@@ -53,7 +53,7 @@ TEST_RUNNER.run({
         let handler = new ListAccountsHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute

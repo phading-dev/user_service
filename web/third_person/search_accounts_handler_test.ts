@@ -57,7 +57,7 @@ TEST_RUNNER.run({
         let handler = new SearchAccountsHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://test.com/",
+          "https://test.com",
         );
 
         // Execute

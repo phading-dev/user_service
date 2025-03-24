@@ -4,4 +4,4 @@ import { ENV_VARS } from "../env_vars";
 
 ENV_VARS.spannerInstanceId = ENV_VARS.balancedSpannerInstanceId;
 ENV_VARS.r2AvatarBucketName = "avatar-dev";
-ENV_VARS.r2AvatarPublicAccessDomain = "https://avatar-dev.phading.org/";
+ENV_VARS.r2AvatarPublicAccessDomain = "https://avatar-dev.phading.org";

@@ -53,7 +53,7 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
       account: {
         accountId: account.accountAccountId,
         naturalName: account.accountNaturalName,
-        avatarSmallUrl: `${this.publicAccessDomain}${account.accountAvatarSmallFilename}`,
+        avatarSmallUrl: `${this.publicAccessDomain}/${account.accountAvatarSmallFilename}`,
       },
     };
   }

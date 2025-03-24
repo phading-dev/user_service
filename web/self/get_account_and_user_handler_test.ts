@@ -49,7 +49,7 @@ TEST_RUNNER.run({
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute
@@ -96,7 +96,7 @@ TEST_RUNNER.run({
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute
@@ -133,7 +133,7 @@ TEST_RUNNER.run({
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute
@@ -185,7 +185,7 @@ TEST_RUNNER.run({
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute
@@ -238,7 +238,7 @@ TEST_RUNNER.run({
         let handler = new GetAccountAndUserHandler(
           SPANNER_DATABASE,
           clientMock,
-          "https://custom.domain/",
+          "https://custom.domain",
         );
 
         // Execute
