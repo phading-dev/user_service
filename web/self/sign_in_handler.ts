@@ -85,7 +85,7 @@ export class SignInHandler extends SignInHandlerInterface {
           capabilitiesVersion: account.accountCapabilitiesVersion,
           capabilities: toCapabilities(
             account.accountAccountType,
-            account.accountBillingProfileState,
+            account.accountPaymentProfileState,
           ),
         }),
       ),

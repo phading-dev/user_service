@@ -6,23 +6,23 @@ import {
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   GET_ACCOUNT_ROW,
-  GET_BILLING_PROFILE_CREATING_TASK_ROW,
-  GET_EARNINGS_PROFILE_CREATING_TASK_ROW,
+  GET_PAYMENT_PROFILE_CREATING_TASK_ROW,
+  GET_PAYOUT_PROFILE_CREATING_TASK_ROW,
   GET_USER_ROW,
   deleteAccountStatement,
-  deleteBillingProfileCreatingTaskStatement,
-  deleteEarningsProfileCreatingTaskStatement,
+  deletePaymentProfileCreatingTaskStatement,
+  deletePayoutProfileCreatingTaskStatement,
   deleteUserStatement,
   getAccount,
-  getBillingProfileCreatingTask,
-  getEarningsProfileCreatingTask,
+  getPaymentProfileCreatingTask,
+  getPayoutProfileCreatingTask,
   getUser,
   insertUserStatement,
 } from "../../db/sql";
 import { CreateAccountHandler } from "./create_account_handler";
 import { MAX_ACCOUNTS_PER_USER } from "@phading/constants/account";
 import { AccountType } from "@phading/user_service_interface/account_type";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { CREATE_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -126,8 +126,8 @@ TEST_RUNNER.run({
                 accountCreatedTimeMs: 1000,
                 accountLastAccessedTimeMs: 1000,
                 accountCapabilitiesVersion: 0,
-                accountBillingProfileStateVersion: 0,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileStateVersion: 0,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -135,28 +135,28 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await getBillingProfileCreatingTask(SPANNER_DATABASE, {
-            billingProfileCreatingTaskAccountIdEq: "account2",
+          await getPaymentProfileCreatingTask(SPANNER_DATABASE, {
+            paymentProfileCreatingTaskAccountIdEq: "account2",
           }),
           isArray([
             eqMessage(
               {
-                billingProfileCreatingTaskAccountId: "account2",
-                billingProfileCreatingTaskRetryCount: 0,
-                billingProfileCreatingTaskExecutionTimeMs: 1000,
-                billingProfileCreatingTaskCreatedTimeMs: 1000,
+                paymentProfileCreatingTaskAccountId: "account2",
+                paymentProfileCreatingTaskRetryCount: 0,
+                paymentProfileCreatingTaskExecutionTimeMs: 1000,
+                paymentProfileCreatingTaskCreatedTimeMs: 1000,
               },
-              GET_BILLING_PROFILE_CREATING_TASK_ROW,
+              GET_PAYMENT_PROFILE_CREATING_TASK_ROW,
             ),
           ]),
-          "billing profile creating task",
+          "payment profile creating task",
         );
         assertThat(
-          await getEarningsProfileCreatingTask(SPANNER_DATABASE, {
-            earningsProfileCreatingTaskAccountIdEq: "account2",
+          await getPayoutProfileCreatingTask(SPANNER_DATABASE, {
+            payoutProfileCreatingTaskAccountIdEq: "account2",
           }),
           isArray([]),
-          "earnings profile creating task",
+          "payout profile creating task",
         );
         assertThat(
           clientMock.request.body,
@@ -192,11 +192,11 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement({ userUserIdEq: "user1" }),
             deleteAccountStatement({ accountAccountIdEq: "account2" }),
-            deleteBillingProfileCreatingTaskStatement({
-              billingProfileCreatingTaskAccountIdEq: "account2",
+            deletePaymentProfileCreatingTaskStatement({
+              paymentProfileCreatingTaskAccountIdEq: "account2",
             }),
-            deleteEarningsProfileCreatingTaskStatement({
-              earningsProfileCreatingTaskAccountIdEq: "account2",
+            deletePayoutProfileCreatingTaskStatement({
+              payoutProfileCreatingTaskAccountIdEq: "account2",
             }),
           ]);
           await transaction.commit();
@@ -287,8 +287,8 @@ TEST_RUNNER.run({
                 accountCreatedTimeMs: 1000,
                 accountLastAccessedTimeMs: 1000,
                 accountCapabilitiesVersion: 0,
-                accountBillingProfileStateVersion: 0,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileStateVersion: 0,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -296,38 +296,38 @@ TEST_RUNNER.run({
           "account",
         );
         assertThat(
-          await getBillingProfileCreatingTask(SPANNER_DATABASE, {
-            billingProfileCreatingTaskAccountIdEq: "account2",
+          await getPaymentProfileCreatingTask(SPANNER_DATABASE, {
+            paymentProfileCreatingTaskAccountIdEq: "account2",
           }),
           isArray([
             eqMessage(
               {
-                billingProfileCreatingTaskAccountId: "account2",
-                billingProfileCreatingTaskRetryCount: 0,
-                billingProfileCreatingTaskExecutionTimeMs: 1000,
-                billingProfileCreatingTaskCreatedTimeMs: 1000,
+                paymentProfileCreatingTaskAccountId: "account2",
+                paymentProfileCreatingTaskRetryCount: 0,
+                paymentProfileCreatingTaskExecutionTimeMs: 1000,
+                paymentProfileCreatingTaskCreatedTimeMs: 1000,
               },
-              GET_BILLING_PROFILE_CREATING_TASK_ROW,
+              GET_PAYMENT_PROFILE_CREATING_TASK_ROW,
             ),
           ]),
-          "billing profile creating task",
+          "payment profile creating task",
         );
         assertThat(
-          await getEarningsProfileCreatingTask(SPANNER_DATABASE, {
-            earningsProfileCreatingTaskAccountIdEq: "account2",
+          await getPayoutProfileCreatingTask(SPANNER_DATABASE, {
+            payoutProfileCreatingTaskAccountIdEq: "account2",
           }),
           isArray([
             eqMessage(
               {
-                earningsProfileCreatingTaskAccountId: "account2",
-                earningsProfileCreatingTaskRetryCount: 0,
-                earningsProfileCreatingTaskExecutionTimeMs: 1000,
-                earningsProfileCreatingTaskCreatedTimeMs: 1000,
+                payoutProfileCreatingTaskAccountId: "account2",
+                payoutProfileCreatingTaskRetryCount: 0,
+                payoutProfileCreatingTaskExecutionTimeMs: 1000,
+                payoutProfileCreatingTaskCreatedTimeMs: 1000,
               },
-              GET_EARNINGS_PROFILE_CREATING_TASK_ROW,
+              GET_PAYOUT_PROFILE_CREATING_TASK_ROW,
             ),
           ]),
-          "earnings profile creating task",
+          "payout profile creating task",
         );
         assertThat(
           clientMock.request.body,
@@ -363,11 +363,11 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement({ userUserIdEq: "user1" }),
             deleteAccountStatement({ accountAccountIdEq: "account2" }),
-            deleteBillingProfileCreatingTaskStatement({
-              billingProfileCreatingTaskAccountIdEq: "account2",
+            deletePaymentProfileCreatingTaskStatement({
+              paymentProfileCreatingTaskAccountIdEq: "account2",
             }),
-            deleteEarningsProfileCreatingTaskStatement({
-              earningsProfileCreatingTaskAccountIdEq: "account2",
+            deletePayoutProfileCreatingTaskStatement({
+              payoutProfileCreatingTaskAccountIdEq: "account2",
             }),
           ]);
           await transaction.commit();

@@ -5,12 +5,12 @@ import {
 } from "../../../common/constants";
 import {
   insertAccountStatement,
-  insertBillingProfileCreatingTaskStatement,
-  insertEarningsProfileCreatingTaskStatement,
+  insertPaymentProfileCreatingTaskStatement,
+  insertPayoutProfileCreatingTaskStatement,
 } from "../../../db/sql";
 import { Statement } from "@google-cloud/spanner/build/src/transaction";
 import { AccountType } from "@phading/user_service_interface/account_type";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { CreateSessionRequestBody } from "@phading/user_session_service_interface/node/interface";
 
 export function createAccount(
@@ -22,9 +22,9 @@ export function createAccount(
   now: number,
   outputStatements: Array<Statement>,
 ): CreateSessionRequestBody {
-  let billingProfileState = BillingProfileState.HEALTHY;
+  let paymentProfileState = PaymentProfileState.HEALTHY;
   let capabilitiesVersion = 0;
-  let capabilities = toCapabilities(accountType, billingProfileState);
+  let capabilities = toCapabilities(accountType, paymentProfileState);
   let request: CreateSessionRequestBody = {
     userId,
     accountId,
@@ -43,13 +43,13 @@ export function createAccount(
       avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
       createdTimeMs: now,
       lastAccessedTimeMs: now,
-      billingProfileStateVersion: 0,
-      billingProfileState,
+      paymentProfileStateVersion: 0,
+      paymentProfileState,
       capabilitiesVersion,
     }),
     ...(capabilities.canBeBilled
       ? [
-          insertBillingProfileCreatingTaskStatement({
+          insertPaymentProfileCreatingTaskStatement({
             accountId,
             retryCount: 0,
             executionTimeMs: now,
@@ -59,7 +59,7 @@ export function createAccount(
       : []),
     ...(capabilities.canEarn
       ? [
-          insertEarningsProfileCreatingTaskStatement({
+          insertPayoutProfileCreatingTaskStatement({
             accountId,
             retryCount: 0,
             executionTimeMs: now,

@@ -1,30 +1,29 @@
 import { SERVICE_CLIENT } from "../common/service_client";
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
-  deleteBillingProfileCreatingTaskStatement,
-  getBillingProfileCreatingTaskMetadata,
-  updateBillingProfileCreatingTaskMetadataStatement,
+  deletePayoutProfileCreatingTaskStatement,
+  getPayoutProfileCreatingTaskMetadata,
+  updatePayoutProfileCreatingTaskMetadataStatement,
 } from "../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { newCreateBillingProfileRequest } from "@phading/commerce_service_interface/node/client";
-import { ProcessBillingProfileCreatingTaskHandlerInterface } from "@phading/user_service_interface/node/handler";
+import { newCreatePayoutProfileRequest } from "@phading/commerce_service_interface/node/client";
+import { ProcessPayoutProfileCreatingTaskHandlerInterface } from "@phading/user_service_interface/node/handler";
 import {
-  ProcessBillingProfileCreatingTaskRequestBody,
-  ProcessBillingProfileCreatingTaskResponse,
+  ProcessPayoutProfileCreatingTaskRequestBody,
+  ProcessPayoutProfileCreatingTaskResponse,
 } from "@phading/user_service_interface/node/interface";
 import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 import { ProcessTaskHandlerWrapper } from "@selfage/service_handler/process_task_handler_wrapper";
 
-export class ProcessBillingProfileCreatingTaskHandler extends ProcessBillingProfileCreatingTaskHandlerInterface {
-  public static create(): ProcessBillingProfileCreatingTaskHandler {
-    return new ProcessBillingProfileCreatingTaskHandler(
+export class ProcessPayoutProfileCreatingTaskHandler extends ProcessPayoutProfileCreatingTaskHandlerInterface {
+  public static create(): ProcessPayoutProfileCreatingTaskHandler {
+    return new ProcessPayoutProfileCreatingTaskHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
       () => Date.now(),
     );
   }
-
   private taskHandler = ProcessTaskHandlerWrapper.create(
     this.descriptor,
     5 * 60 * 1000,
@@ -41,9 +40,9 @@ export class ProcessBillingProfileCreatingTaskHandler extends ProcessBillingProf
 
   public async handle(
     loggingPrefix: string,
-    body: ProcessBillingProfileCreatingTaskRequestBody,
-  ): Promise<ProcessBillingProfileCreatingTaskResponse> {
-    loggingPrefix = `${loggingPrefix} Billing profile creating task for account ${body.accountId}:`;
+    body: ProcessPayoutProfileCreatingTaskRequestBody,
+  ): Promise<ProcessPayoutProfileCreatingTaskResponse> {
+    loggingPrefix = `${loggingPrefix} Payout profile creating task for account ${body.accountId}:`;
     await this.taskHandler.wrap(
       loggingPrefix,
       () => this.claimTask(loggingPrefix, body),
@@ -54,24 +53,24 @@ export class ProcessBillingProfileCreatingTaskHandler extends ProcessBillingProf
 
   public async claimTask(
     loggingPrefix: string,
-    body: ProcessBillingProfileCreatingTaskRequestBody,
+    body: ProcessPayoutProfileCreatingTaskRequestBody,
   ): Promise<void> {
     await this.database.runTransactionAsync(async (transaction) => {
-      let rows = await getBillingProfileCreatingTaskMetadata(transaction, {
-        billingProfileCreatingTaskAccountIdEq: body.accountId,
+      let rows = await getPayoutProfileCreatingTaskMetadata(transaction, {
+        payoutProfileCreatingTaskAccountIdEq: body.accountId,
       });
       if (rows.length === 0) {
         throw newBadRequestError(`Task is not found.`);
       }
       let task = rows[0];
       await transaction.batchUpdate([
-        updateBillingProfileCreatingTaskMetadataStatement({
-          billingProfileCreatingTaskAccountIdEq: body.accountId,
-          setRetryCount: task.billingProfileCreatingTaskRetryCount + 1,
+        updatePayoutProfileCreatingTaskMetadataStatement({
+          payoutProfileCreatingTaskAccountIdEq: body.accountId,
+          setRetryCount: task.payoutProfileCreatingTaskRetryCount + 1,
           setExecutionTimeMs:
             this.getNow() +
             this.taskHandler.getBackoffTime(
-              task.billingProfileCreatingTaskRetryCount,
+              task.payoutProfileCreatingTaskRetryCount,
             ),
         }),
       ]);
@@ -81,17 +80,17 @@ export class ProcessBillingProfileCreatingTaskHandler extends ProcessBillingProf
 
   public async processTask(
     loggingPrefix: string,
-    body: ProcessBillingProfileCreatingTaskRequestBody,
+    body: ProcessPayoutProfileCreatingTaskRequestBody,
   ): Promise<void> {
     await this.serviceClient.send(
-      newCreateBillingProfileRequest({
+      newCreatePayoutProfileRequest({
         accountId: body.accountId,
       }),
     );
     await this.database.runTransactionAsync(async (transaction) => {
       await transaction.batchUpdate([
-        deleteBillingProfileCreatingTaskStatement({
-          billingProfileCreatingTaskAccountIdEq: body.accountId,
+        deletePayoutProfileCreatingTaskStatement({
+          payoutProfileCreatingTaskAccountIdEq: body.accountId,
         }),
       ]);
       await transaction.commit();

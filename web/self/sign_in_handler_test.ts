@@ -9,7 +9,7 @@ import {
 } from "../../db/sql";
 import { SignInHandler } from "./sign_in_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { SIGN_IN_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -42,7 +42,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingProfileState: BillingProfileState.HEALTHY,
+              paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 100,
             }),
             insertAccountStatement({
@@ -50,7 +50,7 @@ TEST_RUNNER.run({
               accountId: "account2",
               accountType: AccountType.PUBLISHER,
               capabilitiesVersion: 0,
-              billingProfileState: BillingProfileState.HEALTHY,
+              paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 200,
             }),
           ]);

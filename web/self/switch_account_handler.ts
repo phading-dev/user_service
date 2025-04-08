@@ -72,7 +72,7 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
           capabilitiesVersion: row.accountCapabilitiesVersion,
           capabilities: toCapabilities(
             row.accountAccountType,
-            row.accountBillingProfileState,
+            row.accountPaymentProfileState,
           ),
         }),
       ),

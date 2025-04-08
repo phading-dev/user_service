@@ -16,7 +16,7 @@ import {
 } from "../../db/sql";
 import { SignUpHandler } from "./sign_up_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { SIGN_UP_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -97,8 +97,8 @@ TEST_RUNNER.run({
                 accountCreatedTimeMs: 1000,
                 accountLastAccessedTimeMs: 1000,
                 accountCapabilitiesVersion: 0,
-                accountBillingProfileStateVersion: 0,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileStateVersion: 0,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),

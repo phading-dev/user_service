@@ -8,7 +8,7 @@ import {
 } from "../../db/sql";
 import { SwitchAccountHandler } from "./switch_account_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { SWITCH_ACCOUNT_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import {
   CREATE_SESSION,
@@ -38,7 +38,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 0,
-              billingProfileState: BillingProfileState.HEALTHY,
+              paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 1000,
             }),
           ]);
@@ -115,7 +115,7 @@ TEST_RUNNER.run({
                 accountAccountId: "account1",
                 accountAccountType: AccountType.CONSUMER,
                 accountCapabilitiesVersion: 0,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
                 accountLastAccessedTimeMs: 2000,
               },
               GET_ACCOUNT_ROW,

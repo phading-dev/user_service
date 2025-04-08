@@ -2,7 +2,7 @@ import { Spanner, Database, Transaction } from '@google-cloud/spanner';
 import { Statement } from '@google-cloud/spanner/build/src/transaction';
 import { PrimitiveType, MessageDescriptor } from '@selfage/message/descriptor';
 import { AccountType, ACCOUNT_TYPE } from '@phading/user_service_interface/account_type';
-import { BillingProfileState, BILLING_PROFILE_STATE } from '@phading/user_service_interface/node/billing_profile_state';
+import { PaymentProfileState, PAYMENT_PROFILE_STATE } from '@phading/user_service_interface/node/payment_profile_state';
 import { toEnumFromNumber, serializeMessage, deserializeMessage } from '@selfage/message/serializer';
 import { VideoPlayerSettings, VIDEO_PLAYER_SETTINGS } from '@phading/user_service_interface/web/self/video_player_settings';
 
@@ -132,13 +132,13 @@ export function insertAccountStatement(
     avatarLargeFilename?: string,
     lastAccessedTimeMs?: number,
     createdTimeMs?: number,
-    billingProfileStateVersion?: number,
-    billingProfileState?: BillingProfileState,
+    paymentProfileStateVersion?: number,
+    paymentProfileState?: PaymentProfileState,
     capabilitiesVersion?: number,
   }
 ): Statement {
   return {
-    sql: "INSERT Account (userId, accountId, accountType, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, lastAccessedTimeMs, createdTimeMs, billingProfileStateVersion, billingProfileState, capabilitiesVersion) VALUES (@userId, @accountId, @accountType, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @lastAccessedTimeMs, @createdTimeMs, @billingProfileStateVersion, @billingProfileState, @capabilitiesVersion)",
+    sql: "INSERT Account (userId, accountId, accountType, naturalName, description, contactEmail, avatarSmallFilename, avatarLargeFilename, lastAccessedTimeMs, createdTimeMs, paymentProfileStateVersion, paymentProfileState, capabilitiesVersion) VALUES (@userId, @accountId, @accountType, @naturalName, @description, @contactEmail, @avatarSmallFilename, @avatarLargeFilename, @lastAccessedTimeMs, @createdTimeMs, @paymentProfileStateVersion, @paymentProfileState, @capabilitiesVersion)",
     params: {
       userId: args.userId,
       accountId: args.accountId,
@@ -150,8 +150,8 @@ export function insertAccountStatement(
       avatarLargeFilename: args.avatarLargeFilename == null ? null : args.avatarLargeFilename,
       lastAccessedTimeMs: args.lastAccessedTimeMs == null ? null : Spanner.float(args.lastAccessedTimeMs),
       createdTimeMs: args.createdTimeMs == null ? null : Spanner.float(args.createdTimeMs),
-      billingProfileStateVersion: args.billingProfileStateVersion == null ? null : Spanner.float(args.billingProfileStateVersion),
-      billingProfileState: args.billingProfileState == null ? null : Spanner.float(args.billingProfileState),
+      paymentProfileStateVersion: args.paymentProfileStateVersion == null ? null : Spanner.float(args.paymentProfileStateVersion),
+      paymentProfileState: args.paymentProfileState == null ? null : Spanner.float(args.paymentProfileState),
       capabilitiesVersion: args.capabilitiesVersion == null ? null : Spanner.float(args.capabilitiesVersion),
     },
     types: {
@@ -165,8 +165,8 @@ export function insertAccountStatement(
       avatarLargeFilename: { type: "string" },
       lastAccessedTimeMs: { type: "float64" },
       createdTimeMs: { type: "float64" },
-      billingProfileStateVersion: { type: "float64" },
-      billingProfileState: { type: "float64" },
+      paymentProfileStateVersion: { type: "float64" },
+      paymentProfileState: { type: "float64" },
       capabilitiesVersion: { type: "float64" },
     }
   };
@@ -199,8 +199,8 @@ export interface GetAccountRow {
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
   accountCreatedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
 }
 
@@ -247,13 +247,13 @@ export let GET_ACCOUNT_ROW: MessageDescriptor<GetAccountRow> = {
     index: 10,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 12,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 13,
@@ -268,7 +268,7 @@ export async function getAccount(
   }
 ): Promise<Array<GetAccountRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.billingProfileStateVersion, Account.billingProfileState, Account.capabilitiesVersion FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion FROM Account WHERE (Account.accountId = @accountAccountIdEq)",
     params: {
       accountAccountIdEq: args.accountAccountIdEq,
     },
@@ -289,8 +289,8 @@ export async function getAccount(
       accountAvatarLargeFilename: row.at(7).value == null ? undefined : row.at(7).value,
       accountLastAccessedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
       accountCreatedTimeMs: row.at(9).value == null ? undefined : row.at(9).value.value,
-      accountBillingProfileStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountBillingProfileState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountPaymentProfileState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(12).value == null ? undefined : row.at(12).value.value,
     });
   }
@@ -619,7 +619,7 @@ export function updateAccountCapabilitiesUpdatingTaskMetadataStatement(
   };
 }
 
-export function insertBillingProfileCreatingTaskStatement(
+export function insertPaymentProfileCreatingTaskStatement(
   args: {
     accountId: string,
     retryCount?: number,
@@ -628,7 +628,7 @@ export function insertBillingProfileCreatingTaskStatement(
   }
 ): Statement {
   return {
-    sql: "INSERT BillingProfileCreatingTask (accountId, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @retryCount, @executionTimeMs, @createdTimeMs)",
+    sql: "INSERT PaymentProfileCreatingTask (accountId, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @retryCount, @executionTimeMs, @createdTimeMs)",
     params: {
       accountId: args.accountId,
       retryCount: args.retryCount == null ? null : Spanner.float(args.retryCount),
@@ -644,180 +644,180 @@ export function insertBillingProfileCreatingTaskStatement(
   };
 }
 
-export function deleteBillingProfileCreatingTaskStatement(
+export function deletePaymentProfileCreatingTaskStatement(
   args: {
-    billingProfileCreatingTaskAccountIdEq: string,
+    paymentProfileCreatingTaskAccountIdEq: string,
   }
 ): Statement {
   return {
-    sql: "DELETE BillingProfileCreatingTask WHERE (BillingProfileCreatingTask.accountId = @billingProfileCreatingTaskAccountIdEq)",
+    sql: "DELETE PaymentProfileCreatingTask WHERE (PaymentProfileCreatingTask.accountId = @paymentProfileCreatingTaskAccountIdEq)",
     params: {
-      billingProfileCreatingTaskAccountIdEq: args.billingProfileCreatingTaskAccountIdEq,
+      paymentProfileCreatingTaskAccountIdEq: args.paymentProfileCreatingTaskAccountIdEq,
     },
     types: {
-      billingProfileCreatingTaskAccountIdEq: { type: "string" },
+      paymentProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   };
 }
 
-export interface GetBillingProfileCreatingTaskRow {
-  billingProfileCreatingTaskAccountId?: string,
-  billingProfileCreatingTaskRetryCount?: number,
-  billingProfileCreatingTaskExecutionTimeMs?: number,
-  billingProfileCreatingTaskCreatedTimeMs?: number,
+export interface GetPaymentProfileCreatingTaskRow {
+  paymentProfileCreatingTaskAccountId?: string,
+  paymentProfileCreatingTaskRetryCount?: number,
+  paymentProfileCreatingTaskExecutionTimeMs?: number,
+  paymentProfileCreatingTaskCreatedTimeMs?: number,
 }
 
-export let GET_BILLING_PROFILE_CREATING_TASK_ROW: MessageDescriptor<GetBillingProfileCreatingTaskRow> = {
-  name: 'GetBillingProfileCreatingTaskRow',
+export let GET_PAYMENT_PROFILE_CREATING_TASK_ROW: MessageDescriptor<GetPaymentProfileCreatingTaskRow> = {
+  name: 'GetPaymentProfileCreatingTaskRow',
   fields: [{
-    name: 'billingProfileCreatingTaskAccountId',
+    name: 'paymentProfileCreatingTaskAccountId',
     index: 1,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'billingProfileCreatingTaskRetryCount',
+    name: 'paymentProfileCreatingTaskRetryCount',
     index: 2,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'billingProfileCreatingTaskExecutionTimeMs',
+    name: 'paymentProfileCreatingTaskExecutionTimeMs',
     index: 3,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'billingProfileCreatingTaskCreatedTimeMs',
+    name: 'paymentProfileCreatingTaskCreatedTimeMs',
     index: 4,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getBillingProfileCreatingTask(
+export async function getPaymentProfileCreatingTask(
   runner: Database | Transaction,
   args: {
-    billingProfileCreatingTaskAccountIdEq: string,
+    paymentProfileCreatingTaskAccountIdEq: string,
   }
-): Promise<Array<GetBillingProfileCreatingTaskRow>> {
+): Promise<Array<GetPaymentProfileCreatingTaskRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT BillingProfileCreatingTask.accountId, BillingProfileCreatingTask.retryCount, BillingProfileCreatingTask.executionTimeMs, BillingProfileCreatingTask.createdTimeMs FROM BillingProfileCreatingTask WHERE (BillingProfileCreatingTask.accountId = @billingProfileCreatingTaskAccountIdEq)",
+    sql: "SELECT PaymentProfileCreatingTask.accountId, PaymentProfileCreatingTask.retryCount, PaymentProfileCreatingTask.executionTimeMs, PaymentProfileCreatingTask.createdTimeMs FROM PaymentProfileCreatingTask WHERE (PaymentProfileCreatingTask.accountId = @paymentProfileCreatingTaskAccountIdEq)",
     params: {
-      billingProfileCreatingTaskAccountIdEq: args.billingProfileCreatingTaskAccountIdEq,
+      paymentProfileCreatingTaskAccountIdEq: args.paymentProfileCreatingTaskAccountIdEq,
     },
     types: {
-      billingProfileCreatingTaskAccountIdEq: { type: "string" },
+      paymentProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetBillingProfileCreatingTaskRow>();
+  let resRows = new Array<GetPaymentProfileCreatingTaskRow>();
   for (let row of rows) {
     resRows.push({
-      billingProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
-      billingProfileCreatingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
-      billingProfileCreatingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
-      billingProfileCreatingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
+      paymentProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      paymentProfileCreatingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
+      paymentProfileCreatingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
+      paymentProfileCreatingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
     });
   }
   return resRows;
 }
 
-export interface ListPendingBillingProfileCreatingTasksRow {
-  billingProfileCreatingTaskAccountId?: string,
+export interface ListPendingPaymentProfileCreatingTasksRow {
+  paymentProfileCreatingTaskAccountId?: string,
 }
 
-export let LIST_PENDING_BILLING_PROFILE_CREATING_TASKS_ROW: MessageDescriptor<ListPendingBillingProfileCreatingTasksRow> = {
-  name: 'ListPendingBillingProfileCreatingTasksRow',
+export let LIST_PENDING_PAYMENT_PROFILE_CREATING_TASKS_ROW: MessageDescriptor<ListPendingPaymentProfileCreatingTasksRow> = {
+  name: 'ListPendingPaymentProfileCreatingTasksRow',
   fields: [{
-    name: 'billingProfileCreatingTaskAccountId',
+    name: 'paymentProfileCreatingTaskAccountId',
     index: 1,
     primitiveType: PrimitiveType.STRING,
   }],
 };
 
-export async function listPendingBillingProfileCreatingTasks(
+export async function listPendingPaymentProfileCreatingTasks(
   runner: Database | Transaction,
   args: {
-    billingProfileCreatingTaskExecutionTimeMsLe?: number,
+    paymentProfileCreatingTaskExecutionTimeMsLe?: number,
   }
-): Promise<Array<ListPendingBillingProfileCreatingTasksRow>> {
+): Promise<Array<ListPendingPaymentProfileCreatingTasksRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT BillingProfileCreatingTask.accountId FROM BillingProfileCreatingTask WHERE BillingProfileCreatingTask.executionTimeMs <= @billingProfileCreatingTaskExecutionTimeMsLe",
+    sql: "SELECT PaymentProfileCreatingTask.accountId FROM PaymentProfileCreatingTask WHERE PaymentProfileCreatingTask.executionTimeMs <= @paymentProfileCreatingTaskExecutionTimeMsLe",
     params: {
-      billingProfileCreatingTaskExecutionTimeMsLe: args.billingProfileCreatingTaskExecutionTimeMsLe == null ? null : new Date(args.billingProfileCreatingTaskExecutionTimeMsLe).toISOString(),
+      paymentProfileCreatingTaskExecutionTimeMsLe: args.paymentProfileCreatingTaskExecutionTimeMsLe == null ? null : new Date(args.paymentProfileCreatingTaskExecutionTimeMsLe).toISOString(),
     },
     types: {
-      billingProfileCreatingTaskExecutionTimeMsLe: { type: "timestamp" },
+      paymentProfileCreatingTaskExecutionTimeMsLe: { type: "timestamp" },
     }
   });
-  let resRows = new Array<ListPendingBillingProfileCreatingTasksRow>();
+  let resRows = new Array<ListPendingPaymentProfileCreatingTasksRow>();
   for (let row of rows) {
     resRows.push({
-      billingProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      paymentProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
     });
   }
   return resRows;
 }
 
-export interface GetBillingProfileCreatingTaskMetadataRow {
-  billingProfileCreatingTaskRetryCount?: number,
-  billingProfileCreatingTaskExecutionTimeMs?: number,
+export interface GetPaymentProfileCreatingTaskMetadataRow {
+  paymentProfileCreatingTaskRetryCount?: number,
+  paymentProfileCreatingTaskExecutionTimeMs?: number,
 }
 
-export let GET_BILLING_PROFILE_CREATING_TASK_METADATA_ROW: MessageDescriptor<GetBillingProfileCreatingTaskMetadataRow> = {
-  name: 'GetBillingProfileCreatingTaskMetadataRow',
+export let GET_PAYMENT_PROFILE_CREATING_TASK_METADATA_ROW: MessageDescriptor<GetPaymentProfileCreatingTaskMetadataRow> = {
+  name: 'GetPaymentProfileCreatingTaskMetadataRow',
   fields: [{
-    name: 'billingProfileCreatingTaskRetryCount',
+    name: 'paymentProfileCreatingTaskRetryCount',
     index: 1,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'billingProfileCreatingTaskExecutionTimeMs',
+    name: 'paymentProfileCreatingTaskExecutionTimeMs',
     index: 2,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getBillingProfileCreatingTaskMetadata(
+export async function getPaymentProfileCreatingTaskMetadata(
   runner: Database | Transaction,
   args: {
-    billingProfileCreatingTaskAccountIdEq: string,
+    paymentProfileCreatingTaskAccountIdEq: string,
   }
-): Promise<Array<GetBillingProfileCreatingTaskMetadataRow>> {
+): Promise<Array<GetPaymentProfileCreatingTaskMetadataRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT BillingProfileCreatingTask.retryCount, BillingProfileCreatingTask.executionTimeMs FROM BillingProfileCreatingTask WHERE (BillingProfileCreatingTask.accountId = @billingProfileCreatingTaskAccountIdEq)",
+    sql: "SELECT PaymentProfileCreatingTask.retryCount, PaymentProfileCreatingTask.executionTimeMs FROM PaymentProfileCreatingTask WHERE (PaymentProfileCreatingTask.accountId = @paymentProfileCreatingTaskAccountIdEq)",
     params: {
-      billingProfileCreatingTaskAccountIdEq: args.billingProfileCreatingTaskAccountIdEq,
+      paymentProfileCreatingTaskAccountIdEq: args.paymentProfileCreatingTaskAccountIdEq,
     },
     types: {
-      billingProfileCreatingTaskAccountIdEq: { type: "string" },
+      paymentProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetBillingProfileCreatingTaskMetadataRow>();
+  let resRows = new Array<GetPaymentProfileCreatingTaskMetadataRow>();
   for (let row of rows) {
     resRows.push({
-      billingProfileCreatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
-      billingProfileCreatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
+      paymentProfileCreatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
+      paymentProfileCreatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
     });
   }
   return resRows;
 }
 
-export function updateBillingProfileCreatingTaskMetadataStatement(
+export function updatePaymentProfileCreatingTaskMetadataStatement(
   args: {
-    billingProfileCreatingTaskAccountIdEq: string,
+    paymentProfileCreatingTaskAccountIdEq: string,
     setRetryCount?: number,
     setExecutionTimeMs?: number,
   }
 ): Statement {
   return {
-    sql: "UPDATE BillingProfileCreatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (BillingProfileCreatingTask.accountId = @billingProfileCreatingTaskAccountIdEq)",
+    sql: "UPDATE PaymentProfileCreatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (PaymentProfileCreatingTask.accountId = @paymentProfileCreatingTaskAccountIdEq)",
     params: {
-      billingProfileCreatingTaskAccountIdEq: args.billingProfileCreatingTaskAccountIdEq,
+      paymentProfileCreatingTaskAccountIdEq: args.paymentProfileCreatingTaskAccountIdEq,
       setRetryCount: args.setRetryCount == null ? null : Spanner.float(args.setRetryCount),
       setExecutionTimeMs: args.setExecutionTimeMs == null ? null : new Date(args.setExecutionTimeMs).toISOString(),
     },
     types: {
-      billingProfileCreatingTaskAccountIdEq: { type: "string" },
+      paymentProfileCreatingTaskAccountIdEq: { type: "string" },
       setRetryCount: { type: "float64" },
       setExecutionTimeMs: { type: "timestamp" },
     }
   };
 }
 
-export function insertEarningsProfileCreatingTaskStatement(
+export function insertPayoutProfileCreatingTaskStatement(
   args: {
     accountId: string,
     retryCount?: number,
@@ -826,7 +826,7 @@ export function insertEarningsProfileCreatingTaskStatement(
   }
 ): Statement {
   return {
-    sql: "INSERT EarningsProfileCreatingTask (accountId, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @retryCount, @executionTimeMs, @createdTimeMs)",
+    sql: "INSERT PayoutProfileCreatingTask (accountId, retryCount, executionTimeMs, createdTimeMs) VALUES (@accountId, @retryCount, @executionTimeMs, @createdTimeMs)",
     params: {
       accountId: args.accountId,
       retryCount: args.retryCount == null ? null : Spanner.float(args.retryCount),
@@ -842,173 +842,173 @@ export function insertEarningsProfileCreatingTaskStatement(
   };
 }
 
-export function deleteEarningsProfileCreatingTaskStatement(
+export function deletePayoutProfileCreatingTaskStatement(
   args: {
-    earningsProfileCreatingTaskAccountIdEq: string,
+    payoutProfileCreatingTaskAccountIdEq: string,
   }
 ): Statement {
   return {
-    sql: "DELETE EarningsProfileCreatingTask WHERE (EarningsProfileCreatingTask.accountId = @earningsProfileCreatingTaskAccountIdEq)",
+    sql: "DELETE PayoutProfileCreatingTask WHERE (PayoutProfileCreatingTask.accountId = @payoutProfileCreatingTaskAccountIdEq)",
     params: {
-      earningsProfileCreatingTaskAccountIdEq: args.earningsProfileCreatingTaskAccountIdEq,
+      payoutProfileCreatingTaskAccountIdEq: args.payoutProfileCreatingTaskAccountIdEq,
     },
     types: {
-      earningsProfileCreatingTaskAccountIdEq: { type: "string" },
+      payoutProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   };
 }
 
-export interface GetEarningsProfileCreatingTaskRow {
-  earningsProfileCreatingTaskAccountId?: string,
-  earningsProfileCreatingTaskRetryCount?: number,
-  earningsProfileCreatingTaskExecutionTimeMs?: number,
-  earningsProfileCreatingTaskCreatedTimeMs?: number,
+export interface GetPayoutProfileCreatingTaskRow {
+  payoutProfileCreatingTaskAccountId?: string,
+  payoutProfileCreatingTaskRetryCount?: number,
+  payoutProfileCreatingTaskExecutionTimeMs?: number,
+  payoutProfileCreatingTaskCreatedTimeMs?: number,
 }
 
-export let GET_EARNINGS_PROFILE_CREATING_TASK_ROW: MessageDescriptor<GetEarningsProfileCreatingTaskRow> = {
-  name: 'GetEarningsProfileCreatingTaskRow',
+export let GET_PAYOUT_PROFILE_CREATING_TASK_ROW: MessageDescriptor<GetPayoutProfileCreatingTaskRow> = {
+  name: 'GetPayoutProfileCreatingTaskRow',
   fields: [{
-    name: 'earningsProfileCreatingTaskAccountId',
+    name: 'payoutProfileCreatingTaskAccountId',
     index: 1,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'earningsProfileCreatingTaskRetryCount',
+    name: 'payoutProfileCreatingTaskRetryCount',
     index: 2,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'earningsProfileCreatingTaskExecutionTimeMs',
+    name: 'payoutProfileCreatingTaskExecutionTimeMs',
     index: 3,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'earningsProfileCreatingTaskCreatedTimeMs',
+    name: 'payoutProfileCreatingTaskCreatedTimeMs',
     index: 4,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getEarningsProfileCreatingTask(
+export async function getPayoutProfileCreatingTask(
   runner: Database | Transaction,
   args: {
-    earningsProfileCreatingTaskAccountIdEq: string,
+    payoutProfileCreatingTaskAccountIdEq: string,
   }
-): Promise<Array<GetEarningsProfileCreatingTaskRow>> {
+): Promise<Array<GetPayoutProfileCreatingTaskRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT EarningsProfileCreatingTask.accountId, EarningsProfileCreatingTask.retryCount, EarningsProfileCreatingTask.executionTimeMs, EarningsProfileCreatingTask.createdTimeMs FROM EarningsProfileCreatingTask WHERE (EarningsProfileCreatingTask.accountId = @earningsProfileCreatingTaskAccountIdEq)",
+    sql: "SELECT PayoutProfileCreatingTask.accountId, PayoutProfileCreatingTask.retryCount, PayoutProfileCreatingTask.executionTimeMs, PayoutProfileCreatingTask.createdTimeMs FROM PayoutProfileCreatingTask WHERE (PayoutProfileCreatingTask.accountId = @payoutProfileCreatingTaskAccountIdEq)",
     params: {
-      earningsProfileCreatingTaskAccountIdEq: args.earningsProfileCreatingTaskAccountIdEq,
+      payoutProfileCreatingTaskAccountIdEq: args.payoutProfileCreatingTaskAccountIdEq,
     },
     types: {
-      earningsProfileCreatingTaskAccountIdEq: { type: "string" },
+      payoutProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetEarningsProfileCreatingTaskRow>();
+  let resRows = new Array<GetPayoutProfileCreatingTaskRow>();
   for (let row of rows) {
     resRows.push({
-      earningsProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
-      earningsProfileCreatingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
-      earningsProfileCreatingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
-      earningsProfileCreatingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
+      payoutProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      payoutProfileCreatingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
+      payoutProfileCreatingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
+      payoutProfileCreatingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
     });
   }
   return resRows;
 }
 
-export interface ListPendingEarningsProfileCreatingTasksRow {
-  earningsProfileCreatingTaskAccountId?: string,
+export interface ListPendingPayoutProfileCreatingTasksRow {
+  payoutProfileCreatingTaskAccountId?: string,
 }
 
-export let LIST_PENDING_EARNINGS_PROFILE_CREATING_TASKS_ROW: MessageDescriptor<ListPendingEarningsProfileCreatingTasksRow> = {
-  name: 'ListPendingEarningsProfileCreatingTasksRow',
+export let LIST_PENDING_PAYOUT_PROFILE_CREATING_TASKS_ROW: MessageDescriptor<ListPendingPayoutProfileCreatingTasksRow> = {
+  name: 'ListPendingPayoutProfileCreatingTasksRow',
   fields: [{
-    name: 'earningsProfileCreatingTaskAccountId',
+    name: 'payoutProfileCreatingTaskAccountId',
     index: 1,
     primitiveType: PrimitiveType.STRING,
   }],
 };
 
-export async function listPendingEarningsProfileCreatingTasks(
+export async function listPendingPayoutProfileCreatingTasks(
   runner: Database | Transaction,
   args: {
-    earningsProfileCreatingTaskExecutionTimeMsLe?: number,
+    payoutProfileCreatingTaskExecutionTimeMsLe?: number,
   }
-): Promise<Array<ListPendingEarningsProfileCreatingTasksRow>> {
+): Promise<Array<ListPendingPayoutProfileCreatingTasksRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT EarningsProfileCreatingTask.accountId FROM EarningsProfileCreatingTask WHERE EarningsProfileCreatingTask.executionTimeMs <= @earningsProfileCreatingTaskExecutionTimeMsLe",
+    sql: "SELECT PayoutProfileCreatingTask.accountId FROM PayoutProfileCreatingTask WHERE PayoutProfileCreatingTask.executionTimeMs <= @payoutProfileCreatingTaskExecutionTimeMsLe",
     params: {
-      earningsProfileCreatingTaskExecutionTimeMsLe: args.earningsProfileCreatingTaskExecutionTimeMsLe == null ? null : new Date(args.earningsProfileCreatingTaskExecutionTimeMsLe).toISOString(),
+      payoutProfileCreatingTaskExecutionTimeMsLe: args.payoutProfileCreatingTaskExecutionTimeMsLe == null ? null : new Date(args.payoutProfileCreatingTaskExecutionTimeMsLe).toISOString(),
     },
     types: {
-      earningsProfileCreatingTaskExecutionTimeMsLe: { type: "timestamp" },
+      payoutProfileCreatingTaskExecutionTimeMsLe: { type: "timestamp" },
     }
   });
-  let resRows = new Array<ListPendingEarningsProfileCreatingTasksRow>();
+  let resRows = new Array<ListPendingPayoutProfileCreatingTasksRow>();
   for (let row of rows) {
     resRows.push({
-      earningsProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
+      payoutProfileCreatingTaskAccountId: row.at(0).value == null ? undefined : row.at(0).value,
     });
   }
   return resRows;
 }
 
-export interface GetEarningsProfileCreatingTaskMetadataRow {
-  earningsProfileCreatingTaskRetryCount?: number,
-  earningsProfileCreatingTaskExecutionTimeMs?: number,
+export interface GetPayoutProfileCreatingTaskMetadataRow {
+  payoutProfileCreatingTaskRetryCount?: number,
+  payoutProfileCreatingTaskExecutionTimeMs?: number,
 }
 
-export let GET_EARNINGS_PROFILE_CREATING_TASK_METADATA_ROW: MessageDescriptor<GetEarningsProfileCreatingTaskMetadataRow> = {
-  name: 'GetEarningsProfileCreatingTaskMetadataRow',
+export let GET_PAYOUT_PROFILE_CREATING_TASK_METADATA_ROW: MessageDescriptor<GetPayoutProfileCreatingTaskMetadataRow> = {
+  name: 'GetPayoutProfileCreatingTaskMetadataRow',
   fields: [{
-    name: 'earningsProfileCreatingTaskRetryCount',
+    name: 'payoutProfileCreatingTaskRetryCount',
     index: 1,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'earningsProfileCreatingTaskExecutionTimeMs',
+    name: 'payoutProfileCreatingTaskExecutionTimeMs',
     index: 2,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
 
-export async function getEarningsProfileCreatingTaskMetadata(
+export async function getPayoutProfileCreatingTaskMetadata(
   runner: Database | Transaction,
   args: {
-    earningsProfileCreatingTaskAccountIdEq: string,
+    payoutProfileCreatingTaskAccountIdEq: string,
   }
-): Promise<Array<GetEarningsProfileCreatingTaskMetadataRow>> {
+): Promise<Array<GetPayoutProfileCreatingTaskMetadataRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT EarningsProfileCreatingTask.retryCount, EarningsProfileCreatingTask.executionTimeMs FROM EarningsProfileCreatingTask WHERE (EarningsProfileCreatingTask.accountId = @earningsProfileCreatingTaskAccountIdEq)",
+    sql: "SELECT PayoutProfileCreatingTask.retryCount, PayoutProfileCreatingTask.executionTimeMs FROM PayoutProfileCreatingTask WHERE (PayoutProfileCreatingTask.accountId = @payoutProfileCreatingTaskAccountIdEq)",
     params: {
-      earningsProfileCreatingTaskAccountIdEq: args.earningsProfileCreatingTaskAccountIdEq,
+      payoutProfileCreatingTaskAccountIdEq: args.payoutProfileCreatingTaskAccountIdEq,
     },
     types: {
-      earningsProfileCreatingTaskAccountIdEq: { type: "string" },
+      payoutProfileCreatingTaskAccountIdEq: { type: "string" },
     }
   });
-  let resRows = new Array<GetEarningsProfileCreatingTaskMetadataRow>();
+  let resRows = new Array<GetPayoutProfileCreatingTaskMetadataRow>();
   for (let row of rows) {
     resRows.push({
-      earningsProfileCreatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
-      earningsProfileCreatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
+      payoutProfileCreatingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
+      payoutProfileCreatingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
     });
   }
   return resRows;
 }
 
-export function updateEarningsProfileCreatingTaskMetadataStatement(
+export function updatePayoutProfileCreatingTaskMetadataStatement(
   args: {
-    earningsProfileCreatingTaskAccountIdEq: string,
+    payoutProfileCreatingTaskAccountIdEq: string,
     setRetryCount?: number,
     setExecutionTimeMs?: number,
   }
 ): Statement {
   return {
-    sql: "UPDATE EarningsProfileCreatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (EarningsProfileCreatingTask.accountId = @earningsProfileCreatingTaskAccountIdEq)",
+    sql: "UPDATE PayoutProfileCreatingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (PayoutProfileCreatingTask.accountId = @payoutProfileCreatingTaskAccountIdEq)",
     params: {
-      earningsProfileCreatingTaskAccountIdEq: args.earningsProfileCreatingTaskAccountIdEq,
+      payoutProfileCreatingTaskAccountIdEq: args.payoutProfileCreatingTaskAccountIdEq,
       setRetryCount: args.setRetryCount == null ? null : Spanner.float(args.setRetryCount),
       setExecutionTimeMs: args.setExecutionTimeMs == null ? null : new Date(args.setExecutionTimeMs).toISOString(),
     },
     types: {
-      earningsProfileCreatingTaskAccountIdEq: { type: "string" },
+      payoutProfileCreatingTaskAccountIdEq: { type: "string" },
       setRetryCount: { type: "float64" },
       setExecutionTimeMs: { type: "timestamp" },
     }
@@ -1072,26 +1072,26 @@ export function updateUserRecoveryEmailStatement(
   };
 }
 
-export function updateAccountBillingProfileStateStatement(
+export function updateAccountPaymentProfileStateStatement(
   args: {
     accountAccountIdEq: string,
-    setBillingProfileState?: BillingProfileState,
-    setBillingProfileStateVersion?: number,
+    setPaymentProfileState?: PaymentProfileState,
+    setPaymentProfileStateVersion?: number,
     setCapabilitiesVersion?: number,
   }
 ): Statement {
   return {
-    sql: "UPDATE Account SET billingProfileState = @setBillingProfileState, billingProfileStateVersion = @setBillingProfileStateVersion, capabilitiesVersion = @setCapabilitiesVersion WHERE Account.accountId = @accountAccountIdEq",
+    sql: "UPDATE Account SET paymentProfileState = @setPaymentProfileState, paymentProfileStateVersion = @setPaymentProfileStateVersion, capabilitiesVersion = @setCapabilitiesVersion WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: args.accountAccountIdEq,
-      setBillingProfileState: args.setBillingProfileState == null ? null : Spanner.float(args.setBillingProfileState),
-      setBillingProfileStateVersion: args.setBillingProfileStateVersion == null ? null : Spanner.float(args.setBillingProfileStateVersion),
+      setPaymentProfileState: args.setPaymentProfileState == null ? null : Spanner.float(args.setPaymentProfileState),
+      setPaymentProfileStateVersion: args.setPaymentProfileStateVersion == null ? null : Spanner.float(args.setPaymentProfileStateVersion),
       setCapabilitiesVersion: args.setCapabilitiesVersion == null ? null : Spanner.float(args.setCapabilitiesVersion),
     },
     types: {
       accountAccountIdEq: { type: "string" },
-      setBillingProfileState: { type: "float64" },
-      setBillingProfileStateVersion: { type: "float64" },
+      setPaymentProfileState: { type: "float64" },
+      setPaymentProfileStateVersion: { type: "float64" },
       setCapabilitiesVersion: { type: "float64" },
     }
   };
@@ -1239,8 +1239,8 @@ export interface ListLastAccessedAccountsRow {
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
 }
 
@@ -1279,13 +1279,13 @@ export let LIST_LAST_ACCESSED_ACCOUNTS_ROW: MessageDescriptor<ListLastAccessedAc
     index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 10,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 11,
@@ -1301,7 +1301,7 @@ export async function listLastAccessedAccounts(
   }
 ): Promise<Array<ListLastAccessedAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingProfileStateVersion, Account.billingProfileState, Account.capabilitiesVersion FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion FROM Account WHERE Account.userId = @accountUserIdEq ORDER BY Account.lastAccessedTimeMs DESC LIMIT @limit",
     params: {
       accountUserIdEq: args.accountUserIdEq,
       limit: args.limit.toString(),
@@ -1322,8 +1322,8 @@ export async function listLastAccessedAccounts(
       accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
       accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
       accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
     });
   }
@@ -1339,8 +1339,8 @@ export interface SearchAccountsRow {
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
   accountFullTextScore?: number,
 }
@@ -1380,13 +1380,13 @@ export let SEARCH_ACCOUNTS_ROW: MessageDescriptor<SearchAccountsRow> = {
     index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 10,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 11,
@@ -1408,7 +1408,7 @@ export async function searchAccounts(
   }
 ): Promise<Array<SearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingProfileStateVersion, Account.billingProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE SEARCH(Account.fullText, @accountFullTextSearch) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE SEARCH(Account.fullText, @accountFullTextSearch) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
       accountFullTextSearch: args.accountFullTextSearch,
       accountFullTextScoreOrderBy: args.accountFullTextScoreOrderBy,
@@ -1433,8 +1433,8 @@ export async function searchAccounts(
       accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
       accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
       accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
       accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
     });
@@ -1451,8 +1451,8 @@ export interface ContinuedSearchAccountsRow {
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
   accountFullTextScore?: number,
 }
@@ -1492,13 +1492,13 @@ export let CONTINUED_SEARCH_ACCOUNTS_ROW: MessageDescriptor<ContinuedSearchAccou
     index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 10,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 11,
@@ -1522,7 +1522,7 @@ export async function continuedSearchAccounts(
   }
 ): Promise<Array<ContinuedSearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingProfileStateVersion, Account.billingProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (SEARCH(Account.fullText, @accountFullTextSearch) AND SCORE(Account.fullText, @accountFullTextScoreWhere) < @accountFullTextScoreLt) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (SEARCH(Account.fullText, @accountFullTextSearch) AND SCORE(Account.fullText, @accountFullTextScoreWhere) < @accountFullTextScoreLt) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC LIMIT @limit",
     params: {
       accountFullTextSearch: args.accountFullTextSearch,
       accountFullTextScoreWhere: args.accountFullTextScoreWhere,
@@ -1551,8 +1551,8 @@ export async function continuedSearchAccounts(
       accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
       accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
       accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
       accountFullTextScore: row.at(11).value == null ? undefined : row.at(11).value.value,
     });
@@ -1569,8 +1569,8 @@ export interface GetAccountMainRow {
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
 }
 
@@ -1609,13 +1609,13 @@ export let GET_ACCOUNT_MAIN_ROW: MessageDescriptor<GetAccountMainRow> = {
     index: 8,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 10,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 11,
@@ -1630,7 +1630,7 @@ export async function getAccountMain(
   }
 ): Promise<Array<GetAccountMainRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.billingProfileStateVersion, Account.billingProfileState, Account.capabilitiesVersion FROM Account WHERE Account.accountId = @accountAccountIdEq",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion FROM Account WHERE Account.accountId = @accountAccountIdEq",
     params: {
       accountAccountIdEq: args.accountAccountIdEq,
     },
@@ -1649,8 +1649,8 @@ export async function getAccountMain(
       accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
       accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
       accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountBillingProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountBillingProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
     });
   }
@@ -1674,8 +1674,8 @@ export interface GetUserAndAccountAllRow {
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
   accountCreatedTimeMs?: number,
-  accountBillingProfileStateVersion?: number,
-  accountBillingProfileState?: BillingProfileState,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
 }
 
@@ -1746,13 +1746,13 @@ export let GET_USER_AND_ACCOUNT_ALL_ROW: MessageDescriptor<GetUserAndAccountAllR
     index: 16,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileStateVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 17,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountBillingProfileState',
+    name: 'accountPaymentProfileState',
     index: 18,
-    enumType: BILLING_PROFILE_STATE,
+    enumType: PAYMENT_PROFILE_STATE,
   }, {
     name: 'accountCapabilitiesVersion',
     index: 19,
@@ -1768,7 +1768,7 @@ export async function getUserAndAccountAll(
   }
 ): Promise<Array<GetUserAndAccountAllRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT u.userId, u.username, u.passwordHashV1, u.recoveryEmail, u.totalAccounts, u.createdTimeMs, a.userId, a.accountId, a.accountType, a.naturalName, a.description, a.contactEmail, a.avatarSmallFilename, a.avatarLargeFilename, a.lastAccessedTimeMs, a.createdTimeMs, a.billingProfileStateVersion, a.billingProfileState, a.capabilitiesVersion FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @userUserIdEq AND a.accountId = @accountAccountIdEq)",
+    sql: "SELECT u.userId, u.username, u.passwordHashV1, u.recoveryEmail, u.totalAccounts, u.createdTimeMs, a.userId, a.accountId, a.accountType, a.naturalName, a.description, a.contactEmail, a.avatarSmallFilename, a.avatarLargeFilename, a.lastAccessedTimeMs, a.createdTimeMs, a.paymentProfileStateVersion, a.paymentProfileState, a.capabilitiesVersion FROM User AS u INNER JOIN Account AS a ON u.userId = a.userId WHERE (u.userId = @userUserIdEq AND a.accountId = @accountAccountIdEq)",
     params: {
       userUserIdEq: args.userUserIdEq,
       accountAccountIdEq: args.accountAccountIdEq,
@@ -1797,8 +1797,8 @@ export async function getUserAndAccountAll(
       accountAvatarLargeFilename: row.at(13).value == null ? undefined : row.at(13).value,
       accountLastAccessedTimeMs: row.at(14).value == null ? undefined : row.at(14).value.value,
       accountCreatedTimeMs: row.at(15).value == null ? undefined : row.at(15).value.value,
-      accountBillingProfileStateVersion: row.at(16).value == null ? undefined : row.at(16).value.value,
-      accountBillingProfileState: row.at(17).value == null ? undefined : toEnumFromNumber(row.at(17).value.value, BILLING_PROFILE_STATE),
+      accountPaymentProfileStateVersion: row.at(16).value == null ? undefined : row.at(16).value.value,
+      accountPaymentProfileState: row.at(17).value == null ? undefined : toEnumFromNumber(row.at(17).value.value, PAYMENT_PROFILE_STATE),
       accountCapabilitiesVersion: row.at(18).value == null ? undefined : row.at(18).value.value,
     });
   }

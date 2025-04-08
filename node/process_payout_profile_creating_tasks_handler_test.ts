@@ -1,14 +1,15 @@
+import "../local/env";
 import { SPANNER_DATABASE } from "../common/spanner_database";
 import {
-  GET_BILLING_PROFILE_CREATING_TASK_ROW,
-  deleteBillingProfileCreatingTaskStatement,
-  getBillingProfileCreatingTask,
-  insertBillingProfileCreatingTaskStatement,
+  GET_PAYOUT_PROFILE_CREATING_TASK_ROW,
+  deletePayoutProfileCreatingTaskStatement,
+  getPayoutProfileCreatingTask,
+  insertPayoutProfileCreatingTaskStatement,
 } from "../db/sql";
-import { ProcessBillingProfileCreatingTaskHandler } from "./process_billing_profile_creating_task_handler";
+import { ProcessPayoutProfileCreatingTaskHandler } from "./process_payout_profile_creating_tasks_handler";
 import {
-  CREATE_BILLING_PROFILE,
-  CREATE_BILLING_PROFILE_REQUEST_BODY,
+  CREATE_PAYOUT_PROFILE,
+  CREATE_PAYOUT_PROFILE_REQUEST_BODY,
 } from "@phading/commerce_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
@@ -16,7 +17,7 @@ import { assertThat, eq, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
-  name: "ProcessBillingProfileCreatingTaskHandlerTest",
+  name: "ProcessPayoutProfileCreatingTaskHandlerTest",
   cases: [
     {
       name: "ProcessTask",
@@ -24,7 +25,7 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertBillingProfileCreatingTaskStatement({
+            insertPayoutProfileCreatingTaskStatement({
               accountId: "account1",
               retryCount: 0,
               executionTimeMs: 1000,
@@ -33,7 +34,7 @@ TEST_RUNNER.run({
           await transaction.commit();
         });
         let clientMock = new NodeServiceClientMock();
-        let handler = new ProcessBillingProfileCreatingTaskHandler(
+        let handler = new ProcessPayoutProfileCreatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
           () => 2000,
@@ -47,7 +48,7 @@ TEST_RUNNER.run({
         // Verify
         assertThat(
           clientMock.request.descriptor,
-          eq(CREATE_BILLING_PROFILE),
+          eq(CREATE_PAYOUT_PROFILE),
           "RC",
         );
         assertThat(
@@ -56,13 +57,13 @@ TEST_RUNNER.run({
             {
               accountId: "account1",
             },
-            CREATE_BILLING_PROFILE_REQUEST_BODY,
+            CREATE_PAYOUT_PROFILE_REQUEST_BODY,
           ),
           "RC body",
         );
         assertThat(
-          await getBillingProfileCreatingTask(SPANNER_DATABASE, {
-            billingProfileCreatingTaskAccountIdEq: "account1",
+          await getPayoutProfileCreatingTask(SPANNER_DATABASE, {
+            payoutProfileCreatingTaskAccountIdEq: "account1",
           }),
           isArray([]),
           "task",
@@ -71,8 +72,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteBillingProfileCreatingTaskStatement({
-              billingProfileCreatingTaskAccountIdEq: "account1",
+            deletePayoutProfileCreatingTaskStatement({
+              payoutProfileCreatingTaskAccountIdEq: "account1",
             }),
           ]);
           await transaction.commit();
@@ -85,7 +86,7 @@ TEST_RUNNER.run({
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            insertBillingProfileCreatingTaskStatement({
+            insertPayoutProfileCreatingTaskStatement({
               accountId: "account1",
               retryCount: 0,
               executionTimeMs: 1000,
@@ -94,7 +95,7 @@ TEST_RUNNER.run({
           await transaction.commit();
         });
         let clientMock = new NodeServiceClientMock();
-        let handler = new ProcessBillingProfileCreatingTaskHandler(
+        let handler = new ProcessPayoutProfileCreatingTaskHandler(
           SPANNER_DATABASE,
           clientMock,
           () => 2000,
@@ -107,17 +108,17 @@ TEST_RUNNER.run({
 
         // Verify
         assertThat(
-          await getBillingProfileCreatingTask(SPANNER_DATABASE, {
-            billingProfileCreatingTaskAccountIdEq: "account1",
+          await getPayoutProfileCreatingTask(SPANNER_DATABASE, {
+            payoutProfileCreatingTaskAccountIdEq: "account1",
           }),
           isArray([
             eqMessage(
               {
-                billingProfileCreatingTaskAccountId: "account1",
-                billingProfileCreatingTaskRetryCount: 1,
-                billingProfileCreatingTaskExecutionTimeMs: 302000,
+                payoutProfileCreatingTaskAccountId: "account1",
+                payoutProfileCreatingTaskRetryCount: 1,
+                payoutProfileCreatingTaskExecutionTimeMs: 302000,
               },
-              GET_BILLING_PROFILE_CREATING_TASK_ROW,
+              GET_PAYOUT_PROFILE_CREATING_TASK_ROW,
             ),
           ]),
           "task",
@@ -126,8 +127,8 @@ TEST_RUNNER.run({
       tearDown: async () => {
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
-            deleteBillingProfileCreatingTaskStatement({
-              billingProfileCreatingTaskAccountIdEq: "account1",
+            deletePayoutProfileCreatingTaskStatement({
+              payoutProfileCreatingTaskAccountIdEq: "account1",
             }),
           ]);
           await transaction.commit();

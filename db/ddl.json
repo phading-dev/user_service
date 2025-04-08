@@ -58,11 +58,11 @@
       "name": "createdTimeMs",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs FLOAT64"
     }, {
-      "name": "billingProfileStateVersion",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN billingProfileStateVersion FLOAT64"
+      "name": "paymentProfileStateVersion",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN paymentProfileStateVersion FLOAT64"
     }, {
-      "name": "billingProfileState",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN billingProfileState FLOAT64"
+      "name": "paymentProfileState",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN paymentProfileState FLOAT64"
     }, {
       "name": "capabilitiesVersion",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN capabilitiesVersion FLOAT64"
@@ -70,7 +70,7 @@
       "name": "fullText",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, billingProfileStateVersion FLOAT64, billingProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, paymentProfileStateVersion FLOAT64, paymentProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimeMs",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
@@ -113,44 +113,44 @@
       "createIndexDdl": "CREATE INDEX AccountCapabilitiesUpdatingTaskByExecutionTimeMs ON AccountCapabilitiesUpdatingTask(executionTimeMs)"
     }]
   }, {
-    "name": "BillingProfileCreatingTask",
+    "name": "PaymentProfileCreatingTask",
     "columns": [{
       "name": "accountId",
-      "addColumnDdl": "ALTER TABLE BillingProfileCreatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
+      "addColumnDdl": "ALTER TABLE PaymentProfileCreatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
     }, {
       "name": "retryCount",
-      "addColumnDdl": "ALTER TABLE BillingProfileCreatingTask ADD COLUMN retryCount FLOAT64"
+      "addColumnDdl": "ALTER TABLE PaymentProfileCreatingTask ADD COLUMN retryCount FLOAT64"
     }, {
       "name": "executionTimeMs",
-      "addColumnDdl": "ALTER TABLE BillingProfileCreatingTask ADD COLUMN executionTimeMs TIMESTAMP"
+      "addColumnDdl": "ALTER TABLE PaymentProfileCreatingTask ADD COLUMN executionTimeMs TIMESTAMP"
     }, {
       "name": "createdTimeMs",
-      "addColumnDdl": "ALTER TABLE BillingProfileCreatingTask ADD COLUMN createdTimeMs TIMESTAMP"
+      "addColumnDdl": "ALTER TABLE PaymentProfileCreatingTask ADD COLUMN createdTimeMs TIMESTAMP"
     }],
-    "createTableDdl": "CREATE TABLE BillingProfileCreatingTask (accountId STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE PaymentProfileCreatingTask (accountId STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC)",
     "indexes": [{
-      "name": "BillingProfileCreatingTaskByExecutionTimeMs",
-      "createIndexDdl": "CREATE INDEX BillingProfileCreatingTaskByExecutionTimeMs ON BillingProfileCreatingTask(executionTimeMs)"
+      "name": "PaymentProfileCreatingTaskByExecutionTimeMs",
+      "createIndexDdl": "CREATE INDEX PaymentProfileCreatingTaskByExecutionTimeMs ON PaymentProfileCreatingTask(executionTimeMs)"
     }]
   }, {
-    "name": "EarningsProfileCreatingTask",
+    "name": "PayoutProfileCreatingTask",
     "columns": [{
       "name": "accountId",
-      "addColumnDdl": "ALTER TABLE EarningsProfileCreatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
+      "addColumnDdl": "ALTER TABLE PayoutProfileCreatingTask ADD COLUMN accountId STRING(MAX) NOT NULL"
     }, {
       "name": "retryCount",
-      "addColumnDdl": "ALTER TABLE EarningsProfileCreatingTask ADD COLUMN retryCount FLOAT64"
+      "addColumnDdl": "ALTER TABLE PayoutProfileCreatingTask ADD COLUMN retryCount FLOAT64"
     }, {
       "name": "executionTimeMs",
-      "addColumnDdl": "ALTER TABLE EarningsProfileCreatingTask ADD COLUMN executionTimeMs TIMESTAMP"
+      "addColumnDdl": "ALTER TABLE PayoutProfileCreatingTask ADD COLUMN executionTimeMs TIMESTAMP"
     }, {
       "name": "createdTimeMs",
-      "addColumnDdl": "ALTER TABLE EarningsProfileCreatingTask ADD COLUMN createdTimeMs TIMESTAMP"
+      "addColumnDdl": "ALTER TABLE PayoutProfileCreatingTask ADD COLUMN createdTimeMs TIMESTAMP"
     }],
-    "createTableDdl": "CREATE TABLE EarningsProfileCreatingTask (accountId STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE PayoutProfileCreatingTask (accountId STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (accountId ASC)",
     "indexes": [{
-      "name": "EarningsProfileCreatingTaskByExecutionTimeMs",
-      "createIndexDdl": "CREATE INDEX EarningsProfileCreatingTaskByExecutionTimeMs ON EarningsProfileCreatingTask(executionTimeMs)"
+      "name": "PayoutProfileCreatingTaskByExecutionTimeMs",
+      "createIndexDdl": "CREATE INDEX PayoutProfileCreatingTaskByExecutionTimeMs ON PayoutProfileCreatingTask(executionTimeMs)"
     }]
   }]
 }

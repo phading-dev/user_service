@@ -112,7 +112,7 @@ export class ProcessAccountCapabilitiesUpdatingTaskHandler extends ProcessAccoun
         capabilitiesVersion: body.capabilitiesVersion,
         capabilities: toCapabilities(
           row.accountAccountType,
-          row.accountBillingProfileState,
+          row.accountPaymentProfileState,
         ),
       }),
     );

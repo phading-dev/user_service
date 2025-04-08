@@ -11,8 +11,8 @@ import {
   insertAccountStatement,
   listPendingAccountCapabilitiesUpdatingTasks,
 } from "../db/sql";
-import { SyncBillingProfileStateHandler } from "./sync_billing_profile_state_handler";
-import { BillingProfileState } from "@phading/user_service_interface/node/billing_profile_state";
+import { SyncPaymentProfileStateHandler } from "./sync_payment_profile_state_handler";
+import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { assertThat, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
@@ -37,7 +37,7 @@ async function cleanupAll() {
 }
 
 TEST_RUNNER.run({
-  name: "SyncBillingProfileStateHandlerTest",
+  name: "SyncPaymentProfileStateHandlerTest",
   cases: [
     {
       name: "InitialSync",
@@ -49,13 +49,13 @@ TEST_RUNNER.run({
               userId: "user1",
               accountId: "account1",
               capabilitiesVersion: 10,
-              billingProfileStateVersion: 0,
-              billingProfileState: BillingProfileState.HEALTHY,
+              paymentProfileStateVersion: 0,
+              paymentProfileState: PaymentProfileState.HEALTHY,
             }),
           ]);
           await transaction.commit();
         });
-        let handler = new SyncBillingProfileStateHandler(
+        let handler = new SyncPaymentProfileStateHandler(
           SPANNER_DATABASE,
           () => 2000,
         );
@@ -63,8 +63,8 @@ TEST_RUNNER.run({
         // Execute
         await handler.handle("", {
           accountId: "account1",
-          billingProfileState: BillingProfileState.SUSPENDED,
-          billingProfileStateVersion: 1,
+          paymentProfileState: PaymentProfileState.SUSPENDED,
+          paymentProfileStateVersion: 1,
         });
 
         // Verify
@@ -78,8 +78,8 @@ TEST_RUNNER.run({
                 accountUserId: "user1",
                 accountAccountId: "account1",
                 accountCapabilitiesVersion: 11,
-                accountBillingProfileStateVersion: 1,
-                accountBillingProfileState: BillingProfileState.SUSPENDED,
+                accountPaymentProfileStateVersion: 1,
+                accountPaymentProfileState: PaymentProfileState.SUSPENDED,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -117,8 +117,8 @@ TEST_RUNNER.run({
               userId: "user1",
               accountId: "account1",
               capabilitiesVersion: 10,
-              billingProfileStateVersion: 1,
-              billingProfileState: BillingProfileState.SUSPENDED,
+              paymentProfileStateVersion: 1,
+              paymentProfileState: PaymentProfileState.SUSPENDED,
             }),
             insertAccountCapabilitiesUpdatingTaskStatement({
               accountId: "account1",
@@ -129,7 +129,7 @@ TEST_RUNNER.run({
           ]);
           await transaction.commit();
         });
-        let handler = new SyncBillingProfileStateHandler(
+        let handler = new SyncPaymentProfileStateHandler(
           SPANNER_DATABASE,
           () => 2000,
         );
@@ -137,8 +137,8 @@ TEST_RUNNER.run({
         // Execute
         await handler.handle("", {
           accountId: "account1",
-          billingProfileState: BillingProfileState.HEALTHY,
-          billingProfileStateVersion: 2,
+          paymentProfileState: PaymentProfileState.HEALTHY,
+          paymentProfileStateVersion: 2,
         });
 
         // Verify
@@ -152,8 +152,8 @@ TEST_RUNNER.run({
                 accountUserId: "user1",
                 accountAccountId: "account1",
                 accountCapabilitiesVersion: 11,
-                accountBillingProfileStateVersion: 2,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileStateVersion: 2,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -191,13 +191,13 @@ TEST_RUNNER.run({
               userId: "user1",
               accountId: "account1",
               capabilitiesVersion: 10,
-              billingProfileStateVersion: 1,
-              billingProfileState: BillingProfileState.HEALTHY,
+              paymentProfileStateVersion: 1,
+              paymentProfileState: PaymentProfileState.HEALTHY,
             }),
           ]);
           await transaction.commit();
         });
-        let handler = new SyncBillingProfileStateHandler(
+        let handler = new SyncPaymentProfileStateHandler(
           SPANNER_DATABASE,
           () => 2000,
         );
@@ -205,8 +205,8 @@ TEST_RUNNER.run({
         // Execute
         await handler.handle("", {
           accountId: "account1",
-          billingProfileState: BillingProfileState.SUSPENDED,
-          billingProfileStateVersion: 1,
+          paymentProfileState: PaymentProfileState.SUSPENDED,
+          paymentProfileStateVersion: 1,
         });
 
         // Verify
@@ -220,8 +220,8 @@ TEST_RUNNER.run({
                 accountUserId: "user1",
                 accountAccountId: "account1",
                 accountCapabilitiesVersion: 10,
-                accountBillingProfileStateVersion: 1,
-                accountBillingProfileState: BillingProfileState.HEALTHY,
+                accountPaymentProfileStateVersion: 1,
+                accountPaymentProfileState: PaymentProfileState.HEALTHY,
               },
               GET_ACCOUNT_ROW,
             ),
