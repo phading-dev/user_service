@@ -1,16 +1,18 @@
+import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
-import { SearchAccountsHandler } from "./search_accounts_handler";
-import { ACCOUNT_SUMMARY } from "@phading/user_service_interface/web/third_person/account_summary";
-import { SEARCH_ACCOUNTS_RESPONSE } from "@phading/user_service_interface/web/third_person/interface";
+import { SearchPublishersHandler } from "./search_publishers_handler";
+import { ACCOUNT_SUMMARY } from "@phading/user_service_interface/web/third_person/account";
+import { SEARCH_PUBLISHERS_RESPONSE } from "@phading/user_service_interface/web/third_person/interface";
 import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, eq, gt } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
+import { AccountType } from "@phading/user_service_interface/account_type";
 
 TEST_RUNNER.run({
-  name: "SearchAccountsHandlerTest",
+  name: "SearchPublishersHandlerTest",
   cases: [
     {
       name: "SearchOnce_SearchAgainButNoMore",
@@ -21,40 +23,48 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
+              accountType: AccountType.PUBLISHER,
               naturalName: "Alice",
               description:
                 "Alice whimsical account with a penchant for Adventure, Adventure and Innovation.",
               avatarSmallFilename: "avatar1",
+              createdTimeMs: 3000,
             }),
             insertAccountStatement({
               userId: "user2",
               accountId: "account2",
+              accountType: AccountType.PUBLISHER,
               naturalName: "Bob",
               description:
-                "Alice whimsical account with a penchant for adventure, adventure and innovation.",
+                "Alice whimsical account with a penchant for and innovation and adventure.",
               avatarSmallFilename: "avatar2",
+              createdTimeMs: 1000,
             }),
             insertAccountStatement({
               userId: "user3",
               accountId: "account3",
+              accountType: AccountType.PUBLISHER,
               naturalName: "Charlie",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
               avatarSmallFilename: "avatar3",
+              createdTimeMs: 2000,
             }),
             insertAccountStatement({
               userId: "user4",
               accountId: "account4",
+              accountType: AccountType.PUBLISHER,
               naturalName: "David",
               description: "Alice whimsical account with a penchant.",
               avatarSmallFilename: "avatar4",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {} as FetchSessionAndCheckCapabilityResponse;
-        let handler = new SearchAccountsHandler(
+        let handler = new SearchPublishersHandler(
           SPANNER_DATABASE,
           clientMock,
           "https://test.com",
@@ -101,6 +111,11 @@ TEST_RUNNER.run({
           "response 1.accounts[1].accountId",
         );
         assertThat(response.scoreCusor, gt(0), "response 1.scoreCusor");
+        assertThat(
+          response.createdTimeCursor,
+          eq(1000),
+          "response 1.createdTimeCursor",
+        );
 
         // Execute
         response = await handler.handle(
@@ -108,7 +123,8 @@ TEST_RUNNER.run({
           {
             query: "Alice Adventure Innovation",
             limit: 2,
-            scoreCusor: response.scoreCusor,
+            scoreCursor: response.scoreCusor,
+            createdTimeCursor: response.createdTimeCursor,
           },
           "session1",
         );
@@ -126,7 +142,7 @@ TEST_RUNNER.run({
                 },
               ],
             },
-            SEARCH_ACCOUNTS_RESPONSE,
+            SEARCH_PUBLISHERS_RESPONSE,
           ),
           "response 2",
         );

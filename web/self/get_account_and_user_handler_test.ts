@@ -37,6 +37,7 @@ TEST_RUNNER.run({
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -173,6 +174,7 @@ TEST_RUNNER.run({
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -226,6 +228,7 @@ TEST_RUNNER.run({
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

@@ -56,7 +56,7 @@
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN lastAccessedTimeMs FLOAT64"
     }, {
       "name": "createdTimeMs",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs FLOAT64"
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN createdTimeMs INT64 NOT NULL"
     }, {
       "name": "paymentProfileStateVersion",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN paymentProfileStateVersion FLOAT64"
@@ -70,13 +70,13 @@
       "name": "fullText",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs FLOAT64, paymentProfileStateVersion FLOAT64, paymentProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs INT64 NOT NULL, paymentProfileStateVersion FLOAT64, paymentProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimeMs",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
     }, {
       "name": "ByFullText",
-      "createIndexDdl": "CREATE SEARCH INDEX ByFullText ON Account(fullText)"
+      "createIndexDdl": "CREATE SEARCH INDEX ByFullText ON Account(fullText) PARTITION BY accountType ORDER BY createdTimeMs"
     }]
   }, {
     "name": "VideoPlayerSettings",

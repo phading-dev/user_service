@@ -51,6 +51,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 10,
               paymentProfileStateVersion: 0,
               paymentProfileState: PaymentProfileState.HEALTHY,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -80,6 +81,7 @@ TEST_RUNNER.run({
                 accountCapabilitiesVersion: 11,
                 accountPaymentProfileStateVersion: 1,
                 accountPaymentProfileState: PaymentProfileState.SUSPENDED,
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -119,6 +121,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 10,
               paymentProfileStateVersion: 1,
               paymentProfileState: PaymentProfileState.SUSPENDED,
+              createdTimeMs: 1000,
             }),
             insertAccountCapabilitiesUpdatingTaskStatement({
               accountId: "account1",
@@ -154,6 +157,7 @@ TEST_RUNNER.run({
                 accountCapabilitiesVersion: 11,
                 accountPaymentProfileStateVersion: 2,
                 accountPaymentProfileState: PaymentProfileState.HEALTHY,
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -193,6 +197,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 10,
               paymentProfileStateVersion: 1,
               paymentProfileState: PaymentProfileState.HEALTHY,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -222,6 +227,7 @@ TEST_RUNNER.run({
                 accountCapabilitiesVersion: 10,
                 accountPaymentProfileStateVersion: 1,
                 accountPaymentProfileState: PaymentProfileState.HEALTHY,
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),

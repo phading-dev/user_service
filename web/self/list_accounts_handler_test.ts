@@ -26,6 +26,7 @@ TEST_RUNNER.run({
               naturalName: "name1",
               avatarSmallFilename: "avatar1",
               lastAccessedTimeMs: 1000,
+              createdTimeMs: 1000,
             }),
             insertAccountStatement({
               userId: "user1",
@@ -34,6 +35,7 @@ TEST_RUNNER.run({
               naturalName: "name2",
               avatarSmallFilename: "avatar2",
               lastAccessedTimeMs: 3000,
+              createdTimeMs: 1000,
             }),
             insertAccountStatement({
               userId: "user1",
@@ -42,6 +44,7 @@ TEST_RUNNER.run({
               naturalName: "name3",
               avatarSmallFilename: "avatar3",
               lastAccessedTimeMs: 2000,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

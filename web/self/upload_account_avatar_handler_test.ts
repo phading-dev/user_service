@@ -57,6 +57,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               avatarSmallFilename: DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
               avatarLargeFilename: DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -90,6 +91,7 @@ TEST_RUNNER.run({
                 accountAccountId: "account1",
                 accountAvatarSmallFilename: "account1s.png",
                 accountAvatarLargeFilename: "account1l.png",
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -133,6 +135,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               avatarSmallFilename: "account1s.png",
               avatarLargeFilename: "account1l.png",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -166,6 +169,7 @@ TEST_RUNNER.run({
                 accountAccountId: "account1",
                 accountAvatarSmallFilename: "account1s.png",
                 accountAvatarLargeFilename: "account1l.png",
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),

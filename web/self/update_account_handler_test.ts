@@ -28,6 +28,7 @@ TEST_RUNNER.run({
               naturalName: "name1",
               contactEmail: "email",
               description: "something something",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -61,6 +62,7 @@ TEST_RUNNER.run({
                 accountNaturalName: "name2",
                 accountContactEmail: "contact2@example.com",
                 accountDescription: "",
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -89,6 +91,7 @@ TEST_RUNNER.run({
               naturalName: "name1",
               contactEmail: "email",
               description: "",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -123,6 +126,7 @@ TEST_RUNNER.run({
                 accountNaturalName: "name2",
                 accountContactEmail: "contact2@example.com",
                 accountDescription: "something something",
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),

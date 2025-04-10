@@ -40,6 +40,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 1000,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();
@@ -117,6 +118,7 @@ TEST_RUNNER.run({
                 accountCapabilitiesVersion: 0,
                 accountPaymentProfileState: PaymentProfileState.HEALTHY,
                 accountLastAccessedTimeMs: 2000,
+                accountCreatedTimeMs: 1000,
               },
               GET_ACCOUNT_ROW,
             ),
@@ -185,6 +187,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               accountType: AccountType.CONSUMER,
               lastAccessedTimeMs: 1000,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

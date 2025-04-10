@@ -60,8 +60,7 @@
           type: float64
           nullable: true
         - name: createdTimeMs
-          type: float64
-          nullable: true
+          type: int53
         - name: paymentProfileStateVersion
           type: float64
           nullable: true
@@ -103,6 +102,10 @@
         - name: ByFullText
           columns:
             - fullText
+          orderByColumns:
+            - createdTimeMs
+          partitionByColumns:
+            - accountType
       insert: InsertAccount
       delete: DeleteAccount
       get: GetAccount
@@ -252,15 +255,21 @@
     - name: SearchAccounts
       from: Account
       where:
-        op: SEARCH
-        lColumn: fullText
+        op: AND
+        exprs:
+          - op: =
+            lColumn: accountType
+          - op: SEARCH
+            lColumn: fullText
       orderBy:
         - func: SCORE
           column: fullText
           desc: true
+        - createdTimeMs
       withLimit: true
       get:
         - columnGroup: main
+        - createdTimeMs
         - func: SCORE
           column: fullText
     - name: ContinuedSearchAccounts
@@ -268,18 +277,31 @@
       where:
         op: AND
         exprs:
+          - op: =
+            lColumn: accountType
           - op: SEARCH
             lColumn: fullText
-          - op: <
-            func: SCORE
-            lColumn: fullText
+          - op: OR
+            exprs:
+              - op: <
+                func: SCORE
+                lColumn: fullText
+              - op: AND
+                exprs:
+                  - op: =
+                    func: SCORE
+                    lColumn: fullText
+                  - op: ">"
+                    lColumn: createdTimeMs
       orderBy:
         - func: SCORE
           column: fullText
           desc: true
+        - createdTimeMs
       withLimit: true
       get:
         - columnGroup: main
+        - createdTimeMs
         - func: SCORE
           column: fullText
     - name: GetAccountMain

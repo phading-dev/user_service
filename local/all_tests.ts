@@ -15,5 +15,6 @@ import "../web/self/update_account_handler_test";
 import "../web/self/update_password_handler_test";
 import "../web/self/update_recovery_email_handler_test";
 import "../web/self/upload_account_avatar_handler_test";
+import "../web/third_person/get_account_details_handler_test";
 import "../web/third_person/get_account_summary_handler_test";
-import "../web/third_person/search_accounts_handler_test";
+import "../web/third_person/search_publishers_handler_test";

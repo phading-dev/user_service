@@ -1,3 +1,4 @@
+import { AccountType } from "@phading/user_service_interface/account_type";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
@@ -8,19 +9,19 @@ import {
 } from "../../db/sql";
 import { ENV_VARS } from "../../env_vars";
 import { Database } from "@google-cloud/spanner";
-import { AccountSummary } from "@phading/user_service_interface/web/third_person/account_summary";
-import { SearchAccountsHandlerInterface } from "@phading/user_service_interface/web/third_person/handler";
+import { AccountSummary } from "@phading/user_service_interface/web/third_person/account";
+import { SearchPublishersHandlerInterface } from "@phading/user_service_interface/web/third_person/handler";
 import {
-  SearchAccountsRequestBody,
-  SearchAccountsResponse,
+  SearchPublishersRequestBody,
+  SearchPublishersResponse,
 } from "@phading/user_service_interface/web/third_person/interface";
 import { newFetchSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
 import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
-export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
-  public static create(): SearchAccountsHandler {
-    return new SearchAccountsHandler(
+export class SearchPublishersHandler extends SearchPublishersHandlerInterface {
+  public static create(): SearchPublishersHandler {
+    return new SearchPublishersHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
       ENV_VARS.r2AvatarPublicAccessDomain,
@@ -37,9 +38,9 @@ export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
 
   public async handle(
     loggingPrefix: string,
-    body: SearchAccountsRequestBody,
+    body: SearchPublishersRequestBody,
     authStr: string,
-  ): Promise<SearchAccountsResponse> {
+  ): Promise<SearchPublishersResponse> {
     if (!body.query) {
       throw newBadRequestError(`"query" is required.`);
     }
@@ -53,8 +54,9 @@ export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
     );
 
     let rows: Array<SearchAccountsRow | ContinuedSearchAccountsRow>;
-    if (!body.scoreCusor) {
+    if (!body.scoreCursor) {
       rows = await searchAccounts(this.database, {
+        accountAccountTypeEq: AccountType.PUBLISHER,
         accountFullTextSearch: body.query,
         accountFullTextScoreOrderBy: body.query,
         limit: body.limit,
@@ -62,9 +64,13 @@ export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
       });
     } else {
       rows = await continuedSearchAccounts(this.database, {
+        accountAccountTypeEq: AccountType.PUBLISHER,
         accountFullTextSearch: body.query,
-        accountFullTextScoreWhere: body.query,
-        accountFullTextScoreLt: body.scoreCusor,
+        accountFullTextScoreWhereLt: body.query,
+        accountFullTextScoreLt: body.scoreCursor,
+        accountFullTextScoreWhereEq: body.query,
+        accountFullTextScoreEq: body.scoreCursor,
+        accountCreatedTimeMsGt: body.createdTimeCursor,
         accountFullTextScoreOrderBy: body.query,
         limit: body.limit,
         accountFullTextScoreSelect: body.query,
@@ -81,6 +87,10 @@ export class SearchAccountsHandler extends SearchAccountsHandlerInterface {
       scoreCusor:
         rows.length === body.limit
           ? rows[rows.length - 1].accountFullTextScore
+          : undefined,
+      createdTimeCursor:
+        rows.length === body.limit
+          ? rows[rows.length - 1].accountCreatedTimeMs
           : undefined,
     };
   }

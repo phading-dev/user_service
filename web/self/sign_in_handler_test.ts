@@ -44,6 +44,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 100,
+              createdTimeMs: 1000,
             }),
             insertAccountStatement({
               userId: "user1",
@@ -52,6 +53,7 @@ TEST_RUNNER.run({
               capabilitiesVersion: 0,
               paymentProfileState: PaymentProfileState.HEALTHY,
               lastAccessedTimeMs: 200,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

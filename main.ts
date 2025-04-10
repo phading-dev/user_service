@@ -22,8 +22,9 @@ import { UpdateAccountHandler } from "./web/self/update_account_handler";
 import { UpdatePasswordHandler } from "./web/self/update_password_handler";
 import { UpdateRecoveryEmailHandler } from "./web/self/update_recovery_email_handler";
 import { UploadAccountAvatarHandler } from "./web/self/upload_account_avatar_handler";
+import { GetAccountDetailsHandler } from "./web/third_person/get_account_details_handler";
 import { GetAccountSummaryHandler } from "./web/third_person/get_account_summary_handler";
-import { SearchAccountsHandler } from "./web/third_person/search_accounts_handler";
+import { SearchPublishersHandler } from "./web/third_person/search_publishers_handler";
 import {
   USER_NODE_SERVICE,
   USER_WEB_SERVICE,
@@ -64,8 +65,9 @@ async function main() {
     .add(UpdatePasswordHandler.create())
     .add(UpdateRecoveryEmailHandler.create())
     .add(UploadAccountAvatarHandler.create())
+    .add(GetAccountDetailsHandler.create())
     .add(GetAccountSummaryHandler.create())
-    .add(SearchAccountsHandler.create());
+    .add(SearchPublishersHandler.create());
   await service.start(ENV_VARS.port);
 }
 

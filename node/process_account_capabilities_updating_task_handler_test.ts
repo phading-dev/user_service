@@ -52,6 +52,7 @@ class UpdateCapabilitiesCase implements TestCase {
           accountType: this.accountType,
           capabilitiesVersion: 1,
           paymentProfileState: this.paymentProfileState,
+          createdTimeMs: 1000,
         }),
         insertAccountCapabilitiesUpdatingTaskStatement({
           accountId: "account1",
@@ -177,6 +178,7 @@ TEST_RUNNER.run({
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 1,
               paymentProfileState: PaymentProfileState.HEALTHY,
+              createdTimeMs: 1000,
             }),
             insertAccountCapabilitiesUpdatingTaskStatement({
               accountId: "account1",
@@ -247,6 +249,7 @@ TEST_RUNNER.run({
               accountType: AccountType.CONSUMER,
               capabilitiesVersion: 2,
               paymentProfileState: PaymentProfileState.HEALTHY,
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

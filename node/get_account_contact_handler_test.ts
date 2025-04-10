@@ -21,6 +21,7 @@ TEST_RUNNER.run({
               accountId: "account1",
               naturalName: "name1",
               contactEmail: "email1",
+              createdTimeMs: 1000,
             }),
           ]);
           await transaction.commit();

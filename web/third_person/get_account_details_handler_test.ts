@@ -1,8 +1,8 @@
 import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
-import { GetAccountSummaryHandler } from "./get_account_summary_handler";
-import { GET_ACCOUNT_SUMMARY_RESPONSE } from "@phading/user_service_interface/web/third_person/interface";
+import { GetAccountDetailsHandler } from "./get_account_details_handler";
+import { GET_ACCOUNT_DETAILS_RESPONSE } from "@phading/user_service_interface/web/third_person/interface";
 import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { newBadRequestError } from "@selfage/http_error";
 import { eqHttpError } from "@selfage/http_error/test_matcher";
@@ -12,7 +12,7 @@ import { assertReject, assertThat } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
-  name: "GetAccountSummaryHandlerTest",
+  name: "GetAccountDetailsHandlerTest",
   cases: [
     {
       name: "Success",
@@ -24,7 +24,8 @@ TEST_RUNNER.run({
               userId: "user1",
               accountId: "account1",
               naturalName: "name1",
-              avatarSmallFilename: "avatarS",
+              avatarLargeFilename: "avatarL",
+              description: "Some some long long description",
               createdTimeMs: 1000,
             }),
           ]);
@@ -32,7 +33,7 @@ TEST_RUNNER.run({
         });
         let clientMock = new NodeServiceClientMock();
         clientMock.response = {} as FetchSessionAndCheckCapabilityResponse;
-        let handler = new GetAccountSummaryHandler(
+        let handler = new GetAccountDetailsHandler(
           SPANNER_DATABASE,
           clientMock,
           "https://custom.domain",
@@ -55,10 +56,11 @@ TEST_RUNNER.run({
               account: {
                 accountId: "account1",
                 naturalName: "name1",
-                avatarSmallUrl: "https://custom.domain/avatarS",
+                avatarLargeUrl: "https://custom.domain/avatarL",
+                description: "Some some long long description",
               },
             },
-            GET_ACCOUNT_SUMMARY_RESPONSE,
+            GET_ACCOUNT_DETAILS_RESPONSE,
           ),
           "response",
         );
@@ -80,7 +82,7 @@ TEST_RUNNER.run({
         clientMock.response = {
           accountId: "account1",
         } as FetchSessionAndCheckCapabilityResponse;
-        let handler = new GetAccountSummaryHandler(
+        let handler = new GetAccountDetailsHandler(
           SPANNER_DATABASE,
           clientMock,
           "https://custom.domain",

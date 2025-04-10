@@ -9,6 +9,7 @@ import {
   GET_ACCOUNT_ROW,
   GET_USER_ROW,
   deleteAccountStatement,
+  deletePaymentProfileCreatingTaskStatement,
   deleteUserStatement,
   getAccount,
   getUser,
@@ -141,6 +142,9 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             deleteUserStatement({ userUserIdEq: "id1" }),
             deleteAccountStatement({ accountAccountIdEq: "id2" }),
+            deletePaymentProfileCreatingTaskStatement({
+              paymentProfileCreatingTaskAccountIdEq: "id2",
+            }),
           ]);
           await transaction.commit();
         });
