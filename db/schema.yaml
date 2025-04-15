@@ -268,8 +268,7 @@
         - createdTimeMs
       withLimit: true
       get:
-        - columnGroup: main
-        - createdTimeMs
+        - all: true
         - func: SCORE
           column: fullText
     - name: ContinuedSearchAccounts
@@ -300,8 +299,7 @@
         - createdTimeMs
       withLimit: true
       get:
-        - columnGroup: main
-        - createdTimeMs
+        - all: true
         - func: SCORE
           column: fullText
     - name: GetAccountMain

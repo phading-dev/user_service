@@ -9,7 +9,7 @@ import {
 } from "../../db/sql";
 import { ENV_VARS } from "../../env_vars";
 import { Database } from "@google-cloud/spanner";
-import { AccountSummary } from "@phading/user_service_interface/web/third_person/account";
+import { AccountDetails } from "@phading/user_service_interface/web/third_person/account";
 import { SearchPublishersHandlerInterface } from "@phading/user_service_interface/web/third_person/handler";
 import {
   SearchPublishersRequestBody,
@@ -78,13 +78,14 @@ export class SearchPublishersHandler extends SearchPublishersHandlerInterface {
     }
     return {
       accounts: rows.map(
-        (row): AccountSummary => ({
+        (row): AccountDetails => ({
           accountId: row.accountAccountId,
           naturalName: row.accountNaturalName,
-          avatarSmallUrl: `${this.publicAccessDomain}/${row.accountAvatarSmallFilename}`,
+          avatarLargeUrl: `${this.publicAccessDomain}/${row.accountAvatarLargeFilename}`,
+          description: row.accountDescription,
         }),
       ),
-      scoreCusor:
+      scoreCursor:
         rows.length === body.limit
           ? rows[rows.length - 1].accountFullTextScore
           : undefined,

@@ -2,14 +2,14 @@ import "../../local/env";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import { deleteAccountStatement, insertAccountStatement } from "../../db/sql";
 import { SearchPublishersHandler } from "./search_publishers_handler";
-import { ACCOUNT_SUMMARY } from "@phading/user_service_interface/web/third_person/account";
+import { AccountType } from "@phading/user_service_interface/account_type";
+import { ACCOUNT_DETAILS } from "@phading/user_service_interface/web/third_person/account";
 import { SEARCH_PUBLISHERS_RESPONSE } from "@phading/user_service_interface/web/third_person/interface";
 import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, eq, gt } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
-import { AccountType } from "@phading/user_service_interface/account_type";
 
 TEST_RUNNER.run({
   name: "SearchPublishersHandlerTest",
@@ -27,7 +27,7 @@ TEST_RUNNER.run({
               naturalName: "Alice",
               description:
                 "Alice whimsical account with a penchant for Adventure, Adventure and Innovation.",
-              avatarSmallFilename: "avatar1",
+              avatarLargeFilename: "avatar1",
               createdTimeMs: 3000,
             }),
             insertAccountStatement({
@@ -37,7 +37,7 @@ TEST_RUNNER.run({
               naturalName: "Bob",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
-              avatarSmallFilename: "avatar2",
+              avatarLargeFilename: "avatar2",
               createdTimeMs: 1000,
             }),
             insertAccountStatement({
@@ -47,7 +47,7 @@ TEST_RUNNER.run({
               naturalName: "Charlie",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
-              avatarSmallFilename: "avatar3",
+              avatarLargeFilename: "avatar3",
               createdTimeMs: 2000,
             }),
             insertAccountStatement({
@@ -56,7 +56,7 @@ TEST_RUNNER.run({
               accountType: AccountType.PUBLISHER,
               naturalName: "David",
               description: "Alice whimsical account with a penchant.",
-              avatarSmallFilename: "avatar4",
+              avatarLargeFilename: "avatar4",
               createdTimeMs: 1000,
             }),
           ]);
@@ -92,9 +92,11 @@ TEST_RUNNER.run({
             {
               accountId: "account1",
               naturalName: "Alice",
-              avatarSmallUrl: "https://test.com/avatar1",
+              avatarLargeUrl: "https://test.com/avatar1",
+              description:
+                "Alice whimsical account with a penchant for Adventure, Adventure and Innovation.",
             },
-            ACCOUNT_SUMMARY,
+            ACCOUNT_DETAILS,
           ),
           "response 1.accounts[0].accountId",
         );
@@ -104,13 +106,15 @@ TEST_RUNNER.run({
             {
               accountId: "account2",
               naturalName: "Bob",
-              avatarSmallUrl: "https://test.com/avatar2",
+              avatarLargeUrl: "https://test.com/avatar2",
+              description:
+                "Alice whimsical account with a penchant for and innovation and adventure.",
             },
-            ACCOUNT_SUMMARY,
+            ACCOUNT_DETAILS,
           ),
           "response 1.accounts[1].accountId",
         );
-        assertThat(response.scoreCusor, gt(0), "response 1.scoreCusor");
+        assertThat(response.scoreCursor, gt(0), "response 1.scoreCusor");
         assertThat(
           response.createdTimeCursor,
           eq(1000),
@@ -123,7 +127,7 @@ TEST_RUNNER.run({
           {
             query: "Alice Adventure Innovation",
             limit: 2,
-            scoreCursor: response.scoreCusor,
+            scoreCursor: response.scoreCursor,
             createdTimeCursor: response.createdTimeCursor,
           },
           "session1",
@@ -138,7 +142,9 @@ TEST_RUNNER.run({
                 {
                   accountId: "account3",
                   naturalName: "Charlie",
-                  avatarSmallUrl: "https://test.com/avatar3",
+                  avatarLargeUrl: "https://test.com/avatar3",
+                  description:
+                    "Alice whimsical account with a penchant for and innovation and adventure.",
                 },
               ],
             },

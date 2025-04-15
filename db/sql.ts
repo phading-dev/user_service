@@ -1335,14 +1335,15 @@ export interface SearchAccountsRow {
   accountAccountId?: string,
   accountAccountType?: AccountType,
   accountNaturalName?: string,
+  accountDescription?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
+  accountCreatedTimeMs?: number,
   accountPaymentProfileStateVersion?: number,
   accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
-  accountCreatedTimeMs?: number,
   accountFullTextScore?: number,
 }
 
@@ -1365,40 +1366,44 @@ export let SEARCH_ACCOUNTS_ROW: MessageDescriptor<SearchAccountsRow> = {
     index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountContactEmail',
+    name: 'accountDescription',
     index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAvatarSmallFilename',
+    name: 'accountContactEmail',
     index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAvatarLargeFilename',
+    name: 'accountAvatarSmallFilename',
     index: 7,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountLastAccessedTimeMs',
+    name: 'accountAvatarLargeFilename',
     index: 8,
-    primitiveType: PrimitiveType.NUMBER,
+    primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountPaymentProfileStateVersion',
+    name: 'accountLastAccessedTimeMs',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountPaymentProfileState',
+    name: 'accountCreatedTimeMs',
     index: 10,
-    enumType: PAYMENT_PROFILE_STATE,
+    primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountCapabilitiesVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountCreatedTimeMs',
+    name: 'accountPaymentProfileState',
     index: 12,
+    enumType: PAYMENT_PROFILE_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 13,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountFullTextScore',
-    index: 13,
+    index: 14,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1414,7 +1419,7 @@ export async function searchAccounts(
   }
 ): Promise<Array<SearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, Account.createdTimeMs, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (Account.accountType = @accountAccountTypeEq AND SEARCH(Account.fullText, @accountFullTextSearch)) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC, Account.createdTimeMs LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (Account.accountType = @accountAccountTypeEq AND SEARCH(Account.fullText, @accountFullTextSearch)) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC, Account.createdTimeMs LIMIT @limit",
     params: {
       accountAccountTypeEq: args.accountAccountTypeEq == null ? null : Spanner.float(args.accountAccountTypeEq),
       accountFullTextSearch: args.accountFullTextSearch,
@@ -1437,15 +1442,16 @@ export async function searchAccounts(
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
       accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
       accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountCreatedTimeMs: row.at(11).value == null ? undefined : row.at(11).value.valueOf(),
-      accountFullTextScore: row.at(12).value == null ? undefined : row.at(12).value.value,
+      accountDescription: row.at(4).value == null ? undefined : row.at(4).value,
+      accountContactEmail: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarSmallFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountAvatarLargeFilename: row.at(7).value == null ? undefined : row.at(7).value,
+      accountLastAccessedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountCreatedTimeMs: row.at(9).value == null ? undefined : row.at(9).value.valueOf(),
+      accountPaymentProfileStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountPaymentProfileState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, PAYMENT_PROFILE_STATE),
+      accountCapabilitiesVersion: row.at(12).value == null ? undefined : row.at(12).value.value,
+      accountFullTextScore: row.at(13).value == null ? undefined : row.at(13).value.value,
     });
   }
   return resRows;
@@ -1456,14 +1462,15 @@ export interface ContinuedSearchAccountsRow {
   accountAccountId?: string,
   accountAccountType?: AccountType,
   accountNaturalName?: string,
+  accountDescription?: string,
   accountContactEmail?: string,
   accountAvatarSmallFilename?: string,
   accountAvatarLargeFilename?: string,
   accountLastAccessedTimeMs?: number,
+  accountCreatedTimeMs?: number,
   accountPaymentProfileStateVersion?: number,
   accountPaymentProfileState?: PaymentProfileState,
   accountCapabilitiesVersion?: number,
-  accountCreatedTimeMs?: number,
   accountFullTextScore?: number,
 }
 
@@ -1486,40 +1493,44 @@ export let CONTINUED_SEARCH_ACCOUNTS_ROW: MessageDescriptor<ContinuedSearchAccou
     index: 4,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountContactEmail',
+    name: 'accountDescription',
     index: 5,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAvatarSmallFilename',
+    name: 'accountContactEmail',
     index: 6,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountAvatarLargeFilename',
+    name: 'accountAvatarSmallFilename',
     index: 7,
     primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountLastAccessedTimeMs',
+    name: 'accountAvatarLargeFilename',
     index: 8,
-    primitiveType: PrimitiveType.NUMBER,
+    primitiveType: PrimitiveType.STRING,
   }, {
-    name: 'accountPaymentProfileStateVersion',
+    name: 'accountLastAccessedTimeMs',
     index: 9,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountPaymentProfileState',
+    name: 'accountCreatedTimeMs',
     index: 10,
-    enumType: PAYMENT_PROFILE_STATE,
+    primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountCapabilitiesVersion',
+    name: 'accountPaymentProfileStateVersion',
     index: 11,
     primitiveType: PrimitiveType.NUMBER,
   }, {
-    name: 'accountCreatedTimeMs',
+    name: 'accountPaymentProfileState',
     index: 12,
+    enumType: PAYMENT_PROFILE_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 13,
     primitiveType: PrimitiveType.NUMBER,
   }, {
     name: 'accountFullTextScore',
-    index: 13,
+    index: 14,
     primitiveType: PrimitiveType.NUMBER,
   }],
 };
@@ -1540,7 +1551,7 @@ export async function continuedSearchAccounts(
   }
 ): Promise<Array<ContinuedSearchAccountsRow>> {
   let [rows] = await runner.run({
-    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, Account.createdTimeMs, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (Account.accountType = @accountAccountTypeEq AND SEARCH(Account.fullText, @accountFullTextSearch) AND (SCORE(Account.fullText, @accountFullTextScoreWhereLt) < @accountFullTextScoreLt OR (SCORE(Account.fullText, @accountFullTextScoreWhereEq) = @accountFullTextScoreEq AND Account.createdTimeMs > @accountCreatedTimeMsGt))) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC, Account.createdTimeMs LIMIT @limit",
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.description, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.createdTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion, SCORE(Account.fullText, @accountFullTextScoreSelect) FROM Account WHERE (Account.accountType = @accountAccountTypeEq AND SEARCH(Account.fullText, @accountFullTextSearch) AND (SCORE(Account.fullText, @accountFullTextScoreWhereLt) < @accountFullTextScoreLt OR (SCORE(Account.fullText, @accountFullTextScoreWhereEq) = @accountFullTextScoreEq AND Account.createdTimeMs > @accountCreatedTimeMsGt))) ORDER BY SCORE(Account.fullText, @accountFullTextScoreOrderBy) DESC, Account.createdTimeMs LIMIT @limit",
     params: {
       accountAccountTypeEq: args.accountAccountTypeEq == null ? null : Spanner.float(args.accountAccountTypeEq),
       accountFullTextSearch: args.accountFullTextSearch,
@@ -1573,15 +1584,16 @@ export async function continuedSearchAccounts(
       accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
       accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
       accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
-      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
-      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
-      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
-      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
-      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
-      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
-      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
-      accountCreatedTimeMs: row.at(11).value == null ? undefined : row.at(11).value.valueOf(),
-      accountFullTextScore: row.at(12).value == null ? undefined : row.at(12).value.value,
+      accountDescription: row.at(4).value == null ? undefined : row.at(4).value,
+      accountContactEmail: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarSmallFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountAvatarLargeFilename: row.at(7).value == null ? undefined : row.at(7).value,
+      accountLastAccessedTimeMs: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountCreatedTimeMs: row.at(9).value == null ? undefined : row.at(9).value.valueOf(),
+      accountPaymentProfileStateVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+      accountPaymentProfileState: row.at(11).value == null ? undefined : toEnumFromNumber(row.at(11).value.value, PAYMENT_PROFILE_STATE),
+      accountCapabilitiesVersion: row.at(12).value == null ? undefined : row.at(12).value.value,
+      accountFullTextScore: row.at(13).value == null ? undefined : row.at(13).value.value,
     });
   }
   return resRows;
