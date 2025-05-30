@@ -117,7 +117,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         ContentType: "image/png",
       },
     });
-    pipeline(
+    await pipeline(
       sharp(data).resize(width, height, { fit: "contain" }).png({
         progressive: true,
         compressionLevel: 9,

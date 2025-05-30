@@ -18,7 +18,13 @@ import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertThat, eq, isArray } from "@selfage/test_matcher";
+import {
+  assertReject,
+  assertThat,
+  eq,
+  eqError,
+  isArray,
+} from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 import { createReadStream } from "fs";
 
@@ -201,6 +207,56 @@ TEST_RUNNER.run({
           await transaction.commit();
         });
         await cleanupFiles(["account1l.png", "account1s.png"]);
+      },
+    },
+    {
+      name: "NonImageFileUpload",
+      execute: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              avatarSmallFilename: "account1s.png",
+              avatarLargeFilename: "account1l.png",
+              createdTimeMs: 1000,
+            }),
+          ]);
+          await transaction.commit();
+        });
+        let clientMock = new NodeServiceClientMock();
+        clientMock.response = {
+          accountId: "account1",
+        } as FetchSessionAndCheckCapabilityResponse;
+        let handler = new UploadAccountAvatarHandler(
+          SPANNER_DATABASE,
+          S3_CLIENT,
+          clientMock,
+        );
+
+        // Execute
+        let error = await assertReject(
+          handler.handle(
+            "",
+            createReadStream(path.join("test_data", "non_image.txt")),
+            "session1",
+          ),
+        );
+
+        // Verify
+        assertThat(
+          error,
+          eqError(new Error("Input buffer contains unsupported image format")),
+          "error",
+        );
+      },
+      tearDown: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
+          await transaction.commit();
+        });
       },
     },
   ],
