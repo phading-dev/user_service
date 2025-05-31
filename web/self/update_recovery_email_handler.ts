@@ -38,8 +38,9 @@ export class UpdateRecoveryEmailHandler extends UpdateRecoveryEmailHandlerInterf
     if (!body.currentPassword) {
       throw newBadRequestError(`"currentPassword" is required.`);
     }
+    body.newEmail = (body.newEmail ?? "").trim();
     if (!body.newEmail) {
-      throw newBadRequestError(`"newEmail" is required.`);
+      throw newBadRequestError(`"newEmail" cannot be empty.`);
     }
     if (body.newEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"newEmail" is too long.`);

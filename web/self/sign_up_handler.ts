@@ -47,14 +47,16 @@ export class SignUpHandler extends SignUpHandlerInterface {
     loggingPrefix: string,
     body: SignUpRequestBody,
   ): Promise<SignUpResponse> {
+    body.username = (body.username ?? "").trim();
     if (!body.username) {
-      throw newBadRequestError(`"username" is required.`);
+      throw newBadRequestError(`"username" cannot be empty.`);
     }
     if (body.username.length > MAX_USERNAME_LENGTH) {
       throw newBadRequestError(`"username" is too long.`);
     }
+    body.recoveryEmail = (body.recoveryEmail ?? "").trim();
     if (!body.recoveryEmail) {
-      throw newBadRequestError(`"recoveryEmail" is required.`);
+      throw newBadRequestError(`"recoveryEmail" cannot be empty.`);
     }
     if (body.recoveryEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"recoveryEmail" is too long.`);
@@ -65,14 +67,16 @@ export class SignUpHandler extends SignUpHandlerInterface {
     if (body.password.length > MAX_PASSWORD_LENGTH) {
       throw newBadRequestError(`"password" is too long.`);
     }
+    body.naturalName = (body.naturalName ?? "").trim();
     if (!body.naturalName) {
-      throw newBadRequestError(`"naturalName" is required.`);
+      throw newBadRequestError(`"naturalName" cannot be empty.`);
     }
     if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
       throw newBadRequestError(`"naturalName" is too long.`);
     }
+    body.contactEmail = (body.contactEmail ?? "").trim();
     if (!body.contactEmail) {
-      throw newBadRequestError(`"contactEmail" is required.`);
+      throw newBadRequestError(`"contactEmail" cannot be empty.`);
     }
     if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);

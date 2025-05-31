@@ -50,14 +50,16 @@ export class CreateAccountHandler extends CreateAccountHandlerInterface {
     body: CreateAccountRequestBody,
     authStr: string,
   ): Promise<CreateAccountResponse> {
+    body.naturalName = (body.naturalName ?? "").trim();
     if (!body.naturalName) {
-      throw newBadRequestError(`"naturalName" is required.`);
+      throw newBadRequestError(`"naturalName" cannot be empty.`);
     }
     if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
       throw newBadRequestError(`"naturalName" is too long.`);
     }
+    body.contactEmail = (body.contactEmail ?? "").trim();
     if (!body.contactEmail) {
-      throw newBadRequestError(`"contactEmail" is required.`);
+      throw newBadRequestError(`"contactEmail" cannot be empty.`);
     }
     if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
       throw newBadRequestError(`"contactEmail" is too long.`);

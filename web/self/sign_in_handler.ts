@@ -44,13 +44,13 @@ export class SignInHandler extends SignInHandlerInterface {
     loggingPrefix: string,
     body: SignInRequestBody,
   ): Promise<SignInResponse> {
+    body.username = (body.username ?? "").trim();
     if (!body.username) {
-      throw newBadRequestError(`"username" is required.`);
+      throw newBadRequestError(`"username" cannot be empty.`);
     }
     if (!body.password) {
       throw newBadRequestError(`"password" is required.`);
     }
-
     let rows = await getUserByUsername(this.database, {
       userUsernameEq: body.username,
     });
