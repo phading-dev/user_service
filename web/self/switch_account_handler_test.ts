@@ -17,11 +17,9 @@ import {
   FETCH_SESSION_AND_CHECK_CAPABILITY,
   FetchSessionAndCheckCapabilityResponse,
 } from "@phading/user_session_service_interface/node/interface";
-import { newForbiddenError, newNotFoundError } from "@selfage/http_error";
-import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertReject, assertThat, isArray } from "@selfage/test_matcher";
+import { assertThat, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
@@ -157,21 +155,24 @@ TEST_RUNNER.run({
         );
 
         // Execute
-        let error = await assertReject(
-          handler.handle(
-            "",
-            {
-              accountId: "account1",
-            },
-            "session1",
-          ),
+        let response = await handler.handle(
+          "",
+          {
+            accountId: "account1",
+          },
+          "session1",
         );
 
         // Verify
         assertThat(
-          error,
-          eqHttpError(newNotFoundError("Account account1 is not found")),
-          "error",
+          response,
+          eqMessage(
+            {
+              notFound: true,
+            },
+            SWITCH_ACCOUNT_RESPONSE,
+          ),
+          "response",
         );
       },
       tearDown: async () => {},
@@ -210,21 +211,24 @@ TEST_RUNNER.run({
         );
 
         // Execute
-        let error = await assertReject(
-          handler.handle(
-            "",
-            {
-              accountId: "account1",
-            },
-            "session1",
-          ),
+        let response = await handler.handle(
+          "",
+          {
+            accountId: "account1",
+          },
+          "session1",
         );
 
         // Verify
         assertThat(
-          error,
-          eqHttpError(newForbiddenError("owned by a different user")),
-          "error",
+          response,
+          eqMessage(
+            {
+              notFound: true,
+            },
+            SWITCH_ACCOUNT_RESPONSE,
+          ),
+          "response",
         );
       },
       tearDown: async () => {

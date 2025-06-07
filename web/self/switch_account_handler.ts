@@ -2,7 +2,7 @@ import { toCapabilities } from "../../common/capabilities_converter";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
-  getAccountMain,
+  getOwnedAccountMain,
   updateAccountLastAccessedTimeStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
@@ -15,11 +15,7 @@ import {
   newCreateSessionRequest,
   newFetchSessionAndCheckCapabilityRequest,
 } from "@phading/user_session_service_interface/node/client";
-import {
-  newBadRequestError,
-  newForbiddenError,
-  newNotFoundError,
-} from "@selfage/http_error";
+import { newBadRequestError } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
@@ -50,19 +46,16 @@ export class SwitchAccountHandler extends SwitchAccountHandlerInterface {
         signedSession: authStr,
       }),
     );
-    let rows = await getAccountMain(this.database, {
+    let rows = await getOwnedAccountMain(this.database, {
+      accountUserIdEq: userId,
       accountAccountIdEq: body.accountId,
     });
     if (rows.length === 0) {
-      throw newNotFoundError(`Account ${body.accountId} is not found.`);
+      return {
+        notFound: true,
+      };
     }
     let row = rows[0];
-    if (row.accountUserId !== userId) {
-      throw newForbiddenError(
-        `Not authorized to switch to account ${body.accountId} owned by a different user.`,
-      );
-    }
-
     let [_, response] = await Promise.all([
       this.updateLastAccessedTimestmap(body.accountId),
       this.serviceClient.send(

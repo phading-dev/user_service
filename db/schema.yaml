@@ -309,6 +309,17 @@
         lColumn: accountId
       get:
         - columnGroup: main
+    - name: GetOwnedAccountMain
+      from: Account
+      where:
+        op: AND
+        exprs:
+          - op: =
+            lColumn: userId
+          - op: =
+            lColumn: accountId
+      get:
+        - columnGroup: main
     - name: GetUserAndAccountAll
       from: User
       as: u

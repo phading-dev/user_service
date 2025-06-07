@@ -1696,6 +1696,106 @@ export async function getAccountMain(
   return resRows;
 }
 
+export interface GetOwnedAccountMainRow {
+  accountUserId?: string,
+  accountAccountId?: string,
+  accountAccountType?: AccountType,
+  accountNaturalName?: string,
+  accountContactEmail?: string,
+  accountAvatarSmallFilename?: string,
+  accountAvatarLargeFilename?: string,
+  accountLastAccessedTimeMs?: number,
+  accountPaymentProfileStateVersion?: number,
+  accountPaymentProfileState?: PaymentProfileState,
+  accountCapabilitiesVersion?: number,
+}
+
+export let GET_OWNED_ACCOUNT_MAIN_ROW: MessageDescriptor<GetOwnedAccountMainRow> = {
+  name: 'GetOwnedAccountMainRow',
+  fields: [{
+    name: 'accountUserId',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountId',
+    index: 2,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAccountType',
+    index: 3,
+    enumType: ACCOUNT_TYPE,
+  }, {
+    name: 'accountNaturalName',
+    index: 4,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountContactEmail',
+    index: 5,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarSmallFilename',
+    index: 6,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountAvatarLargeFilename',
+    index: 7,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'accountLastAccessedTimeMs',
+    index: 8,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountPaymentProfileStateVersion',
+    index: 9,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'accountPaymentProfileState',
+    index: 10,
+    enumType: PAYMENT_PROFILE_STATE,
+  }, {
+    name: 'accountCapabilitiesVersion',
+    index: 11,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getOwnedAccountMain(
+  runner: Database | Transaction,
+  args: {
+    accountUserIdEq: string,
+    accountAccountIdEq: string,
+  }
+): Promise<Array<GetOwnedAccountMainRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT Account.userId, Account.accountId, Account.accountType, Account.naturalName, Account.contactEmail, Account.avatarSmallFilename, Account.avatarLargeFilename, Account.lastAccessedTimeMs, Account.paymentProfileStateVersion, Account.paymentProfileState, Account.capabilitiesVersion FROM Account WHERE (Account.userId = @accountUserIdEq AND Account.accountId = @accountAccountIdEq)",
+    params: {
+      accountUserIdEq: args.accountUserIdEq,
+      accountAccountIdEq: args.accountAccountIdEq,
+    },
+    types: {
+      accountUserIdEq: { type: "string" },
+      accountAccountIdEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetOwnedAccountMainRow>();
+  for (let row of rows) {
+    resRows.push({
+      accountUserId: row.at(0).value == null ? undefined : row.at(0).value,
+      accountAccountId: row.at(1).value == null ? undefined : row.at(1).value,
+      accountAccountType: row.at(2).value == null ? undefined : toEnumFromNumber(row.at(2).value.value, ACCOUNT_TYPE),
+      accountNaturalName: row.at(3).value == null ? undefined : row.at(3).value,
+      accountContactEmail: row.at(4).value == null ? undefined : row.at(4).value,
+      accountAvatarSmallFilename: row.at(5).value == null ? undefined : row.at(5).value,
+      accountAvatarLargeFilename: row.at(6).value == null ? undefined : row.at(6).value,
+      accountLastAccessedTimeMs: row.at(7).value == null ? undefined : row.at(7).value.value,
+      accountPaymentProfileStateVersion: row.at(8).value == null ? undefined : row.at(8).value.value,
+      accountPaymentProfileState: row.at(9).value == null ? undefined : toEnumFromNumber(row.at(9).value.value, PAYMENT_PROFILE_STATE),
+      accountCapabilitiesVersion: row.at(10).value == null ? undefined : row.at(10).value.value,
+    });
+  }
+  return resRows;
+}
+
 export interface GetUserAndAccountAllRow {
   userUserId?: string,
   userUsername?: string,
