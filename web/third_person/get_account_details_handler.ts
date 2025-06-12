@@ -13,13 +13,13 @@ export class GetAccountDetailsHandler extends GetAccountDetailsHandlerInterface 
   public static create(): GetAccountDetailsHandler {
     return new GetAccountDetailsHandler(
       SPANNER_DATABASE,
-      ENV_VARS.r2AvatarPublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessOrigin,
     );
   }
 
   public constructor(
     private database: Database,
-    private publicAccessDomain: string,
+    private publicAccessOrigin: string,
   ) {
     super();
   }
@@ -42,7 +42,7 @@ export class GetAccountDetailsHandler extends GetAccountDetailsHandlerInterface 
       account: {
         accountId: account.accountAccountId,
         naturalName: account.accountNaturalName,
-        avatarLargeUrl: `${this.publicAccessDomain}/${account.accountAvatarLargeFilename}`,
+        avatarLargeUrl: `${this.publicAccessOrigin}/${account.accountAvatarLargeFilename}`,
         description: account.accountDescription,
       },
     };

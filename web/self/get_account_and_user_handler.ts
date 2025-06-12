@@ -17,14 +17,14 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
     return new GetAccountAndUserHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ENV_VARS.r2AvatarPublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessOrigin,
     );
   }
 
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,
-    private publicAccessDomain: string,
+    private publicAccessOrigin: string,
   ) {
     super();
   }
@@ -56,7 +56,7 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
         naturalName: row.accountNaturalName,
         contactEmail: row.accountContactEmail,
         description: row.accountDescription,
-        avatarLargeUrl: `${this.publicAccessDomain}/${row.accountAvatarLargeFilename}`,
+        avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
       },
     };
   }

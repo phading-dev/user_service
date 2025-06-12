@@ -24,14 +24,14 @@ export class SearchPublishersHandler extends SearchPublishersHandlerInterface {
     return new SearchPublishersHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ENV_VARS.r2AvatarPublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessOrigin,
     );
   }
 
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,
-    private publicAccessDomain: string,
+    private publicAccessOrigin: string,
   ) {
     super();
   }
@@ -81,7 +81,7 @@ export class SearchPublishersHandler extends SearchPublishersHandlerInterface {
         (row): AccountDetails => ({
           accountId: row.accountAccountId,
           naturalName: row.accountNaturalName,
-          avatarLargeUrl: `${this.publicAccessDomain}/${row.accountAvatarLargeFilename}`,
+          avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
           description: row.accountDescription,
         }),
       ),

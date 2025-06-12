@@ -18,14 +18,14 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
     return new ListAccountsHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
-      ENV_VARS.r2AvatarPublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessOrigin,
     );
   }
 
   public constructor(
     private database: Database,
     private serviceClient: NodeServiceClient,
-    private publicAccessDomain: string,
+    private publicAccessOrigin: string,
   ) {
     super();
   }
@@ -50,7 +50,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
           accountId: row.accountAccountId,
           accountType: row.accountAccountType,
           naturalName: row.accountNaturalName,
-          avatarSmallUrl: `${this.publicAccessDomain}/${row.accountAvatarSmallFilename}`,
+          avatarSmallUrl: `${this.publicAccessOrigin}/${row.accountAvatarSmallFilename}`,
         };
       }),
     };

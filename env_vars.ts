@@ -5,8 +5,8 @@ export interface EnvVars extends ClusterEnvVars {
   spannerDatabaseId?: string;
   passwordSignerSecretFile?: string;
   r2AvatarBucketName?: string;
-  // Including https:// without a trailing slash
-  r2AvatarPublicAccessDomain?: string;
+  // Without trailing slash
+  r2AvatarPublicAccessOrigin?: string;
   releaseServiceName?: string;
   port?: number;
   builderAccount?: string;

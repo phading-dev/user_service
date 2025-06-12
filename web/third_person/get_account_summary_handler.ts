@@ -13,13 +13,13 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
   public static create(): GetAccountSummaryHandler {
     return new GetAccountSummaryHandler(
       SPANNER_DATABASE,
-      ENV_VARS.r2AvatarPublicAccessDomain,
+      ENV_VARS.r2AvatarPublicAccessOrigin,
     );
   }
 
   public constructor(
     private database: Database,
-    private publicAccessDomain: string,
+    private publicAccessOrigin: string,
   ) {
     super();
   }
@@ -42,7 +42,7 @@ export class GetAccountSummaryHandler extends GetAccountSummaryHandlerInterface 
       account: {
         accountId: account.accountAccountId,
         naturalName: account.accountNaturalName,
-        avatarSmallUrl: `${this.publicAccessDomain}/${account.accountAvatarSmallFilename}`,
+        avatarSmallUrl: `${this.publicAccessOrigin}/${account.accountAvatarSmallFilename}`,
       },
     };
   }
