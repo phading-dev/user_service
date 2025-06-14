@@ -50,7 +50,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
           accountId: row.accountAccountId,
           accountType: row.accountAccountType,
           naturalName: row.accountNaturalName,
-          avatarSmallUrl: `${this.publicAccessOrigin}/${row.accountAvatarSmallFilename}`,
+          avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
         };
       }),
     };
