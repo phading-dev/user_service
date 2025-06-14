@@ -6,3 +6,5 @@ ENV_VARS.spannerInstanceId = ENV_VARS.balancedSpannerInstanceId;
 ENV_VARS.r2AvatarBucketName = "avatar-dev";
 ENV_VARS.r2AvatarPublicAccessOrigin = "https://avatar-dev.secount.com";
 ENV_VARS.replicas = 1;
+ENV_VARS.cpu = "200m";
+ENV_VARS.memory = "256Mi";
