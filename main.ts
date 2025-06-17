@@ -4,6 +4,7 @@ import { initS3Client } from "./common/s3_client";
 import { ENV_VARS } from "./env_vars";
 import { GetAccountContactHandler } from "./node/get_account_contact_handler";
 import { ListAccountCapabilitiesUpdatingTasksHandler } from "./node/list_account_capabilities_updating_tasks_handler";
+import { ListAvatarImageDeletingTasksHandler } from "./node/list_avatar_image_deleting_tasks_handler";
 import { ListPaymentProfileCreatingTasksHandler } from "./node/list_payment_profile_creating_tasks_handler";
 import { ListPayoutProfileCreatingTasksHandler } from "./node/list_payout_profile_creating_tasks_handler";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./node/process_account_capabilities_updating_task_handler";
@@ -46,6 +47,7 @@ async function main() {
     .addHandlerRegister(USER_NODE_SERVICE)
     .add(GetAccountContactHandler.create())
     .add(ListAccountCapabilitiesUpdatingTasksHandler.create())
+    .add(ListAvatarImageDeletingTasksHandler.create())
     .add(ListPaymentProfileCreatingTasksHandler.create())
     .add(ListPayoutProfileCreatingTasksHandler.create())
     .add(ProcessAccountCapabilitiesUpdatingTaskHandler.create())
