@@ -394,6 +394,75 @@ export function updateVideoPlayerSettingsStatement(
   };
 }
 
+export function insertAvatarImageFileStatement(
+  args: {
+    r2Filename: string,
+  }
+): Statement {
+  return {
+    sql: "INSERT AvatarImageFile (r2Filename) VALUES (@r2Filename)",
+    params: {
+      r2Filename: args.r2Filename,
+    },
+    types: {
+      r2Filename: { type: "string" },
+    }
+  };
+}
+
+export function deleteAvatarImageFileStatement(
+  args: {
+    avatarImageFileR2FilenameEq: string,
+  }
+): Statement {
+  return {
+    sql: "DELETE AvatarImageFile WHERE (AvatarImageFile.r2Filename = @avatarImageFileR2FilenameEq)",
+    params: {
+      avatarImageFileR2FilenameEq: args.avatarImageFileR2FilenameEq,
+    },
+    types: {
+      avatarImageFileR2FilenameEq: { type: "string" },
+    }
+  };
+}
+
+export interface GetAvatarImageFileRow {
+  avatarImageFileR2Filename?: string,
+}
+
+export let GET_AVATAR_IMAGE_FILE_ROW: MessageDescriptor<GetAvatarImageFileRow> = {
+  name: 'GetAvatarImageFileRow',
+  fields: [{
+    name: 'avatarImageFileR2Filename',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
+
+export async function getAvatarImageFile(
+  runner: Database | Transaction,
+  args: {
+    avatarImageFileR2FilenameEq: string,
+  }
+): Promise<Array<GetAvatarImageFileRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AvatarImageFile.r2Filename FROM AvatarImageFile WHERE (AvatarImageFile.r2Filename = @avatarImageFileR2FilenameEq)",
+    params: {
+      avatarImageFileR2FilenameEq: args.avatarImageFileR2FilenameEq,
+    },
+    types: {
+      avatarImageFileR2FilenameEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetAvatarImageFileRow>();
+  for (let row of rows) {
+    resRows.push({
+      avatarImageFileR2Filename: row.at(0).value == null ? undefined : row.at(0).value,
+    });
+  }
+  return resRows;
+}
+
 export function insertAccountCapabilitiesUpdatingTaskStatement(
   args: {
     accountId: string,
@@ -1009,6 +1078,204 @@ export function updatePayoutProfileCreatingTaskMetadataStatement(
     },
     types: {
       payoutProfileCreatingTaskAccountIdEq: { type: "string" },
+      setRetryCount: { type: "float64" },
+      setExecutionTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
+export function insertAvatarImageDeletingTaskStatement(
+  args: {
+    r2Filename: string,
+    retryCount?: number,
+    executionTimeMs?: number,
+    createdTimeMs?: number,
+  }
+): Statement {
+  return {
+    sql: "INSERT AvatarImageDeletingTask (r2Filename, retryCount, executionTimeMs, createdTimeMs) VALUES (@r2Filename, @retryCount, @executionTimeMs, @createdTimeMs)",
+    params: {
+      r2Filename: args.r2Filename,
+      retryCount: args.retryCount == null ? null : Spanner.float(args.retryCount),
+      executionTimeMs: args.executionTimeMs == null ? null : new Date(args.executionTimeMs).toISOString(),
+      createdTimeMs: args.createdTimeMs == null ? null : new Date(args.createdTimeMs).toISOString(),
+    },
+    types: {
+      r2Filename: { type: "string" },
+      retryCount: { type: "float64" },
+      executionTimeMs: { type: "timestamp" },
+      createdTimeMs: { type: "timestamp" },
+    }
+  };
+}
+
+export function deleteAvatarImageDeletingTaskStatement(
+  args: {
+    avatarImageDeletingTaskR2FilenameEq: string,
+  }
+): Statement {
+  return {
+    sql: "DELETE AvatarImageDeletingTask WHERE (AvatarImageDeletingTask.r2Filename = @avatarImageDeletingTaskR2FilenameEq)",
+    params: {
+      avatarImageDeletingTaskR2FilenameEq: args.avatarImageDeletingTaskR2FilenameEq,
+    },
+    types: {
+      avatarImageDeletingTaskR2FilenameEq: { type: "string" },
+    }
+  };
+}
+
+export interface GetAvatarImageDeletingTaskRow {
+  avatarImageDeletingTaskR2Filename?: string,
+  avatarImageDeletingTaskRetryCount?: number,
+  avatarImageDeletingTaskExecutionTimeMs?: number,
+  avatarImageDeletingTaskCreatedTimeMs?: number,
+}
+
+export let GET_AVATAR_IMAGE_DELETING_TASK_ROW: MessageDescriptor<GetAvatarImageDeletingTaskRow> = {
+  name: 'GetAvatarImageDeletingTaskRow',
+  fields: [{
+    name: 'avatarImageDeletingTaskR2Filename',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }, {
+    name: 'avatarImageDeletingTaskRetryCount',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'avatarImageDeletingTaskExecutionTimeMs',
+    index: 3,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'avatarImageDeletingTaskCreatedTimeMs',
+    index: 4,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getAvatarImageDeletingTask(
+  runner: Database | Transaction,
+  args: {
+    avatarImageDeletingTaskR2FilenameEq: string,
+  }
+): Promise<Array<GetAvatarImageDeletingTaskRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AvatarImageDeletingTask.r2Filename, AvatarImageDeletingTask.retryCount, AvatarImageDeletingTask.executionTimeMs, AvatarImageDeletingTask.createdTimeMs FROM AvatarImageDeletingTask WHERE (AvatarImageDeletingTask.r2Filename = @avatarImageDeletingTaskR2FilenameEq)",
+    params: {
+      avatarImageDeletingTaskR2FilenameEq: args.avatarImageDeletingTaskR2FilenameEq,
+    },
+    types: {
+      avatarImageDeletingTaskR2FilenameEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetAvatarImageDeletingTaskRow>();
+  for (let row of rows) {
+    resRows.push({
+      avatarImageDeletingTaskR2Filename: row.at(0).value == null ? undefined : row.at(0).value,
+      avatarImageDeletingTaskRetryCount: row.at(1).value == null ? undefined : row.at(1).value.value,
+      avatarImageDeletingTaskExecutionTimeMs: row.at(2).value == null ? undefined : row.at(2).value.valueOf(),
+      avatarImageDeletingTaskCreatedTimeMs: row.at(3).value == null ? undefined : row.at(3).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export interface ListPendingAvatarImageDeletingTasksRow {
+  avatarImageDeletingTaskR2Filename?: string,
+}
+
+export let LIST_PENDING_AVATAR_IMAGE_DELETING_TASKS_ROW: MessageDescriptor<ListPendingAvatarImageDeletingTasksRow> = {
+  name: 'ListPendingAvatarImageDeletingTasksRow',
+  fields: [{
+    name: 'avatarImageDeletingTaskR2Filename',
+    index: 1,
+    primitiveType: PrimitiveType.STRING,
+  }],
+};
+
+export async function listPendingAvatarImageDeletingTasks(
+  runner: Database | Transaction,
+  args: {
+    avatarImageDeletingTaskExecutionTimeMsLe?: number,
+  }
+): Promise<Array<ListPendingAvatarImageDeletingTasksRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AvatarImageDeletingTask.r2Filename FROM AvatarImageDeletingTask WHERE AvatarImageDeletingTask.executionTimeMs <= @avatarImageDeletingTaskExecutionTimeMsLe",
+    params: {
+      avatarImageDeletingTaskExecutionTimeMsLe: args.avatarImageDeletingTaskExecutionTimeMsLe == null ? null : new Date(args.avatarImageDeletingTaskExecutionTimeMsLe).toISOString(),
+    },
+    types: {
+      avatarImageDeletingTaskExecutionTimeMsLe: { type: "timestamp" },
+    }
+  });
+  let resRows = new Array<ListPendingAvatarImageDeletingTasksRow>();
+  for (let row of rows) {
+    resRows.push({
+      avatarImageDeletingTaskR2Filename: row.at(0).value == null ? undefined : row.at(0).value,
+    });
+  }
+  return resRows;
+}
+
+export interface GetAvatarImageDeletingTaskMetadataRow {
+  avatarImageDeletingTaskRetryCount?: number,
+  avatarImageDeletingTaskExecutionTimeMs?: number,
+}
+
+export let GET_AVATAR_IMAGE_DELETING_TASK_METADATA_ROW: MessageDescriptor<GetAvatarImageDeletingTaskMetadataRow> = {
+  name: 'GetAvatarImageDeletingTaskMetadataRow',
+  fields: [{
+    name: 'avatarImageDeletingTaskRetryCount',
+    index: 1,
+    primitiveType: PrimitiveType.NUMBER,
+  }, {
+    name: 'avatarImageDeletingTaskExecutionTimeMs',
+    index: 2,
+    primitiveType: PrimitiveType.NUMBER,
+  }],
+};
+
+export async function getAvatarImageDeletingTaskMetadata(
+  runner: Database | Transaction,
+  args: {
+    avatarImageDeletingTaskR2FilenameEq: string,
+  }
+): Promise<Array<GetAvatarImageDeletingTaskMetadataRow>> {
+  let [rows] = await runner.run({
+    sql: "SELECT AvatarImageDeletingTask.retryCount, AvatarImageDeletingTask.executionTimeMs FROM AvatarImageDeletingTask WHERE (AvatarImageDeletingTask.r2Filename = @avatarImageDeletingTaskR2FilenameEq)",
+    params: {
+      avatarImageDeletingTaskR2FilenameEq: args.avatarImageDeletingTaskR2FilenameEq,
+    },
+    types: {
+      avatarImageDeletingTaskR2FilenameEq: { type: "string" },
+    }
+  });
+  let resRows = new Array<GetAvatarImageDeletingTaskMetadataRow>();
+  for (let row of rows) {
+    resRows.push({
+      avatarImageDeletingTaskRetryCount: row.at(0).value == null ? undefined : row.at(0).value.value,
+      avatarImageDeletingTaskExecutionTimeMs: row.at(1).value == null ? undefined : row.at(1).value.valueOf(),
+    });
+  }
+  return resRows;
+}
+
+export function updateAvatarImageDeletingTaskMetadataStatement(
+  args: {
+    avatarImageDeletingTaskR2FilenameEq: string,
+    setRetryCount?: number,
+    setExecutionTimeMs?: number,
+  }
+): Statement {
+  return {
+    sql: "UPDATE AvatarImageDeletingTask SET retryCount = @setRetryCount, executionTimeMs = @setExecutionTimeMs WHERE (AvatarImageDeletingTask.r2Filename = @avatarImageDeletingTaskR2FilenameEq)",
+    params: {
+      avatarImageDeletingTaskR2FilenameEq: args.avatarImageDeletingTaskR2FilenameEq,
+      setRetryCount: args.setRetryCount == null ? null : Spanner.float(args.setRetryCount),
+      setExecutionTimeMs: args.setExecutionTimeMs == null ? null : new Date(args.setExecutionTimeMs).toISOString(),
+    },
+    types: {
+      avatarImageDeletingTaskR2FilenameEq: { type: "string" },
       setRetryCount: { type: "float64" },
       setExecutionTimeMs: { type: "timestamp" },
     }

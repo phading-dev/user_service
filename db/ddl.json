@@ -90,6 +90,14 @@
     "createTableDdl": "CREATE TABLE VideoPlayerSettings (accountId STRING(MAX) NOT NULL, settings BYTES(MAX)) PRIMARY KEY (accountId ASC)",
     "indexes": []
   }, {
+    "name": "AvatarImageFile",
+    "columns": [{
+      "name": "r2Filename",
+      "addColumnDdl": "ALTER TABLE AvatarImageFile ADD COLUMN r2Filename STRING(MAX) NOT NULL"
+    }],
+    "createTableDdl": "CREATE TABLE AvatarImageFile (r2Filename STRING(MAX) NOT NULL) PRIMARY KEY (r2Filename ASC)",
+    "indexes": []
+  }, {
     "name": "AccountCapabilitiesUpdatingTask",
     "columns": [{
       "name": "accountId",
@@ -151,6 +159,26 @@
     "indexes": [{
       "name": "PayoutProfileCreatingTaskByExecutionTimeMs",
       "createIndexDdl": "CREATE INDEX PayoutProfileCreatingTaskByExecutionTimeMs ON PayoutProfileCreatingTask(executionTimeMs)"
+    }]
+  }, {
+    "name": "AvatarImageDeletingTask",
+    "columns": [{
+      "name": "r2Filename",
+      "addColumnDdl": "ALTER TABLE AvatarImageDeletingTask ADD COLUMN r2Filename STRING(MAX) NOT NULL"
+    }, {
+      "name": "retryCount",
+      "addColumnDdl": "ALTER TABLE AvatarImageDeletingTask ADD COLUMN retryCount FLOAT64"
+    }, {
+      "name": "executionTimeMs",
+      "addColumnDdl": "ALTER TABLE AvatarImageDeletingTask ADD COLUMN executionTimeMs TIMESTAMP"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE AvatarImageDeletingTask ADD COLUMN createdTimeMs TIMESTAMP"
+    }],
+    "createTableDdl": "CREATE TABLE AvatarImageDeletingTask (r2Filename STRING(MAX) NOT NULL, retryCount FLOAT64, executionTimeMs TIMESTAMP, createdTimeMs TIMESTAMP) PRIMARY KEY (r2Filename ASC)",
+    "indexes": [{
+      "name": "AvatarImageDeletingTaskByExecutionTimeMs",
+      "createIndexDdl": "CREATE INDEX AvatarImageDeletingTaskByExecutionTimeMs ON AvatarImageDeletingTask(executionTimeMs)"
     }]
   }]
 }

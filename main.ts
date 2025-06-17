@@ -7,6 +7,7 @@ import { ListAccountCapabilitiesUpdatingTasksHandler } from "./node/list_account
 import { ListPaymentProfileCreatingTasksHandler } from "./node/list_payment_profile_creating_tasks_handler";
 import { ListPayoutProfileCreatingTasksHandler } from "./node/list_payout_profile_creating_tasks_handler";
 import { ProcessAccountCapabilitiesUpdatingTaskHandler } from "./node/process_account_capabilities_updating_task_handler";
+import { ProcessAvatarImageDeletingTaskHandler } from "./node/process_avatar_image_deleting_task_handler";
 import { ProcessPaymentProfileCreatingTaskHandler } from "./node/process_payment_profile_creating_task_handler";
 import { ProcessPayoutProfileCreatingTaskHandler } from "./node/process_payout_profile_creating_tasks_handler";
 import { SyncPaymentProfileStateHandler } from "./node/sync_payment_profile_state_handler";
@@ -48,6 +49,7 @@ async function main() {
     .add(ListPaymentProfileCreatingTasksHandler.create())
     .add(ListPayoutProfileCreatingTasksHandler.create())
     .add(ProcessAccountCapabilitiesUpdatingTaskHandler.create())
+    .add(ProcessAvatarImageDeletingTaskHandler.create())
     .add(ProcessPaymentProfileCreatingTaskHandler.create())
     .add(ProcessPayoutProfileCreatingTaskHandler.create())
     .add(SyncPaymentProfileStateHandler.create());

@@ -1,5 +1,6 @@
 import "../node/get_account_contact_handler_test";
 import "../node/process_account_capabilities_updating_task_handler_test";
+import "../node/process_avatar_image_deleting_task_handler_test";
 import "../node/process_payment_profile_creating_task_handler_test";
 import "../node/process_payout_profile_creating_tasks_handler_test";
 import "../node/sync_payment_profile_state_handler_test";

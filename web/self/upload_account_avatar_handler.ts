@@ -1,11 +1,22 @@
+import crypto = require("crypto");
 import getStream = require("get-stream");
 import sharp = require("sharp");
 import stream = require("stream");
-import { DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME } from "../../common/constants";
+import {
+  DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME,
+  DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
+} from "../../common/constants";
 import { S3_CLIENT } from "../../common/s3_client";
 import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
-import { getAccountMain, updateAccountAvatarStatement } from "../../db/sql";
+import {
+  deleteAvatarImageDeletingTaskStatement,
+  getAccountMain,
+  insertAvatarImageDeletingTaskStatement,
+  insertAvatarImageFileStatement,
+  updateAccountAvatarStatement,
+  updateAvatarImageDeletingTaskMetadataStatement,
+} from "../../db/sql";
 import { ENV_VARS } from "../../env_vars";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -30,13 +41,21 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
       SPANNER_DATABASE,
       S3_CLIENT,
       SERVICE_CLIENT,
+      () => Date.now(),
+      () => crypto.randomUUID(),
     );
   }
+
+  private static ONE_YEAR_IN_MS = 365 * 24 * 60 * 60 * 1000;
+  private static DELAY_TO_CLEAN_UP_ON_ERROR_MS = 5 * 60 * 1000;
+  public interfereFn: () => Promise<void> = () => Promise.resolve();
 
   public constructor(
     private database: Database,
     private s3Client: Ref<S3Client>,
     private serviceClient: NodeServiceClient,
+    private getNow: () => number,
+    private generateUuid: () => string,
   ) {
     super();
   }
@@ -51,8 +70,93 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         signedSession: authStr,
       }),
     );
-    let avatarSmallFilename: string;
-    let avatarLargeFilename: string;
+    let avatarSmallFilename = this.generateUuid();
+    let avatarLargeFilename = this.generateUuid();
+    await this.database.runTransactionAsync(async (transaction) => {
+      let now = this.getNow();
+      await transaction.batchUpdate([
+        insertAvatarImageFileStatement({
+          r2Filename: avatarSmallFilename,
+        }),
+        insertAvatarImageFileStatement({
+          r2Filename: avatarLargeFilename,
+        }),
+        insertAvatarImageDeletingTaskStatement({
+          r2Filename: avatarSmallFilename,
+          retryCount: 0,
+          executionTimeMs: now + UploadAccountAvatarHandler.ONE_YEAR_IN_MS,
+          createdTimeMs: now,
+        }),
+        insertAvatarImageDeletingTaskStatement({
+          r2Filename: avatarLargeFilename,
+          retryCount: 0,
+          executionTimeMs: now + UploadAccountAvatarHandler.ONE_YEAR_IN_MS,
+          createdTimeMs: now,
+        }),
+      ]);
+      await transaction.commit();
+    });
+
+    try {
+      await this.interfereFn();
+      await this.uploadAndFinalize(
+        loggingPrefix,
+        body,
+        avatarSmallFilename,
+        avatarLargeFilename,
+        accountId,
+      );
+    } catch (e) {
+      await this.database.runTransactionAsync(async (transaction) => {
+        await transaction.batchUpdate([
+          updateAvatarImageDeletingTaskMetadataStatement({
+            avatarImageDeletingTaskR2FilenameEq: avatarSmallFilename,
+            setRetryCount: 0,
+            setExecutionTimeMs:
+              this.getNow() +
+              UploadAccountAvatarHandler.DELAY_TO_CLEAN_UP_ON_ERROR_MS,
+          }),
+          updateAvatarImageDeletingTaskMetadataStatement({
+            avatarImageDeletingTaskR2FilenameEq: avatarLargeFilename,
+            setRetryCount: 0,
+            setExecutionTimeMs:
+              this.getNow() +
+              UploadAccountAvatarHandler.DELAY_TO_CLEAN_UP_ON_ERROR_MS,
+          }),
+        ]);
+        await transaction.commit();
+      });
+      throw e;
+    }
+    return {};
+  }
+
+  private async uploadAndFinalize(
+    loggingPrefix: string,
+    body: Readable,
+    avatarSmallFilename: string,
+    avatarLargeFilename: string,
+    accountId: string,
+  ): Promise<void> {
+    let imageBuffer = await getStream.buffer(body, {
+      maxBuffer: MAX_AVATAR_SIZE,
+    });
+    await Promise.all([
+      this.resizeAndUpload(
+        loggingPrefix,
+        imageBuffer,
+        LARGE_AVATAR_SIZE,
+        LARGE_AVATAR_SIZE,
+        avatarLargeFilename,
+      ),
+      this.resizeAndUpload(
+        loggingPrefix,
+        imageBuffer,
+        SMALL_AVATAR_SIZE,
+        SMALL_AVATAR_SIZE,
+        avatarSmallFilename,
+      ),
+    ]);
     await this.database.runTransactionAsync(async (transaction) => {
       let rows = await getAccountMain(transaction, {
         accountAccountIdEq: accountId,
@@ -61,47 +165,48 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         throw newInternalServerErrorError(`Account ${accountId} is not found.`);
       }
       let account = rows[0];
-      if (
-        account.accountAvatarSmallFilename !==
+      let now = this.getNow();
+      await transaction.batchUpdate([
+        updateAccountAvatarStatement({
+          accountAccountIdEq: accountId,
+          setAvatarSmallFilename: avatarSmallFilename,
+          setAvatarLargeFilename: avatarLargeFilename,
+        }),
+        deleteAvatarImageDeletingTaskStatement({
+          avatarImageDeletingTaskR2FilenameEq: avatarSmallFilename,
+        }),
+        deleteAvatarImageDeletingTaskStatement({
+          avatarImageDeletingTaskR2FilenameEq: avatarLargeFilename,
+        }),
+        ...(account.accountAvatarSmallFilename !==
         DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME
-      ) {
-        avatarSmallFilename = account.accountAvatarSmallFilename;
-        avatarLargeFilename = account.accountAvatarLargeFilename;
-      } else {
-        avatarSmallFilename = `${accountId}s.png`;
-        avatarLargeFilename = `${accountId}l.png`;
-        await transaction.batchUpdate([
-          updateAccountAvatarStatement({
-            accountAccountIdEq: accountId,
-            setAvatarSmallFilename: avatarSmallFilename,
-            setAvatarLargeFilename: avatarLargeFilename,
-          }),
-        ]);
-        await transaction.commit();
-      }
+          ? [
+              insertAvatarImageDeletingTaskStatement({
+                r2Filename: account.accountAvatarSmallFilename,
+                retryCount: 0,
+                executionTimeMs: now,
+                createdTimeMs: now,
+              }),
+            ]
+          : []),
+        ...(account.accountAvatarLargeFilename !==
+        DEFAULT_ACCOUNT_AVATAR_LARGE_FILENAME
+          ? [
+              insertAvatarImageDeletingTaskStatement({
+                r2Filename: account.accountAvatarLargeFilename,
+                retryCount: 0,
+                executionTimeMs: now,
+                createdTimeMs: now,
+              }),
+            ]
+          : []),
+      ]);
+      await transaction.commit();
     });
-
-    let imageBuffer = await getStream.buffer(body, {
-      maxBuffer: MAX_AVATAR_SIZE,
-    });
-    await Promise.all([
-      this.resizeAndUpload(
-        imageBuffer,
-        LARGE_AVATAR_SIZE,
-        LARGE_AVATAR_SIZE,
-        avatarLargeFilename,
-      ),
-      this.resizeAndUpload(
-        imageBuffer,
-        SMALL_AVATAR_SIZE,
-        SMALL_AVATAR_SIZE,
-        avatarSmallFilename,
-      ),
-    ]);
-    return {};
   }
 
   private async resizeAndUpload(
+    loggingPrefix: string,
     data: Buffer,
     width: number,
     height: number,
@@ -117,7 +222,7 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         ContentType: "image/png",
       },
     });
-    await pipeline(
+    pipeline(
       sharp(data).resize(width, height, { fit: "contain" }).png({
         progressive: true,
         compressionLevel: 9,
@@ -125,7 +230,13 @@ export class UploadAccountAvatarHandler extends UploadAccountAvatarHandlerInterf
         effort: 10,
       }),
       passThrough,
-    );
+    ).catch((e) => {
+      console.error(
+        `${loggingPrefix} Error while processing and uploading to ${outputFile}:`,
+        e,
+      );
+      upload.abort();
+    });
     await upload.done();
   }
 }

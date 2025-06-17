@@ -124,6 +124,16 @@
       delete: DeleteVideoPlayerSettings
       get: GetVideoPlayerSettings
       update: UpdateVideoPlayerSettings
+    - kind: Table
+      name: AvatarImageFile
+      columns:
+        - name: r2Filename
+          type: string
+      primaryKeys:
+        - r2Filename
+      insert: InsertAvatarImageFile
+      delete: DeleteAvatarImageFile
+      get: GetAvatarImageFile
     - kind: TaskTable
       name: AccountCapabilitiesUpdatingTask
       columns:
@@ -178,6 +188,23 @@
       listPendingTasks: ListPendingPayoutProfileCreatingTasks
       getMetadata: GetPayoutProfileCreatingTaskMetadata
       updateMetadata: UpdatePayoutProfileCreatingTaskMetadata
+    - kind: TaskTable
+      name: AvatarImageDeletingTask
+      columns:
+        - name: r2Filename
+          type: string
+      retryCountColumn: retryCount
+      executionTimeColumn: executionTimeMs
+      createdTimeColumn: createdTimeMs
+      primaryKeys:
+        - r2Filename
+      executionTimeIndex: AvatarImageDeletingTaskByExecutionTimeMs
+      insert: InsertAvatarImageDeletingTask
+      delete: DeleteAvatarImageDeletingTask
+      get: GetAvatarImageDeletingTask
+      listPendingTasks: ListPendingAvatarImageDeletingTasks
+      getMetadata: GetAvatarImageDeletingTaskMetadata
+      updateMetadata: UpdateAvatarImageDeletingTaskMetadata
   updates:
     - name: UpdateUserTotalAccounts
       table: User
