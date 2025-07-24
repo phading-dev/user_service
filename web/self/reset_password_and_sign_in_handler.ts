@@ -4,15 +4,18 @@ import { SERVICE_CLIENT } from "../../common/service_client";
 import { SPANNER_DATABASE } from "../../common/spanner_database";
 import {
   ListLastAccessedAccountsRow,
-  getUserByUserEmail,
+  deletePasswordResetTokenStatement,
+  getPasswordResetToken,
+  getUser,
   listLastAccessedAccounts,
   updateAccountLastAccessedTimeStatement,
+  updateUserPasswordHashStatement,
 } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
-import { SignInHandlerInterface } from "@phading/user_service_interface/web/self/handler";
+import { ResetPasswordAndSignInHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
-  SignInRequestBody,
-  SignInResponse,
+  ResetPasswordAndSignInRequestBody,
+  ResetPasswordAndSignInResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { newCreateSessionRequest } from "@phading/user_session_service_interface/node/client";
 import {
@@ -21,9 +24,9 @@ import {
 } from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
-export class SignInHandler extends SignInHandlerInterface {
-  public static create(): SignInHandler {
-    return new SignInHandler(
+export class ResetPasswordAndSignInHandler extends ResetPasswordAndSignInHandlerInterface {
+  public static create(): ResetPasswordAndSignInHandler {
+    return new ResetPasswordAndSignInHandler(
       SPANNER_DATABASE,
       SERVICE_CLIENT,
       PASSWORD_SIGNER,
@@ -42,68 +45,73 @@ export class SignInHandler extends SignInHandlerInterface {
 
   public async handle(
     loggingPrefix: string,
-    body: SignInRequestBody,
-  ): Promise<SignInResponse> {
-    body.userEmail = (body.userEmail ?? "").trim();
-    if (!body.userEmail) {
-      throw newBadRequestError(`"userEmail" cannot be empty.`);
+    body: ResetPasswordAndSignInRequestBody,
+  ): Promise<ResetPasswordAndSignInResponse> {
+    if (!body.resetToken) {
+      throw newBadRequestError(`"resetToken" is required.`);
     }
-    if (!body.password) {
-      throw newBadRequestError(`"password" is required.`);
+    if (!body.newPassword) {
+      throw newBadRequestError(`"newPassword" is required.`);
     }
-
-    let notAuthenticated = false;
-    let needsEmailVerification = false;
     let account: ListLastAccessedAccountsRow;
     await this.database.runTransactionAsync(async (transaction) => {
-      let userRows = await getUserByUserEmail(this.database, {
-        userUserEmailEq: body.userEmail,
+      let tokenRows = await getPasswordResetToken(transaction, {
+        passwordResetTokenTokenIdEq: body.resetToken,
       });
-      if (userRows.length === 0) {
+      if (tokenRows.length === 0) {
         console.log(
-          `${loggingPrefix} userEmail ${body.userEmail} is not found.`,
+          `${loggingPrefix} Password reset token ${body.resetToken} is not found.`,
         );
-        notAuthenticated = true;
         return;
+      }
+      let token = tokenRows[0];
+      if (token.passwordResetTokenExpiresTimeMs < this.getNow()) {
+        console.log(
+          `${loggingPrefix} Password reset token ${token.passwordResetTokenTokenId} expired.`,
+        );
+        return;
+      }
+
+      let [userRows, accountRows] = await Promise.all([
+        getUser(transaction, {
+          userUserIdEq: token.passwordResetTokenUserId,
+        }),
+        listLastAccessedAccounts(transaction, {
+          accountUserIdEq: token.passwordResetTokenUserId,
+          limit: 1,
+        }),
+      ]);
+      if (userRows.length === 0) {
+        throw newBadRequestError(
+          `User ${token.passwordResetTokenUserId} not found for the provided token.`,
+        );
       }
       let user = userRows[0];
-      if (this.passwordSigner.sign(body.password) !== user.userPasswordHashV1) {
-        console.log(
-          `${loggingPrefix} password doesn't match for userEmail ${body.userEmail}.`,
-        );
-        notAuthenticated = true;
-        return;
-      }
-      if (user.userEmailVerified === false) {
-        needsEmailVerification = true;
-        return;
-      }
-      let accountRows = await listLastAccessedAccounts(this.database, {
-        accountUserIdEq: user.userUserId,
-        limit: 1,
-      });
       if (accountRows.length === 0) {
         throw newInternalServerErrorError(
           `No account found for user ${user.userUserId}.`,
         );
       }
       account = accountRows[0];
+      let newPasswordHash = this.passwordSigner.sign(body.newPassword);
       await transaction.batchUpdate([
+        updateUserPasswordHashStatement({
+          userUserIdEq: user.userUserId,
+          setPasswordHashV1: newPasswordHash,
+        }),
         updateAccountLastAccessedTimeStatement({
           accountAccountIdEq: account.accountAccountId,
           setLastAccessedTimeMs: this.getNow(),
         }),
+        deletePasswordResetTokenStatement({
+          passwordResetTokenTokenIdEq: body.resetToken,
+        }),
       ]);
       await transaction.commit();
     });
-    if (notAuthenticated) {
+    if (!account) {
       return {
-        notAuthenticated: true,
-      };
-    }
-    if (needsEmailVerification) {
-      return {
-        needsEmailVerification: true,
+        tokenExpired: true,
       };
     }
     let response = await this.serviceClient.send(

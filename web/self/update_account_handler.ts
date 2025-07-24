@@ -4,8 +4,7 @@ import { updateAccountContentStatement } from "../../db/sql";
 import { Database } from "@google-cloud/spanner";
 import {
   MAX_DESCRIPTION_LENGTH,
-  MAX_EMAIL_LENGTH,
-  MAX_NATURAL_NAME_LENGTH,
+  MAX_NAME_LENGTH,
 } from "@phading/constants/account";
 import { UpdateAccountHandlerInterface } from "@phading/user_service_interface/web/self/handler";
 import {
@@ -33,19 +32,12 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
     body: UpdateAccountRequestBody,
     authStr: string,
   ): Promise<UpdateAccountResponse> {
-    body.naturalName = (body.naturalName ?? "").trim();
-    if (!body.naturalName) {
-      throw newBadRequestError(`"naturalName" cannot be empty.`);
+    body.name = (body.name ?? "").trim();
+    if (!body.name) {
+      throw newBadRequestError(`"name" cannot be empty.`);
     }
-    if (body.naturalName.length > MAX_NATURAL_NAME_LENGTH) {
-      throw newBadRequestError(`"naturalName" is too long.`);
-    }
-    body.contactEmail = (body.contactEmail ?? "").trim();
-    if (!body.contactEmail) {
-      throw newBadRequestError(`"contactEmail" cannot be empty.`);
-    }
-    if (body.contactEmail.length > MAX_EMAIL_LENGTH) {
-      throw newBadRequestError(`"contactEmail" is too long.`);
+    if (body.name.length > MAX_NAME_LENGTH) {
+      throw newBadRequestError(`"name" is too long.`);
     }
     body.description = (body.description ?? "").trim();
     if (body.description.length > MAX_DESCRIPTION_LENGTH) {
@@ -60,8 +52,7 @@ export class UpdateAccountHandler extends UpdateAccountHandlerInterface {
       await transaction.batchUpdate([
         updateAccountContentStatement({
           accountAccountIdEq: accountId,
-          setContactEmail: body.contactEmail,
-          setNaturalName: body.naturalName,
+          setName: body.name,
           setDescription: body.description,
         }),
       ]);

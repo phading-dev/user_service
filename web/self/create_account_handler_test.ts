@@ -49,7 +49,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
               totalAccounts: 1,
             }),
           ]);
@@ -83,8 +83,7 @@ TEST_RUNNER.run({
           "",
           {
             accountType: AccountType.CONSUMER,
-            contactEmail: "contact@example.com",
-            naturalName: "name2",
+            name: "name2",
           },
           "session1",
         );
@@ -98,7 +97,7 @@ TEST_RUNNER.run({
             eqMessage(
               {
                 userUserId: "user1",
-                userUsername: "username1",
+                userUserEmail: "user@example.com",
                 userTotalAccounts: 2,
               },
               GET_USER_ROW,
@@ -116,9 +115,9 @@ TEST_RUNNER.run({
                 accountUserId: "user1",
                 accountAccountId: "account2",
                 accountAccountType: AccountType.CONSUMER,
-                accountNaturalName: "name2",
+                accountName: "name2",
                 accountDescription: "",
-                accountContactEmail: "contact@example.com",
+                accountContactEmail: "user@example.com",
                 accountAvatarSmallFilename:
                   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
                 accountAvatarLargeFilename:
@@ -210,7 +209,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
               totalAccounts: 1,
             }),
           ]);
@@ -244,8 +243,7 @@ TEST_RUNNER.run({
           "",
           {
             accountType: AccountType.PUBLISHER,
-            contactEmail: "contact@example.com",
-            naturalName: "name2",
+            name: "name2",
           },
           "session1",
         );
@@ -259,7 +257,7 @@ TEST_RUNNER.run({
             eqMessage(
               {
                 userUserId: "user1",
-                userUsername: "username1",
+                userUserEmail: "user@example.com",
                 userTotalAccounts: 2,
               },
               GET_USER_ROW,
@@ -277,9 +275,9 @@ TEST_RUNNER.run({
                 accountUserId: "user1",
                 accountAccountId: "account2",
                 accountAccountType: AccountType.PUBLISHER,
-                accountNaturalName: "name2",
+                accountName: "name2",
                 accountDescription: "",
-                accountContactEmail: "contact@example.com",
+                accountContactEmail: "user@example.com",
                 accountAvatarSmallFilename:
                   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
                 accountAvatarLargeFilename:
@@ -382,7 +380,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
               totalAccounts: MAX_ACCOUNTS_PER_USER,
             }),
           ]);
@@ -412,8 +410,7 @@ TEST_RUNNER.run({
             "",
             {
               accountType: AccountType.CONSUMER,
-              contactEmail: "contact@example.com",
-              naturalName: "name2",
+              name: "name2",
             },
             "session1",
           ),

@@ -19,13 +19,7 @@ import { SignUpHandler } from "./sign_up_handler";
 import { AccountType } from "@phading/user_service_interface/account_type";
 import { PaymentProfileState } from "@phading/user_service_interface/node/payment_profile_state";
 import { SIGN_UP_RESPONSE } from "@phading/user_service_interface/web/self/interface";
-import {
-  CREATE_SESSION,
-  CREATE_SESSION_REQUEST_BODY,
-  CreateSessionResponse,
-} from "@phading/user_session_service_interface/node/interface";
 import { eqMessage } from "@selfage/message/test_matcher";
-import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
 import { assertThat, eq, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
@@ -36,16 +30,11 @@ TEST_RUNNER.run({
       name: "Success",
       execute: async () => {
         // Prepare
-        let clientMock = new NodeServiceClientMock();
-        clientMock.response = {
-          signedSession: "session1",
-        } as CreateSessionResponse;
         let signerMock = new PasswordSignerMock();
         signerMock.signed = "signed_password";
         let uuid = 1;
         let handler = new SignUpHandler(
           SPANNER_DATABASE,
-          clientMock,
           signerMock,
           () => `id${uuid++}`,
           () => 1000,
@@ -53,15 +42,14 @@ TEST_RUNNER.run({
 
         // Execute
         let response = await handler.handle("", {
-          username: "username1",
+          userEmail: "user@example.com",
           password: "pass1",
-          recoveryEmail: "recovery@example.com",
-          naturalName: "first second",
+          name: "first second",
           accountType: AccountType.CONSUMER,
-          contactEmail: "contact@example.com",
         });
 
         // Verify
+        assertThat(response, eqMessage({}, SIGN_UP_RESPONSE), "response");
         assertThat(signerMock.password, eq("pass1"), "raw password");
         assertThat(
           await getUser(SPANNER_DATABASE, { userUserIdEq: "id1" }),
@@ -69,9 +57,9 @@ TEST_RUNNER.run({
             eqMessage(
               {
                 userUserId: "id1",
-                userUsername: "username1",
+                userUserEmail: "user@example.com",
+                userEmailVerified: false,
                 userPasswordHashV1: "signed_password",
-                userRecoveryEmail: "recovery@example.com",
                 userTotalAccounts: 1,
                 userCreatedTimeMs: 1000,
               },
@@ -88,9 +76,9 @@ TEST_RUNNER.run({
                 accountUserId: "id1",
                 accountAccountId: "id2",
                 accountAccountType: AccountType.CONSUMER,
-                accountNaturalName: "first second",
+                accountName: "first second",
                 accountDescription: "",
-                accountContactEmail: "contact@example.com",
+                accountContactEmail: "user@example.com",
                 accountAvatarSmallFilename:
                   DEFAULT_ACCOUNT_AVATAR_SMALL_FILENAME,
                 accountAvatarLargeFilename:
@@ -105,36 +93,6 @@ TEST_RUNNER.run({
             ),
           ]),
           "account created",
-        );
-        assertThat(
-          response,
-          eqMessage(
-            {
-              signedSession: "session1",
-              usernameIsAvailable: true,
-            },
-            SIGN_UP_RESPONSE,
-          ),
-          "response",
-        );
-        assertThat(clientMock.request.descriptor, eq(CREATE_SESSION), "RC");
-        assertThat(
-          clientMock.request.body,
-          eqMessage(
-            {
-              userId: "id1",
-              accountId: "id2",
-              capabilitiesVersion: 0,
-              capabilities: {
-                canConsume: true,
-                canPublish: false,
-                canBeBilled: true,
-                canEarn: false,
-              },
-            },
-            CREATE_SESSION_REQUEST_BODY,
-          ),
-          "create session request",
         );
       },
       tearDown: async () => {
@@ -151,28 +109,23 @@ TEST_RUNNER.run({
       },
     },
     {
-      name: "UsernameNotAvailable",
+      name: "UserEmailUnavailable",
       execute: async () => {
         // Prepare
         await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
             }),
           ]);
           await transaction.commit();
         });
-        let clientMock = new NodeServiceClientMock();
-        clientMock.response = {
-          signedSession: "session1",
-        } as CreateSessionResponse;
         let signerMock = new PasswordSignerMock();
         signerMock.signed = "signed_password";
         let uuid = 1;
         let handler = new SignUpHandler(
           SPANNER_DATABASE,
-          clientMock,
           signerMock,
           () => `id${uuid++}`,
           () => 1000,
@@ -180,12 +133,10 @@ TEST_RUNNER.run({
 
         // Execute
         let response = await handler.handle("", {
-          username: "username1",
+          userEmail: "user@example.com",
           password: "pass1",
-          recoveryEmail: "recovery@example.com",
-          naturalName: "first second",
+          name: "first second",
           accountType: AccountType.CONSUMER,
-          contactEmail: "contact@example.com",
         });
 
         // Verify
@@ -193,7 +144,7 @@ TEST_RUNNER.run({
           response,
           eqMessage(
             {
-              usernameIsAvailable: false,
+              userEmailUnavailable: true,
             },
             SIGN_UP_RESPONSE,
           ),

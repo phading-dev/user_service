@@ -80,7 +80,7 @@ export class SearchPublishersHandler extends SearchPublishersHandlerInterface {
       accounts: rows.map(
         (row): AccountDetails => ({
           accountId: row.accountAccountId,
-          naturalName: row.accountNaturalName,
+          name: row.accountName,
           avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
           description: row.accountDescription,
         }),

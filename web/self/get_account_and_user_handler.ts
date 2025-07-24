@@ -51,10 +51,8 @@ export class GetAccountAndUserHandler extends GetAccountAndUserHandlerInterface 
     let row = rows[0];
     return {
       account: {
-        username: row.userUsername,
-        recoveryEmail: row.userRecoveryEmail,
-        naturalName: row.accountNaturalName,
-        contactEmail: row.accountContactEmail,
+        userEmail: row.userUserEmail,
+        name: row.accountName,
         description: row.accountDescription,
         avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
       },

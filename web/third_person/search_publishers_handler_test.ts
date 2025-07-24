@@ -24,7 +24,7 @@ TEST_RUNNER.run({
               userId: "user1",
               accountId: "account1",
               accountType: AccountType.PUBLISHER,
-              naturalName: "Alice",
+              name: "Alice",
               description:
                 "Alice whimsical account with a penchant for Adventure, Adventure and Innovation.",
               avatarLargeFilename: "avatar1",
@@ -34,7 +34,7 @@ TEST_RUNNER.run({
               userId: "user2",
               accountId: "account2",
               accountType: AccountType.PUBLISHER,
-              naturalName: "Bob",
+              name: "Bob",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
               avatarLargeFilename: "avatar2",
@@ -44,7 +44,7 @@ TEST_RUNNER.run({
               userId: "user3",
               accountId: "account3",
               accountType: AccountType.PUBLISHER,
-              naturalName: "Charlie",
+              name: "Charlie",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
               avatarLargeFilename: "avatar3",
@@ -54,7 +54,7 @@ TEST_RUNNER.run({
               userId: "user4",
               accountId: "account4",
               accountType: AccountType.PUBLISHER,
-              naturalName: "David",
+              name: "David",
               description: "Alice whimsical account with a penchant.",
               avatarLargeFilename: "avatar4",
               createdTimeMs: 1000,
@@ -91,7 +91,7 @@ TEST_RUNNER.run({
           eqMessage(
             {
               accountId: "account1",
-              naturalName: "Alice",
+              name: "Alice",
               avatarLargeUrl: "https://test.com/avatar1",
               description:
                 "Alice whimsical account with a penchant for Adventure, Adventure and Innovation.",
@@ -105,7 +105,7 @@ TEST_RUNNER.run({
           eqMessage(
             {
               accountId: "account2",
-              naturalName: "Bob",
+              name: "Bob",
               avatarLargeUrl: "https://test.com/avatar2",
               description:
                 "Alice whimsical account with a penchant for and innovation and adventure.",
@@ -141,7 +141,7 @@ TEST_RUNNER.run({
               accounts: [
                 {
                   accountId: "account3",
-                  naturalName: "Charlie",
+                  name: "Charlie",
                   avatarLargeUrl: "https://test.com/avatar3",
                   description:
                     "Alice whimsical account with a penchant for and innovation and adventure.",

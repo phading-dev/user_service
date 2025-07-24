@@ -8,12 +8,11 @@ import {
   insertUserStatement,
 } from "../../db/sql";
 import { UpdatePasswordHandler } from "./update_password_handler";
+import { UPDATE_PASSWORD_RESPONSE } from "@phading/user_service_interface/web/self/interface";
 import { FetchSessionAndCheckCapabilityResponse } from "@phading/user_session_service_interface/node/interface";
-import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
-import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertReject, assertThat, isArray } from "@selfage/test_matcher";
+import { assertThat, isArray } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
@@ -27,7 +26,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
               passwordHashV1: "signed_current_pass",
             }),
           ]);
@@ -71,7 +70,7 @@ TEST_RUNNER.run({
             eqMessage(
               {
                 userUserId: "user1",
-                userUsername: "username1",
+                userUserEmail: "user@example.com",
                 userPasswordHashV1: "signed_new_pass",
               },
               GET_USER_ROW,
@@ -90,38 +89,6 @@ TEST_RUNNER.run({
       },
     },
     {
-      name: "UserNotFound",
-      execute: async () => {
-        // Prepare
-        let signerMock = new PasswordSignerMock();
-        let clientMock = new NodeServiceClientMock();
-        clientMock.response = {
-          userId: "user1",
-        } as FetchSessionAndCheckCapabilityResponse;
-        let handler = new UpdatePasswordHandler(
-          SPANNER_DATABASE,
-          signerMock,
-          clientMock,
-        );
-
-        // Execute
-        let error = await assertReject(
-          handler.handle(
-            "",
-            {
-              currentPassword: "current_pass",
-              newPassword: "new_pass",
-            },
-            "session1",
-          ),
-        );
-
-        // Verify
-        assertThat(error, eqHttpError(newNotFoundError("not found")), "error");
-      },
-      tearDown: async () => {},
-    },
-    {
       name: "PasswordNotMatch",
       execute: async () => {
         // Prepare
@@ -129,7 +96,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
               passwordHashV1: "signed_current_pass",
             }),
           ]);
@@ -155,22 +122,25 @@ TEST_RUNNER.run({
         );
 
         // Execute
-        let error = await assertReject(
-          handler.handle(
-            "",
-            {
-              currentPassword: "current_pass",
-              newPassword: "new_pass",
-            },
-            "session1",
-          ),
+        let response = await handler.handle(
+          "",
+          {
+            currentPassword: "current_pass",
+            newPassword: "new_pass",
+          },
+          "session1",
         );
 
         // Verify
         assertThat(
-          error,
-          eqHttpError(newBadRequestError("Password is incorrect")),
-          "error",
+          response,
+          eqMessage(
+            {
+              notAuthenticated: true,
+            },
+            UPDATE_PASSWORD_RESPONSE,
+          ),
+          "response",
         );
       },
       tearDown: async () => {

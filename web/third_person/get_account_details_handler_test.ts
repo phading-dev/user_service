@@ -21,7 +21,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               avatarLargeFilename: "avatarL",
               description: "Some some long long description",
               createdTimeMs: 1000,
@@ -46,7 +46,7 @@ TEST_RUNNER.run({
             {
               account: {
                 accountId: "account1",
-                naturalName: "name1",
+                name: "name1",
                 avatarLargeUrl: "https://custom.domain/avatarL",
                 description: "Some some long long description",
               },

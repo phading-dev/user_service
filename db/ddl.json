@@ -5,14 +5,14 @@
       "name": "userId",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN userId STRING(MAX) NOT NULL"
     }, {
-      "name": "username",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN username STRING(MAX) NOT NULL"
+      "name": "userEmail",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN userEmail STRING(MAX) NOT NULL"
+    }, {
+      "name": "emailVerified",
+      "addColumnDdl": "ALTER TABLE User ADD COLUMN emailVerified BOOL"
     }, {
       "name": "passwordHashV1",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN passwordHashV1 STRING(MAX)"
-    }, {
-      "name": "recoveryEmail",
-      "addColumnDdl": "ALTER TABLE User ADD COLUMN recoveryEmail STRING(MAX)"
     }, {
       "name": "totalAccounts",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN totalAccounts FLOAT64"
@@ -20,10 +20,10 @@
       "name": "createdTimeMs",
       "addColumnDdl": "ALTER TABLE User ADD COLUMN createdTimeMs FLOAT64"
     }],
-    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, username STRING(MAX) NOT NULL, passwordHashV1 STRING(MAX), recoveryEmail STRING(MAX), totalAccounts FLOAT64, createdTimeMs FLOAT64) PRIMARY KEY (userId ASC)",
+    "createTableDdl": "CREATE TABLE User (userId STRING(MAX) NOT NULL, userEmail STRING(MAX) NOT NULL, emailVerified BOOL, passwordHashV1 STRING(MAX), totalAccounts FLOAT64, createdTimeMs FLOAT64) PRIMARY KEY (userId ASC)",
     "indexes": [{
-      "name": "UniqueUsername",
-      "createIndexDdl": "CREATE UNIQUE INDEX UniqueUsername ON User(username)"
+      "name": "UniqueUserEmail",
+      "createIndexDdl": "CREATE UNIQUE INDEX UniqueUserEmail ON User(userEmail)"
     }]
   }, {
     "name": "Account",
@@ -37,8 +37,8 @@
       "name": "accountType",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN accountType FLOAT64"
     }, {
-      "name": "naturalName",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN naturalName STRING(MAX)"
+      "name": "name",
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN name STRING(MAX)"
     }, {
       "name": "description",
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN description STRING(MAX)"
@@ -68,15 +68,58 @@
       "addColumnDdl": "ALTER TABLE Account ADD COLUMN capabilitiesVersion FLOAT64"
     }, {
       "name": "fullText",
-      "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN"
+      "addColumnDdl": "ALTER TABLE Account ADD COLUMN fullText TOKENLIST AS (TOKENIZE_FULLTEXT(name || ' ' || description)) HIDDEN"
     }],
-    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, naturalName STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs INT64 NOT NULL, paymentProfileStateVersion FLOAT64, paymentProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(naturalName || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
+    "createTableDdl": "CREATE TABLE Account (userId STRING(MAX) NOT NULL, accountId STRING(MAX) NOT NULL, accountType FLOAT64, name STRING(MAX), description STRING(MAX), contactEmail STRING(MAX), avatarSmallFilename STRING(MAX), avatarLargeFilename STRING(MAX), lastAccessedTimeMs FLOAT64, createdTimeMs INT64 NOT NULL, paymentProfileStateVersion FLOAT64, paymentProfileState FLOAT64, capabilitiesVersion FLOAT64, fullText TOKENLIST AS (TOKENIZE_FULLTEXT(name || ' ' || description)) HIDDEN) PRIMARY KEY (accountId ASC)",
     "indexes": [{
       "name": "ByUserAndLastAccessTimeMs",
       "createIndexDdl": "CREATE INDEX ByUserAndLastAccessTimeMs ON Account(userId, lastAccessedTimeMs DESC)"
     }, {
       "name": "ByFullText",
       "createIndexDdl": "CREATE SEARCH INDEX ByFullText ON Account(fullText) PARTITION BY accountType ORDER BY createdTimeMs"
+    }]
+  }, {
+    "name": "EmailVerificationToken",
+    "columns": [{
+      "name": "tokenId",
+      "addColumnDdl": "ALTER TABLE EmailVerificationToken ADD COLUMN tokenId STRING(MAX) NOT NULL"
+    }, {
+      "name": "userId",
+      "addColumnDdl": "ALTER TABLE EmailVerificationToken ADD COLUMN userId STRING(MAX)"
+    }, {
+      "name": "userEmail",
+      "addColumnDdl": "ALTER TABLE EmailVerificationToken ADD COLUMN userEmail STRING(MAX)"
+    }, {
+      "name": "expiresTimeMs",
+      "addColumnDdl": "ALTER TABLE EmailVerificationToken ADD COLUMN expiresTimeMs FLOAT64"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE EmailVerificationToken ADD COLUMN createdTimeMs FLOAT64"
+    }],
+    "createTableDdl": "CREATE TABLE EmailVerificationToken (tokenId STRING(MAX) NOT NULL, userId STRING(MAX), userEmail STRING(MAX), expiresTimeMs FLOAT64, createdTimeMs FLOAT64) PRIMARY KEY (tokenId ASC)",
+    "indexes": [{
+      "name": "EmailVerificationTokenByUserId",
+      "createIndexDdl": "CREATE INDEX EmailVerificationTokenByUserId ON EmailVerificationToken(userId, createdTimeMs DESC)"
+    }]
+  }, {
+    "name": "PasswordResetToken",
+    "columns": [{
+      "name": "tokenId",
+      "addColumnDdl": "ALTER TABLE PasswordResetToken ADD COLUMN tokenId STRING(MAX) NOT NULL"
+    }, {
+      "name": "userId",
+      "addColumnDdl": "ALTER TABLE PasswordResetToken ADD COLUMN userId STRING(MAX)"
+    }, {
+      "name": "expiresTimeMs",
+      "addColumnDdl": "ALTER TABLE PasswordResetToken ADD COLUMN expiresTimeMs FLOAT64"
+    }, {
+      "name": "createdTimeMs",
+      "addColumnDdl": "ALTER TABLE PasswordResetToken ADD COLUMN createdTimeMs FLOAT64"
+    }],
+    "createTableDdl": "CREATE TABLE PasswordResetToken (tokenId STRING(MAX) NOT NULL, userId STRING(MAX), expiresTimeMs FLOAT64, createdTimeMs FLOAT64) PRIMARY KEY (tokenId ASC)",
+    "indexes": [{
+      "name": "PasswordResetTokenByUserId",
+      "createIndexDdl": "CREATE INDEX PasswordResetTokenByUserId ON PasswordResetToken(userId, createdTimeMs DESC)"
     }]
   }, {
     "name": "VideoPlayerSettings",

@@ -6,12 +6,12 @@
       columns:
         - name: userId
           type: string
-        - name: username
+        - name: userEmail
           type: string
-        - name: passwordHashV1
-          type: string
+        - name: emailVerified
+          type: bool
           nullable: true
-        - name: recoveryEmail
+        - name: passwordHashV1
           type: string
           nullable: true
         - name: totalAccounts
@@ -23,9 +23,9 @@
       primaryKeys:
         - userId
       indexes:
-        - name: UniqueUsername
+        - name: UniqueUserEmail
           columns:
-            - username
+            - userEmail
           unique: true
       insert: InsertUser
       delete: DeleteUser
@@ -41,7 +41,7 @@
           type: AccountType
           import: "@phading/user_service_interface/account_type"
           nullable: true
-        - name: naturalName
+        - name: name
           type: string
           nullable: true
         - name: description
@@ -77,7 +77,7 @@
             - userId
             - accountId
             - accountType
-            - naturalName
+            - name
             - contactEmail
             - avatarSmallFilename
             - avatarLargeFilename
@@ -88,7 +88,7 @@
       searchColumns:
         - name: fullText
           columnRefs:
-            - naturalName
+            - name
             - description
       primaryKeys:
         - accountId
@@ -109,6 +109,59 @@
       insert: InsertAccount
       delete: DeleteAccount
       get: GetAccount
+    - kind: Table
+      name: EmailVerificationToken
+      columns:
+        - name: tokenId
+          type: string
+        - name: userId
+          type: string
+          nullable: true
+        - name: userEmail
+          type: string
+          nullable: true
+        - name: expiresTimeMs
+          type: float64
+          nullable: true
+        - name: createdTimeMs
+          type: float64
+          nullable: true
+      primaryKeys:
+        - tokenId
+      indexes:
+        - name: EmailVerificationTokenByUserId
+          columns:
+            - userId
+            - name: createdTimeMs
+              desc: true
+      insert: InsertEmailVerificationToken
+      delete: DeleteEmailVerificationToken
+      get: GetEmailVerificationToken
+    - kind: Table
+      name: PasswordResetToken
+      columns:
+        - name: tokenId
+          type: string
+        - name: userId
+          type: string
+          nullable: true
+        - name: expiresTimeMs
+          type: float64
+          nullable: true
+        - name: createdTimeMs
+          type: float64
+          nullable: true
+      primaryKeys:
+        - tokenId
+      indexes:
+        - name: PasswordResetTokenByUserId
+          columns:
+            - userId
+            - name: createdTimeMs
+              desc: true
+      insert: InsertPasswordResetToken
+      delete: DeletePasswordResetToken
+      get: GetPasswordResetToken
     - kind: Table
       name: VideoPlayerSettings
       columns:
@@ -205,6 +258,17 @@
       listPendingTasks: ListPendingAvatarImageDeletingTasks
       getMetadata: GetAvatarImageDeletingTaskMetadata
       updateMetadata: UpdateAvatarImageDeletingTaskMetadata
+  deletes:
+    - name: DeleteExpiredEmailVerificationTokens
+      table: EmailVerificationToken
+      where:
+        op: <
+        lColumn: expiresTimeMs
+    - name: DeleteExpiredPasswordResetTokens
+      table: PasswordResetToken
+      where:
+        op: <
+        lColumn: expiresTimeMs
   updates:
     - name: UpdateUserTotalAccounts
       table: User
@@ -220,13 +284,21 @@
         lColumn: userId
       set:
         - passwordHashV1
-    - name: UpdateUserRecoveryEmail
+    - name: UpdateUserEmail
       table: User
       where:
         op: =
         lColumn: userId
       set:
-        - recoveryEmail
+        - userEmail
+        - emailVerified
+    - name: UpdateUserEmailVerified
+      table: User
+      where:
+        op: =
+        lColumn: userId
+      set:
+        - emailVerified
     - name: UpdateAccountPaymentProfileState
       table: Account
       where:
@@ -243,15 +315,21 @@
         lColumn: accountId
       set:
         - lastAccessedTimeMs
+    - name: UpdateAccountsContactEmailByUserId
+      table: Account
+      where:
+        op: =
+        lColumn: userId
+      set:
+        - contactEmail
     - name: UpdateAccountContent
       table: Account
       where:
         op: =
         lColumn: accountId
       set:
-        - naturalName
+        - name
         - description
-        - contactEmail
     - name: UpdateAccountAvatar
       table: Account
       where:
@@ -261,11 +339,33 @@
         - avatarSmallFilename
         - avatarLargeFilename
   selects:
-    - name: GetUserByUsername
+    - name: GetUserByUserEmail
       from: User
       where:
         op: =
-        lColumn: username
+        lColumn: userEmail
+      get:
+        - all: true
+    - name: ListEmailVerificationTokensByUserId
+      from: EmailVerificationToken
+      where:
+        op: =
+        lColumn: userId
+      orderBy:
+        - column: createdTimeMs
+          desc: true
+      withLimit: true
+      get:
+        - all: true
+    - name: ListPasswordResetTokensByUserId
+      from: PasswordResetToken
+      where:
+        op: =
+        lColumn: userId
+      orderBy:
+        - column: createdTimeMs
+          desc: true
+      withLimit: true
       get:
         - all: true
     - name: ListLastAccessedAccounts

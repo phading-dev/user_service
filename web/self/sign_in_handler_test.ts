@@ -16,11 +16,9 @@ import {
   CREATE_SESSION_REQUEST_BODY,
   CreateSessionResponse,
 } from "@phading/user_session_service_interface/node/interface";
-import { newUnauthorizedError } from "@selfage/http_error";
-import { eqHttpError } from "@selfage/http_error/test_matcher";
 import { eqMessage } from "@selfage/message/test_matcher";
 import { NodeServiceClientMock } from "@selfage/node_service_client/client_mock";
-import { assertReject, assertThat, eq } from "@selfage/test_matcher";
+import { assertThat, eq } from "@selfage/test_matcher";
 import { TEST_RUNNER } from "@selfage/test_runner";
 
 TEST_RUNNER.run({
@@ -34,7 +32,8 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
+              emailVerified: true,
               passwordHashV1: "signed_password",
             }),
             insertAccountStatement({
@@ -73,7 +72,7 @@ TEST_RUNNER.run({
 
         // Execute
         let response = await handler.handle("", {
-          username: "username1",
+          userEmail: "user@example.com",
           password: "pass1",
         });
 
@@ -121,7 +120,71 @@ TEST_RUNNER.run({
       },
     },
     {
-      name: "UsernameNotFound",
+      name: "NeedsEmailVerification",
+      execute: async () => {
+        // Prepare
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            insertUserStatement({
+              userId: "user1",
+              userEmail: "user@example.com",
+              emailVerified: false,
+              passwordHashV1: "signed_password",
+            }),
+            insertAccountStatement({
+              userId: "user1",
+              accountId: "account1",
+              accountType: AccountType.CONSUMER,
+              capabilitiesVersion: 0,
+              paymentProfileState: PaymentProfileState.HEALTHY,
+              lastAccessedTimeMs: 100,
+              createdTimeMs: 1000,
+            }),
+          ]);
+          await transaction.commit();
+        });
+        let clientMock = new NodeServiceClientMock();
+        let signerMock = new PasswordSignerMock();
+        signerMock.signed = "signed_password";
+        let handler = new SignInHandler(
+          SPANNER_DATABASE,
+          clientMock,
+          signerMock,
+          () => 1000,
+        );
+
+        // Execute
+        let response = await handler.handle("", {
+          userEmail: "user@example.com",
+          password: "pass1",
+        });
+
+        // Verify
+        assertThat(signerMock.password, eq("pass1"), "password");
+        assertThat(
+          response,
+          eqMessage(
+            {
+              needsEmailVerification: true,
+            },
+            SIGN_IN_RESPONSE,
+          ),
+          "response",
+        );
+        assertThat(clientMock.request, eq(undefined), "RC");
+      },
+      tearDown: async () => {
+        await SPANNER_DATABASE.runTransactionAsync(async (transaction) => {
+          await transaction.batchUpdate([
+            deleteUserStatement({ userUserIdEq: "user1" }),
+            deleteAccountStatement({ accountAccountIdEq: "account1" }),
+          ]);
+          await transaction.commit();
+        });
+      },
+    },
+    {
+      name: "UserEmailNotFound",
       execute: async () => {
         // Prepare
         let clientMock = new NodeServiceClientMock();
@@ -134,18 +197,16 @@ TEST_RUNNER.run({
         );
 
         // Execute
-        let error = await assertReject(
-          handler.handle("", {
-            username: "username1",
-            password: "pass1",
-          }),
-        );
+        let response = await handler.handle("", {
+          userEmail: "user@example.com",
+          password: "pass1",
+        });
 
         // Verify
         assertThat(
-          error,
-          eqHttpError(newUnauthorizedError("Failed to sign in")),
-          "error",
+          response,
+          eqMessage({ notAuthenticated: true }, SIGN_IN_RESPONSE),
+          "response",
         );
       },
       tearDown: async () => {},
@@ -158,7 +219,8 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
+              userEmail: "user@example.com",
+              emailVerified: true,
               passwordHashV1: "signed_password",
             }),
           ]);
@@ -175,18 +237,16 @@ TEST_RUNNER.run({
         );
 
         // Execute
-        let error = await assertReject(
-          handler.handle("", {
-            username: "username1",
-            password: "pass1",
-          }),
-        );
+        let response = await handler.handle("", {
+          userEmail: "user@example.com",
+          password: "pass1",
+        });
 
         // Verify
         assertThat(
-          error,
-          eqHttpError(newUnauthorizedError("Failed to sign in")),
-          "error",
+          response,
+          eqMessage({ notAuthenticated: true }, SIGN_IN_RESPONSE),
+          "response",
         );
       },
       tearDown: async () => {

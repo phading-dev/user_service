@@ -19,7 +19,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "email1",
               createdTimeMs: 1000,
             }),
@@ -38,7 +38,7 @@ TEST_RUNNER.run({
           response,
           eqMessage(
             {
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "email1",
             },
             GET_ACCOUNT_CONTACT_RESPONSE,

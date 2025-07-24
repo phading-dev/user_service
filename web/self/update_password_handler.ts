@@ -10,7 +10,10 @@ import {
   UpdatePasswordResponse,
 } from "@phading/user_service_interface/web/self/interface";
 import { newFetchSessionAndCheckCapabilityRequest } from "@phading/user_session_service_interface/node/client";
-import { newBadRequestError, newNotFoundError } from "@selfage/http_error";
+import {
+  newBadRequestError,
+  newInternalServerErrorError,
+} from "@selfage/http_error";
 import { NodeServiceClient } from "@selfage/node_service_client";
 
 export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
@@ -49,18 +52,24 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
         signedSession: authStr,
       }),
     );
-    let rows = await getUser(this.database, { userUserIdEq: userId });
-    if (rows.length === 0) {
-      throw newNotFoundError(`User ${userId} is not found.`);
-    }
-    let user = rows[0];
-    if (
-      this.passwordSigner.sign(body.currentPassword) !== user.userPasswordHashV1
-    ) {
-      throw newBadRequestError(`Password is incorrect.`);
-    }
-    let newPasswordHash = this.passwordSigner.sign(body.newPassword);
+    let notAuthenticated = false;
     await this.database.runTransactionAsync(async (transaction) => {
+      let rows = await getUser(transaction, { userUserIdEq: userId });
+      if (rows.length === 0) {
+        throw newInternalServerErrorError(`User ${userId} is not found.`);
+      }
+      let user = rows[0];
+      if (
+        this.passwordSigner.sign(body.currentPassword) !==
+        user.userPasswordHashV1
+      ) {
+        console.log(
+          `${loggingPrefix} password doesn't match for userId ${userId}.`,
+        );
+        notAuthenticated = true;
+        return;
+      }
+      let newPasswordHash = this.passwordSigner.sign(body.newPassword);
       await transaction.batchUpdate([
         updateUserPasswordHashStatement({
           userUserIdEq: userId,
@@ -69,6 +78,11 @@ export class UpdatePasswordHandler extends UpdatePasswordHandlerInterface {
       ]);
       await transaction.commit();
     });
+    if (notAuthenticated) {
+      return {
+        notAuthenticated: true,
+      };
+    }
     return {};
   }
 }

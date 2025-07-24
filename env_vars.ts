@@ -7,6 +7,8 @@ export interface EnvVars extends ClusterEnvVars {
   r2AvatarBucketName?: string;
   // Without trailing slash
   r2AvatarPublicAccessOrigin?: string;
+  emailVerificationEmailTemplateId?: string;
+  passwordResetEmailTemplateId?: string;
   releaseServiceName?: string;
   port?: number;
   builderAccount?: string;

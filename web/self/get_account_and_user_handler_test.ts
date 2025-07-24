@@ -27,13 +27,12 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
-              recoveryEmail: "recovery1",
+              userEmail: "user@example.com",
             }),
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",
@@ -62,11 +61,9 @@ TEST_RUNNER.run({
           eqMessage(
             {
               account: {
-                username: "username1",
-                recoveryEmail: "recovery1",
-                naturalName: "name1",
+                userEmail: "user@example.com",
+                name: "name1",
                 description: "something something",
-                contactEmail: "contact1",
                 avatarLargeUrl: "https://custom.domain/avatarL",
               },
             },
@@ -120,8 +117,7 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
-              recoveryEmail: "recovery1",
+              userEmail: "user@example.com",
             }),
           ]);
           await transaction.commit();
@@ -164,13 +160,12 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
-              recoveryEmail: "recovery1",
+              userEmail: "user@example.com",
             }),
             insertAccountStatement({
               userId: "user1",
               accountId: "account2",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",
@@ -218,13 +213,12 @@ TEST_RUNNER.run({
           await transaction.batchUpdate([
             insertUserStatement({
               userId: "user1",
-              username: "username1",
-              recoveryEmail: "recovery1",
+              userEmail: "user@example.com",
             }),
             insertAccountStatement({
               userId: "user2",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "contact1",
               description: "something something",
               avatarLargeFilename: "avatarL",

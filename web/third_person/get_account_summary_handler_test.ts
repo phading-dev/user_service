@@ -21,7 +21,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               avatarSmallFilename: "avatarS",
               createdTimeMs: 1000,
             }),
@@ -45,7 +45,7 @@ TEST_RUNNER.run({
             {
               account: {
                 accountId: "account1",
-                naturalName: "name1",
+                name: "name1",
                 avatarSmallUrl: "https://custom.domain/avatarS",
               },
             },

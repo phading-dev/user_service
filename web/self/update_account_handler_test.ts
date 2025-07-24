@@ -25,7 +25,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "email",
               description: "something something",
               createdTimeMs: 1000,
@@ -43,8 +43,7 @@ TEST_RUNNER.run({
         await handler.handle(
           "",
           {
-            naturalName: "name2",
-            contactEmail: "contact2@example.com",
+            name: "name2",
           },
           "session1",
         );
@@ -59,8 +58,8 @@ TEST_RUNNER.run({
               {
                 accountUserId: "user1",
                 accountAccountId: "account1",
-                accountNaturalName: "name2",
-                accountContactEmail: "contact2@example.com",
+                accountName: "name2",
+                accountContactEmail: "email",
                 accountDescription: "",
                 accountCreatedTimeMs: 1000,
               },
@@ -88,7 +87,7 @@ TEST_RUNNER.run({
             insertAccountStatement({
               userId: "user1",
               accountId: "account1",
-              naturalName: "name1",
+              name: "name1",
               contactEmail: "email",
               description: "",
               createdTimeMs: 1000,
@@ -106,8 +105,7 @@ TEST_RUNNER.run({
         await handler.handle(
           "",
           {
-            naturalName: "name2",
-            contactEmail: "contact2@example.com",
+            name: "name2",
             description: "something something",
           },
           "session1",
@@ -123,8 +121,8 @@ TEST_RUNNER.run({
               {
                 accountUserId: "user1",
                 accountAccountId: "account1",
-                accountNaturalName: "name2",
-                accountContactEmail: "contact2@example.com",
+                accountName: "name2",
+                accountContactEmail: "email",
                 accountDescription: "something something",
                 accountCreatedTimeMs: 1000,
               },

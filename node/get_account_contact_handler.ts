@@ -29,7 +29,7 @@ export class GetAccountContactHandler extends GetAccountContactHandlerInterface 
     }
     let row = rows[0];
     return {
-      naturalName: row.accountNaturalName,
+      name: row.accountName,
       contactEmail: row.accountContactEmail,
     };
   }

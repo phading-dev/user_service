@@ -41,7 +41,7 @@ export class GetAccountDetailsHandler extends GetAccountDetailsHandlerInterface 
     return {
       account: {
         accountId: account.accountAccountId,
-        naturalName: account.accountNaturalName,
+        name: account.accountName,
         avatarLargeUrl: `${this.publicAccessOrigin}/${account.accountAvatarLargeFilename}`,
         description: account.accountDescription,
       },

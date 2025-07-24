@@ -49,7 +49,7 @@ export class ListAccountsHandler extends ListAccountsHandlerInterface {
         return {
           accountId: row.accountAccountId,
           accountType: row.accountAccountType,
-          naturalName: row.accountNaturalName,
+          name: row.accountName,
           avatarLargeUrl: `${this.publicAccessOrigin}/${row.accountAvatarLargeFilename}`,
         };
       }),
