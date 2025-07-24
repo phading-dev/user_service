@@ -74,7 +74,7 @@ export class SignInHandler extends SignInHandlerInterface {
         notAuthenticated = true;
         return;
       }
-      if (user.userEmailVerified === false) {
+      if (!user.userEmailVerified) {
         needsEmailVerification = true;
         return;
       }
