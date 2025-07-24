@@ -29,6 +29,7 @@ import { SwitchAccountHandler } from "./web/self/switch_account_handler";
 import { UpdateAccountHandler } from "./web/self/update_account_handler";
 import { UpdatePasswordHandler } from "./web/self/update_password_handler";
 import { UpdateUserEmailHandler } from "./web/self/update_user_email_handler";
+import { UpdateUserEmailWithPasswordHandler } from "./web/self/update_user_email_with_password_handler";
 import { UploadAccountAvatarHandler } from "./web/self/upload_account_avatar_handler";
 import { VerifyEmailAndSignInHandler } from "./web/self/verify_email_and_sign_in_handler";
 import { GetAccountDetailsHandler } from "./web/third_person/get_account_details_handler";
@@ -84,6 +85,7 @@ async function main() {
     .add(UpdateAccountHandler.create())
     .add(UpdatePasswordHandler.create())
     .add(UpdateUserEmailHandler.create())
+    .add(UpdateUserEmailWithPasswordHandler.create())
     .add(UploadAccountAvatarHandler.create())
     .add(VerifyEmailAndSignInHandler.create())
     .add(GetAccountDetailsHandler.create())
