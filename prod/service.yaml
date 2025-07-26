@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service-pod
+  template:
+    metadata:
+      labels:
+        app: user-service-pod
+    spec:
+      serviceAccountName: user-service-account
+      containers:
+      - name: user-service-container
+        image: gcr.io/phading-prod/user-service:latest
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+---
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: user-service-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: user-service-pod
+  endpoints:
+  - port: 8080
+    path: /metricsz
+    interval: 30s
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: user-service-neg-health-check
+spec:
+  healthCheck:
+    port: 8080
+    type: HTTP
+    requestPath: /healthz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    beta.cloud.google.com/backend-config: '{"default": "user-service-neg-health-check"}'
+spec:
+  selector:
+    app: user-service-pod
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
